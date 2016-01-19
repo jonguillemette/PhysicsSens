@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/action_bar_height"
+    android:background="@color/primary_blue">
+    
+    <ImageButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/action_bar_home_image_button"
+        android:src="@drawable/home_active"
+        android:layout_centerVertical="true"
+        android:layout_alignParentStart="true"
+        android:padding="30dp"
+        android:background="?attr/selectableItemBackground"/>
+
+    <ImageButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/action_bar_list_image_button"
+        android:src="@drawable/graph_icon_small"
+        android:layout_toEndOf="@id/action_bar_home_image_button"
+        android:layout_centerVertical="true"
+        android:padding="30dp"
+        android:background="?attr/selectableItemBackground"/>
+
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/action_bar_current_username"
+        android:layout_toEndOf="@id/action_bar_list_image_button"
+        android:layout_centerVertical="true"
+        android:layout_marginStart="20dp"
+        android:textColor="@android:color/white"
+        android:textSize="@dimen/action_bar_details_text_size"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/action_bar_textview"
+        android:text="@string/ble_scan_title"
+        android:textColor="@android:color/white"
+        android:textSize="@dimen/action_bar_text_size"
+        android:layout_centerInParent="true"
+        />
+
+    <ImageButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/action_bar_bte_image_button"
+        android:src="@android:drawable/stat_sys_data_bluetooth"
+        android:layout_alignParentEnd="true"
+        android:layout_centerVertical="true"
+        android:padding="40dp"
+        android:background="?attr/selectableItemBackground"/>
+
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/action_bar_current_ble_status"
+        android:layout_toStartOf="@id/action_bar_bte_image_button"
+        android:layout_centerVertical="true"
+        android:layout_marginEnd="20dp"
+        android:textColor="@android:color/white"
+        android:textSize="@dimen/action_bar_details_text_size"/>
+
+</RelativeLayout>

@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:id="@+id/home_fragment_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_grey">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_gravity="center_horizontal">
+
+        <TextView
+            android:layout_width="@dimen/home_text_width"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:gravity="center_horizontal"
+            android:layout_marginTop="@dimen/home_text_top_margin"
+            android:text="@string/home_instruction_1"
+            android:textSize="@dimen/home_text_size"
+            android:lineSpacingExtra="@dimen/home_line_extra"
+            android:textColor="@color/instruction_grey"/>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="@dimen/spinner_vertical_margin"
+            android:layout_marginBottom="@dimen/spinner_vertical_margin">
+
+            <Spinner
+                android:id="@+id/user_spinner"
+                android:layout_width="@dimen/spinner_width"
+                android:layout_height="wrap_content"
+                android:background="@android:drawable/btn_dropdown"
+                android:spinnerMode="dropdown" />
+
+            <ImageButton
+                android:layout_width="@dimen/new_user_logo_width"
+                android:layout_height="wrap_content"
+                android:id="@+id/new_user_image_button"
+                android:src="@android:drawable/ic_input_add"
+                android:layout_gravity="center"
+                android:layout_marginStart="@dimen/new_user_left_margin"
+                android:background="@android:color/transparent"/>
+
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="@dimen/home_text_width"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:gravity="center_horizontal"
+            android:layout_marginBottom="@dimen/spinner_vertical_margin"
+            android:text="@string/home_instruction_2"
+            android:textSize="@dimen/home_text_size"
+            android:lineSpacingExtra="@dimen/home_line_extra"
+            android:textColor="@color/instruction_grey"/>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_gravity="center_horizontal">
+
+            <Button
+                android:layout_width="@dimen/test_box_width"
+                android:layout_height="@dimen/test_box_height"
+                android:id="@+id/shot_test_button"
+                android:background="@drawable/test_button_shadow"
+                android:text="@string/shot"
+                android:textAllCaps="false"
+                android:textColor="@color/dark_grey"
+                android:textSize="@dimen/test_text_size"
+                android:gravity="center"
+                />
+
+            <Button
+                android:layout_width="@dimen/test_box_width"
+                android:layout_height="@dimen/test_box_height"
+                android:id="@+id/evaluation_test_button"
+                android:background="@drawable/disabled_test_button_shadow"
+                android:text="@string/evaluation"
+                android:textAllCaps="false"
+                android:textColor="@color/dark_grey"
+                android:textSize="@dimen/test_text_size"
+                android:layout_marginStart="@dimen/test_horizontal_margin"
+                android:gravity="center"
+                android:clickable="false"
+                />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="@dimen/test_vertical_margin"
+            android:layout_marginBottom="200dp">
+
+            <Button
+                android:layout_width="@dimen/test_box_width"
+                android:layout_height="@dimen/test_box_height"
+                android:id="@+id/handling_test_button"
+                android:background="@drawable/disabled_test_button_shadow"
+                android:text="@string/stickHandling"
+                android:textAllCaps="false"
+                android:textColor="@color/dark_grey"
+                android:textSize="@dimen/test_text_size"
+                android:gravity="center"
+                android:clickable="false"
+                />
+
+            <Button
+                android:layout_width="@dimen/test_box_width"
+                android:layout_height="@dimen/test_box_height"
+                android:id="@+id/roaming_test_button"
+                android:background="@drawable/disabled_test_button_shadow"
+                android:text="@string/freeRoaming"
+                android:textAllCaps="false"
+                android:textColor="@color/dark_grey"
+                android:textSize="@dimen/test_text_size"
+                android:layout_marginStart="@dimen/test_horizontal_margin"
+                android:gravity="center"
+                android:clickable="false"
+                />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>

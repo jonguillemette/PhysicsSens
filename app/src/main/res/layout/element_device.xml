@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:paddingBottom="5dp"
+    >
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/device_image"
+        android:layout_gravity="left|center_vertical"
+        android:layout_weight="0"
+        android:contentDescription="image"
+        android:focusable="false"
+        android:paddingRight="15dp"
+        android:src="@drawable/sensortag" />
+
+    <TextView
+        android:id="@+id/descr"
+        style="@style/nameStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="left|center_vertical"
+        android:layout_weight="4"
+        android:focusable="false"
+        android:gravity="left" />
+
+
+    <Button
+        android:layout_width="@dimen/connect_button_width"
+        android:layout_height="@dimen/connect_button_height"
+        android:id="@+id/btnConnect"
+        android:layout_gravity="center_vertical"
+        android:layout_marginTop="@dimen/connect_button_vertical_margin"
+        android:layout_marginBottom="@dimen/connect_button_vertical_margin"
+        android:layout_weight="0"
+        android:clickable="false"
+        android:focusable="false"
+        android:gravity="center"
+        android:text="Connect"
+        android:textAllCaps="false"
+        android:textColor="@color/instruction_grey"
+        android:textSize="@dimen/connect_button_text_size"
+        android:background="@drawable/start_button_shadow" />
+
+</LinearLayout>
