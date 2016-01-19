@@ -127,7 +127,7 @@ public class ContentActivity extends FragmentActivity {
 			scanLeDevice(false);
 			mBluetoothLeService.close();
 			unregisterReceiver(mReceiver);
-			unbindService(mServiceConnection);
+            unbindService(mServiceConnection);
 			mBluetoothLeService = null;
 		}
 
@@ -144,7 +144,7 @@ public class ContentActivity extends FragmentActivity {
 		FragmentTransaction ft = fm.beginTransaction();
 		ft.replace(R.id.action_bar_fragment_container, mActionBarFragment);
 		ft.commit();
-	}
+    }
 
 	private void initializeScanFragment() {
 		mScanFragmentContainer = (FrameLayout) findViewById(R.id.scan_fragment_container);
