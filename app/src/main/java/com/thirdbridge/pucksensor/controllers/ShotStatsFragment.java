@@ -84,6 +84,8 @@ public class ShotStatsFragment extends BaseFragment {
 
     private static final double STAMP = 2.0; // This is the delta time between sending, need to calculate instead TODO
     private static final int MINIMAL_G = 1;
+    private static final float MINIMAL_NOISE_G = 0.5f;
+    private static final int MAX_DATA = 1000;
 
 
 	private boolean mTestRunning = false;
@@ -114,10 +116,17 @@ public class ShotStatsFragment extends BaseFragment {
     private CheckBox mAccCheckB;
     private CheckBox mSpeedCheckB;
     private CheckBox mAngularCheckB;
+    private CheckBox mFilterCheckB;
     private TextView mPeakAccTV;
     private SeekBar mPeakAccSB;
 
+    // Core
     private boolean mNewSetRequired = true;
+    private boolean mShotDetected = false;
+    private int mIdDatas = 0;
+    private Point3D[] mAccDatas = new Point3D[MAX_DATA];
+    private double[] mRotDatas = new double[MAX_DATA];
+    private boolean mNotFilter;
 
 	//Accel Chart
     private LinearLayout mAccelLayout;
@@ -268,6 +277,7 @@ public class ShotStatsFragment extends BaseFragment {
         mAccCheckB = (CheckBox) v.findViewById(R.id.show_acceleration_check);
         mSpeedCheckB = (CheckBox) v.findViewById(R.id.show_speed_check);
         mAngularCheckB = (CheckBox) v.findViewById(R.id.show_angular_check);
+        mFilterCheckB = (CheckBox) v.findViewById(R.id.filter_off_check);
         mPeakAccTV = (TextView) v.findViewById(R.id.peak_acc_number);
         mPeakAccSB = (SeekBar) v.findViewById(R.id.peak_acc_seekbar);
 
@@ -285,6 +295,15 @@ public class ShotStatsFragment extends BaseFragment {
 		mTopAccelXYZTextView = (TextView) v.findViewById(R.id.top_accel_xyz_textview);
 
 		// DEBUGGING DATA
+        mNotFilter = mFilterCheckB.isChecked();
+
+        mFilterCheckB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                mNotFilter = isChecked;
+            }
+        });
+
         mHackButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -307,15 +326,21 @@ public class ShotStatsFragment extends BaseFragment {
                 mAccelChart.getAxisLeft().setEnabled(true);
                 mSpeedChart.getAxisLeft().setEnabled(true);
                 mRotationChart.getAxisLeft().setEnabled(true);
-                int item = 400;
+                int item = 1500;
                 Point3D[] acc = new Point3D[item];
                 double[] rot = new double[item];
 
                 for (int i=0; i<item; i++) {
-                    if (i < item/2) {
-                        acc[i] = new Point3D((i * mPeakAccSB.getProgress())*1f/200f, 0.0f, 0.0f);
+                    if (i < 200) {
+                        acc[i] = new Point3D(Math.random()*0.8, 0.0f, 0.0f);
+                    } else if (i < 500) {
+                        acc[i] = new Point3D((i-200f)*(1f/300f)*10, 0.0f, 0.0f);
+                    } else if (i<1000) {
+                        acc[i] = new Point3D((1-((i-500f)*(1f/500f)))*10, 0.0f, 0.0f);
+                    } else if (i<1200) {
+                        acc[i] = new Point3D(((i-1000f)*(1f/200f))*20, 0.0f, 0.0f);
                     } else {
-                        acc[i] = new Point3D((item-i * mPeakAccSB.getProgress())*1f/200f, 0.0f, 0.0f);
+                        acc[i] = new Point3D((1-((i-1200f)*(1f/300f)))*20, 0.0f, 0.0f);
                     }
                     rot[i] = Math.random()*i;
                 }
@@ -1279,8 +1304,61 @@ public class ShotStatsFragment extends BaseFragment {
 	}
 
 	private void onDummyChanged(Point3D[] acceleration, double[] rotation) {
-		populateCharts(acceleration, rotation);
-        populateStatisticsFields();
+        if (mNotFilter) {
+            populateCharts(acceleration, rotation);
+            populateStatisticsFields();
+        } else {
+            // 1. Analyse data (Simulated data, normally, only one a a time)
+            boolean sendData = false;
+            mShotDetected = false;
+            mIdDatas = 0; // Normally continue and check if outbound
+            for (int i = 0; i < rotation.length; i++) {
+                double accelX = acceleration[i].x;
+                double accelY = acceleration[i].y;
+                double accelZ = acceleration[i].z;
+                double accelXYZ = Math.sqrt(Math.pow(accelX, 2) + Math.pow(accelY, 2) + Math.pow(accelZ, 2));
+
+                if (accelXYZ > Integer.parseInt(mPeakAccTV.getText().toString())) {
+                    // Case 1, Find a peak
+                    mShotDetected = true;
+                    mAccDatas[mIdDatas] = acceleration[i];
+                    mRotDatas[mIdDatas] = rotation[i];
+                    mIdDatas++;
+                } else if (accelXYZ > MINIMAL_NOISE_G) {
+                    // Case 2 , just add
+                    mAccDatas[mIdDatas] = acceleration[i];
+                    mRotDatas[mIdDatas] = rotation[i];
+                    mIdDatas++;
+
+                } else if (accelXYZ <= MINIMAL_NOISE_G && mShotDetected) {
+                    // Case 3, Ready to send data
+                    // Normally check to discard the next 1000 data for rebound issue
+                    sendData = true;
+                    break;
+                } else {
+                    mIdDatas = 0;
+                }
+            }
+
+            if (sendData) {
+                //Rebuild data...
+                Point3D[] sendAcc = new Point3D[mIdDatas];
+                double[] sendRot = new double[mIdDatas];
+
+                for (int i = 0; i < sendRot.length; i++) {
+                    sendAcc[i] = mAccDatas[i];
+                    sendRot[i] = mRotDatas[i];
+                }
+
+                // 2. If trigger, than show
+                populateCharts(sendAcc, sendRot);
+                populateStatisticsFields();
+            } else {
+                Toast.makeText(this.getActivity(), "Not parsing done", Toast.LENGTH_SHORT).show();
+            }
+        }
+
+
 	}
 
 	private void populateCharts(Point3D puckAcceleration, double rotation) {
