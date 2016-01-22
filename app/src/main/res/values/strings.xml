@@ -45,6 +45,11 @@
     <string name="xAxisData">Show X Axis Data</string>
     <string name="yAxisData">Show Y Axis Data</string>
     <string name="zAxisData">Show Z Axis Data</string>
+    <string name="show_acceleration">Show acceleration</string>
+    <string name="show_speed">Show speed</string>
+    <string name="show_angular">Show angular speed</string>
+    <string name="peak_acc">(DEV) Peak acceleration threshold: </string>
+
 
     <!-- Acceleration Chart -->
     <string name="accelChartTitle">Puck acceleration over time (g)</string>

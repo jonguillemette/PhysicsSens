@@ -23,11 +23,13 @@ import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -63,6 +65,7 @@ import java.util.Calendar;
 import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
+import java.util.Random;
 import java.util.UUID;
 
 /**
@@ -77,6 +80,8 @@ public class ShotStatsFragment extends BaseFragment {
 	private static final int X_DATA = 2;
 	private static final int Y_DATA = 3;
 	private static final int Z_DATA = 4;
+
+    private static final double STAMP = 2.0; // This is the delta time between sending, need to calculate instead TODO
 
 
 	private boolean mTestRunning = false;
@@ -103,19 +108,17 @@ public class ShotStatsFragment extends BaseFragment {
 	private boolean mTestWasRun = false;
 	private int dataCounter = 0;
 
+    // Menu
+    private CheckBox mAccCheckB;
+    private CheckBox mSpeedCheckB;
+    private CheckBox mAngularCheckB;
+    private TextView mPeakAccTV;
+    private SeekBar mPeakAccSB;
+
 	//Accel Chart
+    private LinearLayout mAccelLayout;
 	private LineChart mAccelChart;
-	private LinearLayout mAccelXStatsLinearLayout;
-	private LinearLayout mAccelYStatsLinearLayout;
-	private LinearLayout mAccelZStatsLinearLayout;
 	private TextView mTopAccelXYZTextView;
-	private TextView mTopAccelXTextView;
-	private TextView mTopAccelYTextView;
-	private TextView mTopAccelZTextView;
-	private CheckBox mRecordIndividualAccelAxesCheckbox;
-	private CheckBox mXAccelDataCheckBox;
-	private CheckBox mYAccelDataCheckBox;
-	private CheckBox mZAccelDataCheckBox;
 	private float mTopAccelXYZ = 0f;
 	private float mTopAccelX = 0f;
 	private float mTopAccelY = 0f;
@@ -127,18 +130,9 @@ public class ShotStatsFragment extends BaseFragment {
 	private boolean mCalculatedAverageOffset = false;
 
 	//Speed Chart
+    private LinearLayout mSpeedLayout;
 	private LineChart mSpeedChart;
-	private LinearLayout mSpeedXStatsLinearLayout;
-	private LinearLayout mSpeedYStatsLinearLayout;
-	private LinearLayout mSpeedZStatsLinearLayout;
 	private TextView mTopSpeedXYZTextView;
-	private TextView mTopSpeedXTextView;
-	private TextView mTopSpeedYTextView;
-	private TextView mTopSpeedZTextView;
-	private CheckBox mRecordIndividualSpeedAxesCheckbox;
-	private CheckBox mXSpeedDataCheckBox;
-	private CheckBox mYSpeedDataCheckBox;
-	private CheckBox mZSpeedDataCheckBox;
 	private float mTopSpeedXYZ = 0f;
 	private float mTopSpeedX = 0f;
 	private float mTopSpeedY = 0f;
@@ -152,8 +146,12 @@ public class ShotStatsFragment extends BaseFragment {
 	private boolean mSpeedDataVisibleX = false;
 	private boolean mSpeedDataVisibleY = false;
 	private boolean mSpeedDataVisibleZ = false;
+	private Button mGenerateButton;
+    private Button mHackButton;
+    private Button mCalibrateButton;
 
 	//Rotation Chart
+    private LinearLayout mAngularLayout;
 	private LineChart mRotationChart;
 	private TextView mTopRotationTextView;
 	private float mTopRotation = 0f;
@@ -175,7 +173,7 @@ public class ShotStatsFragment extends BaseFragment {
 	private boolean mShowingSpeed = false;
 	private boolean mShowingAccel = false;
 	private int mAccelIsGravityCounter = 0;
-	private int mPrintDataFrequency = 20;
+	private int mPrintDataFrequency = 1;//20;
 	private int mMultipleAxesDataFrequency = 10;
 
 	//Accel Chart
@@ -244,7 +242,7 @@ public class ShotStatsFragment extends BaseFragment {
 		mDataCountWithoutEvent = 200;
 
 		//Print one value out of x on the graph, increase the value of this variable for better performance
-		mPrintDataFrequency = 20;
+		mPrintDataFrequency = 1;
 
 		//When the user decides to record individual axes, this variable is added to mPrintDataFrequency to enhance performance
 		mMultipleAxesDataFrequency = 10;
@@ -321,36 +319,66 @@ public class ShotStatsFragment extends BaseFragment {
 		mStartStopButton = (Button) v.findViewById(R.id.start_button);
 		mSaveButton = (Button) v.findViewById(R.id.save_button);
 		mDescriptionTextView = (TextView) v.findViewById(R.id.stats_description_textview);
+		mGenerateButton = (Button) v.findViewById(R.id.generate_button);
+        mHackButton = (Button) v.findViewById(R.id.demo_start_button);
+        mCalibrateButton = (Button) v.findViewById(R.id.calibrate_button);
 
 		mLoadingScreenRelativeLayout = (RelativeLayout) v.findViewById(R.id.loading_screen_relative_layout);
 
+        // Menu
+        mAccCheckB = (CheckBox) v.findViewById(R.id.show_acceleration_check);
+        mSpeedCheckB = (CheckBox) v.findViewById(R.id.show_speed_check);
+        mAngularCheckB = (CheckBox) v.findViewById(R.id.show_angular_check);
+        mPeakAccTV = (TextView) v.findViewById(R.id.peak_acc_number);
+        mPeakAccSB = (SeekBar) v.findViewById(R.id.peak_acc_seekbar);
+
+        // Main structure
+        mAccelLayout = (LinearLayout) v.findViewById(R.id.accel_layout);
+        mSpeedLayout = (LinearLayout) v.findViewById(R.id.speed_layout);
+        mAngularLayout = (LinearLayout) v.findViewById(R.id.angular_layout);
+
 		//Accel chart
 		mAccelChart = (LineChart) v.findViewById(R.id.accel_stats_chart);
-		mAccelXStatsLinearLayout = (LinearLayout) v.findViewById(R.id.accel_x_stats_box_linear_layout);
-		mAccelYStatsLinearLayout = (LinearLayout) v.findViewById(R.id.accel_y_stats_box_linear_layout);
-		mAccelZStatsLinearLayout = (LinearLayout) v.findViewById(R.id.accel_z_stats_box_linear_layout);
 		mTopAccelXYZTextView = (TextView) v.findViewById(R.id.top_accel_xyz_textview);
-		mTopAccelXTextView = (TextView) v.findViewById(R.id.top_accel_x_textview);
-		mTopAccelYTextView = (TextView) v.findViewById(R.id.top_accel_y_textview);
-		mTopAccelZTextView = (TextView) v.findViewById(R.id.top_accel_z_textview);
-		mRecordIndividualAccelAxesCheckbox = (CheckBox) v.findViewById(R.id.accel_individual_axes_checkbox);
-		mXAccelDataCheckBox = (CheckBox) v.findViewById(R.id.accel_x_checkbox);
-		mYAccelDataCheckBox = (CheckBox) v.findViewById(R.id.accel_y_checkbox);
-		mZAccelDataCheckBox = (CheckBox) v.findViewById(R.id.accel_z_checkbox);
+
+		// DEBUGGING DATA
+        mHackButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mSensorStartingProgressBar.setVisibility(View.GONE);
+                mSensorStartingTextView.setVisibility(View.GONE);
+                mStartStopButton.setVisibility(View.VISIBLE);
+                mSaveButton.setVisibility(View.VISIBLE);
+
+
+            }
+        });
+
+
+		mGenerateButton.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+                mAccelChart.getAxisLeft().setDrawGridLines(true);
+                mSpeedChart.getAxisLeft().setDrawGridLines(true);
+                mRotationChart.getAxisLeft().setDrawGridLines(true);
+                mAccelChart.getAxisLeft().setEnabled(true);
+                mSpeedChart.getAxisLeft().setEnabled(true);
+                mRotationChart.getAxisLeft().setEnabled(true);
+                int item = 400;
+                Point3D[] acc = new Point3D[item];
+                double[] rot = new double[item];
+
+                for (int i=0; i<item; i++) {
+                    acc[i] = new Point3D(Math.random()*i, 0.0f, 0.0f);
+                    rot[i] = 0.0;
+                }
+                onDummyChanged(acc, rot);
+			}
+		});
 
 		//Speed Chart
 		mSpeedChart = (LineChart) v.findViewById(R.id.speed_stats_chart);
-		mSpeedXStatsLinearLayout = (LinearLayout) v.findViewById(R.id.speed_x_stats_box_linear_layout);
-		mSpeedYStatsLinearLayout = (LinearLayout) v.findViewById(R.id.speed_y_stats_box_linear_layout);
-		mSpeedZStatsLinearLayout = (LinearLayout) v.findViewById(R.id.speed_z_stats_box_linear_layout);
 		mTopSpeedXYZTextView = (TextView) v.findViewById(R.id.top_speed_xyz_textview);
-		mTopSpeedXTextView = (TextView) v.findViewById(R.id.top_speed_x_textview);
-		mTopSpeedYTextView = (TextView) v.findViewById(R.id.top_speed_y_textview);
-		mTopSpeedZTextView = (TextView) v.findViewById(R.id.top_speed_z_textview);
-		mRecordIndividualSpeedAxesCheckbox = (CheckBox) v.findViewById(R.id.speed_individual_axes_checkbox);
-		mXSpeedDataCheckBox = (CheckBox) v.findViewById(R.id.speed_x_checkbox);
-		mYSpeedDataCheckBox = (CheckBox) v.findViewById(R.id.speed_y_checkbox);
-		mZSpeedDataCheckBox = (CheckBox) v.findViewById(R.id.speed_z_checkbox);
 
 		//Rotation Chart
 		mRotationChart = (LineChart) v.findViewById(R.id.rotation_stats_chart);
@@ -362,7 +390,7 @@ public class ShotStatsFragment extends BaseFragment {
 			@Override
 			public void onClick(View view) {
 
-				if (mSensorReady) {
+				if (true/*mSensorReady*/) {
 
 					mSaveButton.setBackground(ContextCompat.getDrawable(getContext(), R.drawable.small_button_shadow));
 
@@ -377,10 +405,6 @@ public class ShotStatsFragment extends BaseFragment {
 					} else if (mTestWasRun) {
 						mTestWasRun = false;
 						getController().reloadShotStatsFragment();
-						mRecordIndividualAccelAxesCheckbox.setEnabled(true);
-						mRecordIndividualSpeedAxesCheckbox.setEnabled(true);
-						mRecordIndividualAccelAxesCheckbox.setChecked(false);
-						mRecordIndividualSpeedAxesCheckbox.setChecked(false);
 						if (!getController().isBleDeviceConnected())
 							mStartStopButton.setEnabled(false);
 					} else {
@@ -455,22 +479,15 @@ public class ShotStatsFragment extends BaseFragment {
 						setupRotationChart();
 
 						mTopAccelXYZTextView.setText("");
-						mTopAccelXTextView.setText("");
-						mTopAccelYTextView.setText("");
-						mTopAccelZTextView.setText("");
 
 						mTopSpeedXYZTextView.setText("");
-						mTopAccelXTextView.setText("");
-						mTopAccelYTextView.setText("");
-						mTopAccelZTextView.setText("");
 
 						mTopRotationTextView.setText("");
 
 						mStartStopButton.setText(getString(R.string.stopTest));
 						mStartStopButton.setCompoundDrawablesWithIntrinsicBounds(android.R.drawable.ic_delete, 0, 0, 0);
 
-						mRecordIndividualAccelAxesCheckbox.setEnabled(false);
-						mRecordIndividualSpeedAxesCheckbox.setEnabled(false);
+
 
 						lastDataTime = 0;
 						dataCounter = 0;
@@ -500,111 +517,30 @@ public class ShotStatsFragment extends BaseFragment {
 			}
 		});
 
-		mRecordIndividualAccelAxesCheckbox.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View view) {
-				if(mRecordIndividualAccelAxesCheckbox.isChecked()){
-					mXAccelDataCheckBox.setVisibility(View.VISIBLE);
-					mYAccelDataCheckBox.setVisibility(View.VISIBLE);
-					mZAccelDataCheckBox.setVisibility(View.VISIBLE);
+        showAcceleration(mAccCheckB.isChecked());
+        showSpeed(mSpeedCheckB.isChecked());
+        showAngularSpeed(mAngularCheckB.isChecked());
 
-					mAccelXStatsLinearLayout.setVisibility(View.VISIBLE);
-					mAccelYStatsLinearLayout.setVisibility(View.VISIBLE);
-					mAccelZStatsLinearLayout.setVisibility(View.VISIBLE);
+        mAccCheckB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                showAcceleration(isChecked);
+            }
+        });
 
-					mAccelDataVisibleX = false;
-					mAccelDataVisibleY = false;
-					mAccelDataVisibleZ = false;
+        mSpeedCheckB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                showSpeed(isChecked);
+            }
+        });
 
-					mXAccelDataCheckBox.setChecked(false);
-					mYAccelDataCheckBox.setChecked(false);
-					mZAccelDataCheckBox.setChecked(false);
-				}
-				else{
-					mXAccelDataCheckBox.setVisibility(View.GONE);
-					mYAccelDataCheckBox.setVisibility(View.GONE);
-					mZAccelDataCheckBox.setVisibility(View.GONE);
-
-					mAccelXStatsLinearLayout.setVisibility(View.GONE);
-					mAccelYStatsLinearLayout.setVisibility(View.GONE);
-					mAccelZStatsLinearLayout.setVisibility(View.GONE);
-				}
-			}
-		});
-
-		mXAccelDataCheckBox.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View view) {
-				toggleAccelChartData(X_DATA);
-			}
-		});
-
-		mYAccelDataCheckBox.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View view) {
-				toggleAccelChartData(Y_DATA);
-			}
-		});
-
-		mZAccelDataCheckBox.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View view) {
-				toggleAccelChartData(Z_DATA);
-			}
-		});
-
-		mRecordIndividualSpeedAxesCheckbox.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View view) {
-				if(mRecordIndividualSpeedAxesCheckbox.isChecked()){
-					mXSpeedDataCheckBox.setVisibility(View.VISIBLE);
-					mYSpeedDataCheckBox.setVisibility(View.VISIBLE);
-					mZSpeedDataCheckBox.setVisibility(View.VISIBLE);
-
-					mSpeedXStatsLinearLayout.setVisibility(View.VISIBLE);
-					mSpeedYStatsLinearLayout.setVisibility(View.VISIBLE);
-					mSpeedZStatsLinearLayout.setVisibility(View.VISIBLE);
-
-					mSpeedDataVisibleX = false;
-					mSpeedDataVisibleY = false;
-					mSpeedDataVisibleZ = false;
-
-					mXSpeedDataCheckBox.setChecked(false);
-					mYSpeedDataCheckBox.setChecked(false);
-					mZSpeedDataCheckBox.setChecked(false);
-				}
-				else{
-					mXSpeedDataCheckBox.setVisibility(View.GONE);
-					mYSpeedDataCheckBox.setVisibility(View.GONE);
-					mZSpeedDataCheckBox.setVisibility(View.GONE);
-
-					mSpeedXStatsLinearLayout.setVisibility(View.GONE);
-					mSpeedYStatsLinearLayout.setVisibility(View.GONE);
-					mSpeedZStatsLinearLayout.setVisibility(View.GONE);
-				}
-			}
-		});
-
-		mXSpeedDataCheckBox.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View view) {
-				toggleSpeedChartData(X_DATA);
-			}
-		});
-
-		mYSpeedDataCheckBox.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View view) {
-				toggleSpeedChartData(Y_DATA);
-			}
-		});
-
-		mZSpeedDataCheckBox.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View view) {
-				toggleSpeedChartData(Z_DATA);
-			}
-		});
+        mAngularCheckB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                showAngularSpeed(isChecked);
+            }
+        });
 
 		return v;
 	}
@@ -633,8 +569,6 @@ public class ShotStatsFragment extends BaseFragment {
 			mSaveButton.setVisibility(View.GONE);
 			mSensorStartingProgressBar.setVisibility(View.GONE);
 			mSensorStartingTextView.setVisibility(View.GONE);
-			mRecordIndividualAccelAxesCheckbox.setVisibility(View.GONE);
-			mRecordIndividualSpeedAxesCheckbox.setVisibility(View.GONE);
 
 			Handler handler = new Handler();
 			handler.postDelayed(new Runnable() {
@@ -700,9 +634,6 @@ public class ShotStatsFragment extends BaseFragment {
 
 
 			mTopAccelXYZTextView.setText(MathHelper.round(mTopAccelXYZ, 2) + "g");
-			mTopAccelXTextView.setText(MathHelper.round(mTopAccelX, 2) + "g");
-			mTopAccelYTextView.setText(MathHelper.round(mTopAccelY, 2) + "g");
-			mTopAccelZTextView.setText(MathHelper.round(mTopAccelZ, 2) + "g");
 		}
 
 		if (mSpeedChart != null) {
@@ -729,9 +660,6 @@ public class ShotStatsFragment extends BaseFragment {
 			}
 
 			mTopSpeedXYZTextView.setText(MathHelper.round(mTopSpeedXYZ, 2) + " m/s");
-			mTopSpeedXTextView.setText(MathHelper.round(mTopSpeedX, 2) + " m/s");
-			mTopSpeedYTextView.setText(MathHelper.round(mTopSpeedY, 2) + " m/s");
-			mTopSpeedZTextView.setText(MathHelper.round(mTopSpeedZ, 2) + " m/s");
 		}
 
 		if (mRotationChart != null) {
@@ -932,11 +860,11 @@ public class ShotStatsFragment extends BaseFragment {
 		mAccelChart.getLegend().setEnabled(false);
 
 		// enable touch gestures
-		mAccelChart.setTouchEnabled(true);
+		mAccelChart.setTouchEnabled(false);
 
 		// enable scaling and dragging
-		mAccelChart.setDragEnabled(true);
-		mAccelChart.setScaleEnabled(true);
+		mAccelChart.setDragEnabled(false);
+		mAccelChart.setScaleEnabled(false);
 		mAccelChart.setDrawGridBackground(false);
 
 		// if disabled, scaling can be done on x- and y-axis separately
@@ -951,6 +879,7 @@ public class ShotStatsFragment extends BaseFragment {
 		// add empty data
 		mAccelChart.setData(data);
 
+
 		mAccelChart.setDescription("");
 
 		// get the legend (only possible after setting data)
@@ -958,7 +887,7 @@ public class ShotStatsFragment extends BaseFragment {
 
 		// modify the legend ...
 		// l.setPosition(LegendPosition.LEFT_OF_CHART);
-		l.setForm(Legend.LegendForm.LINE);
+        l.setForm(Legend.LegendForm.LINE);
 		l.setTextColor(Color.BLACK);
 
 		XAxis xl = mAccelChart.getXAxis();
@@ -1012,30 +941,6 @@ public class ShotStatsFragment extends BaseFragment {
 						mNewAccelDataSetRequired = false;
 					}
 					break;
-				case "X":
-					mXAccelDataCheckBox.setVisibility(View.VISIBLE);
-					mAccelXStatsLinearLayout.setVisibility(View.VISIBLE);
-					for (int k = 0; k < yEntries.size(); k++) {
-						addAccelEntry(X_DATA, xValues.get(yEntries.get(k).getXIndex()), yEntries.get(k).getVal(), true);
-						mNewAccelDataSetRequired = false;
-					}
-					break;
-				case "Y":
-					mYAccelDataCheckBox.setVisibility(View.VISIBLE);
-					mAccelYStatsLinearLayout.setVisibility(View.VISIBLE);
-					for (int k = 0; k < yEntries.size(); k++) {
-						addAccelEntry(Y_DATA, xValues.get(yEntries.get(k).getXIndex()), yEntries.get(k).getVal(), true);
-						mNewAccelDataSetRequired = false;
-					}
-					break;
-				case "Z":
-					mZAccelDataCheckBox.setVisibility(View.VISIBLE);
-					mAccelZStatsLinearLayout.setVisibility(View.VISIBLE);
-					for (int k = 0; k < yEntries.size(); k++) {
-						addAccelEntry(Z_DATA, xValues.get(yEntries.get(k).getXIndex()), yEntries.get(k).getVal(), true);
-						mNewAccelDataSetRequired = false;
-					}
-					break;
 				default:
 					break;
 			}
@@ -1048,7 +953,7 @@ public class ShotStatsFragment extends BaseFragment {
 		LineData data = mAccelChart.getData();
 
 		if (data != null) {
-
+            Log.i(TAG, "Data not null");
 			LineDataSet currentLineDataSet = null;
 
 			// add a new x-value first
@@ -1078,29 +983,40 @@ public class ShotStatsFragment extends BaseFragment {
 					data.addEntry(new Entry(yValue, data.getXValCount()), dataType);
 					break;
 				case XYZ_DATA:
+                    Log.i(TAG, "XYZ data");
 					if (showEntry) {
+                        Log.i(TAG, "Show entry" + mPreviewTest);
 						if (mNewAccelDataSetRequired) {
+                            Log.i(TAG, "New set require");
+                            data.clearValues();
+                            Log.i(TAG, "Now1: " + yValue + " " + data.getXValCount() + " " + mAccelDataSetIndexXYZ + " " + mAccelEntryBufferXYZ.size());
 							currentLineDataSet = createSet("XYZ", ColorTemplate.getHoloBlue(), 2f, 2f, true);
 							data.addDataSet(currentLineDataSet);
 							mAccelDataSetIndexXYZ = data.getIndexOfDataSet(currentLineDataSet);
-							mAccelDataSetIndexesXYZ.add(mAccelDataSetIndexXYZ);
 
 							int accelBufferSize = mAccelEntryBufferXYZ.size();
-
+                            Log.i(TAG, "Now2: " + yValue + " " + data.getXValCount() + " " + mAccelDataSetIndexXYZ + " " + mAccelEntryBufferXYZ.size());
 							for (int i = 0; i < accelBufferSize; i++) {
 								data.addEntry(mAccelEntryBufferXYZ.getLast(), mAccelDataSetIndexXYZ);
 								mAccelEntryBufferXYZ.removeLast();
 							}
 
+                            Log.i(TAG, "Now3: " + yValue + " " + data.getXValCount() + " " + mAccelDataSetIndexXYZ + " " + mAccelEntryBufferXYZ.size());
+
 						}
-						if (!mPreviewTest)
-							data.addEntry(new Entry(yValue, data.getXValCount()), mAccelDataSetIndexXYZ);
-						else
-							data.addEntry(new Entry(yValue, data.getXVals().indexOf(xValue)), mAccelDataSetIndexXYZ);
+						if (!mPreviewTest) {
+                            Log.i(TAG, "Push: " + yValue + " " + data.getXValCount() + " " + mAccelDataSetIndexXYZ);
+                            data.addEntry(new Entry(yValue, data.getXValCount()), mAccelDataSetIndexXYZ);
+                        } else {
+
+                            data.addEntry(new Entry(yValue, data.getXVals().indexOf(xValue)), mAccelDataSetIndexXYZ);
+                        }
 					} else {
+                        Log.i(TAG, "Else");
 						if (mAccelEntryBufferXYZ.size() >= 5) {
 							mAccelEntryBufferXYZ.removeLast();
 						}
+                        Log.i(TAG, "push" + mPreviewTest);
 						mAccelEntryBufferXYZ.push(new Entry(yValue, data.getXValCount()));
 					}
 
@@ -1214,11 +1130,8 @@ public class ShotStatsFragment extends BaseFragment {
 					break;
 			}
 
-			// let the chart know it's data has changed
-			mAccelChart.notifyDataSetChanged();
 
-			// limit the number of visible entries
-			mAccelChart.setVisibleXRangeMaximum(60);
+
 
 			// move to the latest entry
 			if(!mPreviewTest)
@@ -1313,30 +1226,6 @@ public class ShotStatsFragment extends BaseFragment {
 				case "XYZ":
 					for (int k = 0; k < yEntries.size(); k++) {
 						addSpeedEntry(XYZ_DATA, xValues.get(yEntries.get(k).getXIndex()), yEntries.get(k).getVal(), true);
-						mNewSpeedDataSetRequired = false;
-					}
-					break;
-				case "X":
-					mXSpeedDataCheckBox.setVisibility(View.VISIBLE);
-					mSpeedXStatsLinearLayout.setVisibility(View.VISIBLE);
-					for (int k = 0; k < yEntries.size(); k++) {
-						addSpeedEntry(X_DATA, xValues.get(yEntries.get(k).getXIndex()), yEntries.get(k).getVal(), true);
-						mNewSpeedDataSetRequired = false;
-					}
-					break;
-				case "Y":
-					mYSpeedDataCheckBox.setVisibility(View.VISIBLE);
-					mSpeedYStatsLinearLayout.setVisibility(View.VISIBLE);
-					for (int k = 0; k < yEntries.size(); k++) {
-						addSpeedEntry(Y_DATA, xValues.get(yEntries.get(k).getXIndex()), yEntries.get(k).getVal(), true);
-						mNewSpeedDataSetRequired = false;
-					}
-					break;
-				case "Z":
-					mZSpeedDataCheckBox.setVisibility(View.VISIBLE);
-					mSpeedZStatsLinearLayout.setVisibility(View.VISIBLE);
-					for (int k = 0; k < yEntries.size(); k++) {
-						addSpeedEntry(Z_DATA, xValues.get(yEntries.get(k).getXIndex()), yEntries.get(k).getVal(), true);
 						mNewSpeedDataSetRequired = false;
 					}
 					break;
@@ -1637,7 +1526,7 @@ public class ShotStatsFragment extends BaseFragment {
 
 	private LineDataSet createSet(String setTitle, int lineColor, float lineWidth, float circleSize, boolean fullLine) {
 		LineDataSet set = new LineDataSet(null, setTitle);
-		set.setAxisDependency(YAxis.AxisDependency.LEFT);
+        set.setAxisDependency(YAxis.AxisDependency.LEFT);
 		set.setColor(lineColor);
 		set.setCircleColor(Color.BLACK);
 		set.setLineWidth(lineWidth);
@@ -1940,6 +1829,10 @@ public class ShotStatsFragment extends BaseFragment {
 		}
 	}
 
+	private void onDummyChanged(Point3D[] acceleration, double[] rotation) {
+		populateCharts(acceleration, rotation);
+	}
+
 	private void populateCharts(Point3D puckAcceleration, double rotation) {
 
 		dataCounter++;
@@ -2032,31 +1925,16 @@ public class ShotStatsFragment extends BaseFragment {
 
 			int dataPrintFrequency = mPrintDataFrequency;
 
-			if(mRecordIndividualAccelAxesCheckbox.isChecked())
-				dataPrintFrequency += mMultipleAxesDataFrequency;
-			if(mRecordIndividualSpeedAxesCheckbox.isChecked())
-				dataPrintFrequency += mMultipleAxesDataFrequency;
 
 			if (dataCounter % dataPrintFrequency == 0) {
 				addAccelEntry(DUMMY_DATA, currentTime, 0, true);
 				addAccelEntry(XYZ_DATA, currentTime, (float) accelXYZ, mShowingAccel);
 
-				if(mRecordIndividualAccelAxesCheckbox.isChecked()) {
-					addAccelEntry(X_DATA, currentTime, (float) accelX, mShowingAccel);
-					addAccelEntry(Y_DATA, currentTime, (float) accelY, mShowingAccel);
-					addAccelEntry(Z_DATA, currentTime, (float) accelZ, mShowingAccel);
-				}
 
 				mNewAccelDataSetRequired = false;
 
 				addSpeedEntry(DUMMY_DATA, currentTime, 0, true);
 				addSpeedEntry(XYZ_DATA, currentTime, mPuckSpeedXYZ, mShowingSpeed);
-
-				if(mRecordIndividualSpeedAxesCheckbox.isChecked()) {
-					addSpeedEntry(X_DATA, currentTime, mPuckSpeedX, mShowingSpeed);
-					addSpeedEntry(Y_DATA, currentTime, mPuckSpeedY, mShowingSpeed);
-					addSpeedEntry(Z_DATA, currentTime, mPuckSpeedZ, mShowingSpeed);
-				}
 
 				mNewSpeedDataSetRequired = false;
 
@@ -2065,4 +1943,183 @@ public class ShotStatsFragment extends BaseFragment {
 		}
 
 	}
+
+    private void populateCharts(Point3D[] puckAcceleration, double[] rotation) {
+
+        double time = 0.0f; // Use stamp
+
+        mAccelChart.clear();
+        LineData data = new LineData();
+        data.setValueTextColor(Color.BLACK);
+
+        // add empty data
+        mAccelChart.setData(data);
+
+        mNewAccelDataSetRequired = true;
+
+
+        mPuckSpeedX = 0;
+        mPuckSpeedY = 0;
+        mPuckSpeedZ = 0;
+
+        for (int i=0; i<rotation.length; i++) {
+            double accelX = puckAcceleration[i].x;
+            double accelY = puckAcceleration[i].y;
+            double accelZ = puckAcceleration[i].z;
+            double accelXYZ = Math.sqrt(Math.pow(accelX, 2) + Math.pow(accelY, 2) + Math.pow(accelZ, 2));
+
+            // TODO Cancel gravity
+
+            mTimeStep = (float)STAMP;
+
+            mPuckSpeedX += (accelX) * GRAVITY * mTimeStep;
+            mPuckSpeedY += (accelY) * GRAVITY * mTimeStep;
+            mPuckSpeedZ += (accelZ) * GRAVITY * mTimeStep;
+
+            mPuckSpeedXYZ = (float) Math.sqrt(Math.pow(mPuckSpeedX, 2) + Math.pow(mPuckSpeedY, 2) + Math.pow(mPuckSpeedZ, 2));
+
+            addAccelEntry(XYZ_DATA, i*mTimeStep+"", (float) accelXYZ, true);
+            mNewAccelDataSetRequired = false;
+        }
+        Log.i(TAG, "Fit on screen");
+        mAccelChart.fitScreen();
+        // let the chart know it's data has changed
+        mAccelChart.notifyDataSetChanged();
+        Log.i(TAG, "Done");
+
+
+/*
+        //Calibrate the puck
+        if ((System.currentTimeMillis() - mTestStartTime) < mCalibrationTime) {
+            if (mAverageGravityOffset == 0) {
+                mAccelChart.setNoDataText("Calibrating sensors...");
+                mAccelChart.invalidate();
+                mSpeedChart.setNoDataText("Calibrating sensors...");
+                mSpeedChart.invalidate();
+                mRotationChart.setNoDataText("Calibration sensors...");
+                mRotationChart.invalidate();
+            }
+            mAverageGravityOffset += accelXYZ;
+            mAverageAccelX += accelX;
+            mAverageAccelY += accelY;
+            mAverageAccelZ += accelZ;
+        } else {
+            if (!mCalculatedAverageOffset) {
+                mAverageGravityOffset /= dataCounter;
+                mAverageAccelX /= dataCounter;
+                mAverageAccelY /= dataCounter;
+                mAverageAccelZ /= dataCounter;
+
+                mTimeStep = (float) ((System.currentTimeMillis() - mTestStartTime) / (dataCounter * 1000.0));
+                mPuckSpeedOffset = 0f;
+                mCalculatedAverageOffset = true;
+
+                mAccelChart.getAxisLeft().setDrawGridLines(true);
+                mSpeedChart.getAxisLeft().setDrawGridLines(true);
+                mRotationChart.getAxisLeft().setDrawGridLines(true);
+                mAccelChart.getAxisLeft().setEnabled(true);
+                mSpeedChart.getAxisLeft().setEnabled(true);
+                mRotationChart.getAxisLeft().setEnabled(true);
+
+                Log.i("Average Data", "Found average gravity contribution: " + mAverageGravityOffset + " and average X accel: " + mAverageAccelX + " and average Y accel:" + mAverageAccelY + " and average Z accel:" + mAverageAccelZ);
+                Log.i("Average Data", "Got :" + String.valueOf(dataCounter) + " data in: " + String.valueOf(mCalibrationTime) + "ms");
+                Log.i("Average Data", "Average time step " + String.valueOf(mTimeStep));
+            }
+
+            boolean eventHasOccured = Math.abs(accelX-mAverageAccelX) > mEventDetection || Math.abs(accelY-mAverageAccelY) > mEventDetection || Math.abs(accelZ-mAverageAccelZ) > mEventDetection;
+
+            if(!eventHasOccured){
+                mAccelIsGravityCounter++;
+                if (mAccelIsGravityCounter > mDataCountWithoutEvent) {
+                    mShowingSpeed = false;
+                    mShowingAccel = false;
+                    mNewSpeedDataSetRequired = true;
+                    mNewAccelDataSetRequired = true;
+                }
+            }
+            else {
+                mShowingSpeed = true;
+                mShowingAccel = true;
+                mAccelIsGravityCounter = 0;
+            }
+
+            mPuckSpeedOffset += (mSpeedGravityOffsetRatio*GRAVITY * mTimeStep);
+
+            mPuckSpeedX += (accelX) * GRAVITY * mTimeStep;
+            mPuckSpeedY += (accelY) * GRAVITY * mTimeStep;
+            mPuckSpeedZ += (accelZ ) * GRAVITY * mTimeStep;
+
+            mPuckSpeedXYZ = (float) Math.sqrt(Math.pow(mPuckSpeedX, 2) + Math.pow(mPuckSpeedY, 2) + Math.pow(mPuckSpeedZ, 2));
+            mPuckSpeedXYZ -= mPuckSpeedOffset;
+
+            if (mPuckSpeedXYZ <= 0 || !mShowingSpeed || !mShowingAccel) {
+                mPuckSpeedXYZ = 0;
+                mPuckSpeedX = 0;
+                mPuckSpeedY = 0;
+                mPuckSpeedZ = 0;
+                mPuckSpeedOffset = 0;
+            }
+
+            accelXYZ -= mAverageGravityOffset;
+
+            int dataPrintFrequency = mPrintDataFrequency;
+
+            if(mRecordIndividualAccelAxesCheckbox.isChecked())
+                dataPrintFrequency += mMultipleAxesDataFrequency;
+            if(mRecordIndividualSpeedAxesCheckbox.isChecked())
+                dataPrintFrequency += mMultipleAxesDataFrequency;
+
+            if (dataCounter % dataPrintFrequency == 0) {
+                Log.d(TAG, "HERE! " + accelXYZ);
+                addAccelEntry(DUMMY_DATA, currentTime, 0, true);
+                addAccelEntry(XYZ_DATA, currentTime, (float) accelXYZ, mShowingAccel);
+
+                if(mRecordIndividualAccelAxesCheckbox.isChecked()) {
+                    addAccelEntry(X_DATA, currentTime, (float) accelX, mShowingAccel);
+                    addAccelEntry(Y_DATA, currentTime, (float) accelY, mShowingAccel);
+                    addAccelEntry(Z_DATA, currentTime, (float) accelZ, mShowingAccel);
+                }
+
+                mNewAccelDataSetRequired = false;
+
+                addSpeedEntry(DUMMY_DATA, currentTime, 0, true);
+                addSpeedEntry(XYZ_DATA, currentTime, mPuckSpeedXYZ, mShowingSpeed);
+
+                if(mRecordIndividualSpeedAxesCheckbox.isChecked()) {
+                    addSpeedEntry(X_DATA, currentTime, mPuckSpeedX, mShowingSpeed);
+                    addSpeedEntry(Y_DATA, currentTime, mPuckSpeedY, mShowingSpeed);
+                    addSpeedEntry(Z_DATA, currentTime, mPuckSpeedZ, mShowingSpeed);
+                }
+
+                mNewSpeedDataSetRequired = false;
+
+                addRotationEntry(currentTime, (float) rotation);
+            }
+        }*/
+
+    }
+
+    private void showAcceleration(boolean show) {
+        if (show) {
+            mAccelLayout.setVisibility(View.VISIBLE);
+        } else {
+            mAccelLayout.setVisibility(View.GONE);
+        }
+    }
+
+    private void showSpeed(boolean show) {
+        if (show) {
+            mSpeedLayout.setVisibility(View.VISIBLE);
+        } else {
+            mSpeedLayout.setVisibility(View.GONE);
+        }
+    }
+
+    private void showAngularSpeed(boolean show) {
+        if (show) {
+            mAngularLayout.setVisibility(View.VISIBLE);
+        } else {
+            mAngularLayout.setVisibility(View.GONE);
+        }
+    }
 }

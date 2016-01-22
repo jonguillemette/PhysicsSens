@@ -94,11 +94,13 @@ public class HomeFragment extends BaseFragment {
         shotTestButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(userSpinner.getSelectedItemPosition() != -1) {
+                // Reenable link
+                getController().gotoShotStats((User)userSpinner.getSelectedItem());
+                /*if(userSpinner.getSelectedItemPosition() != -1) {
                     if (getController().isBleDeviceConnected()) {
                         getController().gotoShotStats((User)userSpinner.getSelectedItem());
                     }
-                }
+                }*/
             }
         });
 
