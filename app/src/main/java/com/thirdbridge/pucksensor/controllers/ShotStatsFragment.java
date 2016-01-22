@@ -70,6 +70,7 @@ import java.util.UUID;
 
 /**
  * Created by Christophe on 2015-10-14.
+ * Modified by Jayson Dalpé since 2016-01-22.
  */
 public class ShotStatsFragment extends BaseFragment {
 
