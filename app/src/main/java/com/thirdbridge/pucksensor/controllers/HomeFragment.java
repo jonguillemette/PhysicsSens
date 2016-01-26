@@ -1,7 +1,9 @@
 package com.thirdbridge.pucksensor.controllers;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,7 +21,9 @@ import com.thirdbridge.pucksensor.R;
 import com.thirdbridge.pucksensor.database.DataManager;
 import com.thirdbridge.pucksensor.models.User;
 import com.thirdbridge.pucksensor.utils.BaseFragment;
+import com.thirdbridge.pucksensor.utils.IO;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -29,6 +33,10 @@ import java.util.UUID;
  * Modified by Jayson Dalpe since 2016-01-26
  */
 public class HomeFragment extends BaseFragment {
+    private final static String PREF_USER = "PREF_USER";
+
+    // Saving local instance
+    SharedPreferences mSettings;
 
     private Button mShotTextButton;
     private ImageButton mNewUserImageButton;
@@ -62,6 +70,7 @@ public class HomeFragment extends BaseFragment {
         mNewUserImageButton = (ImageButton) v.findViewById(R.id.new_user_image_button);
         mUserSpinner = (Spinner) v.findViewById(R.id.user_spinner);
 
+        mSettings = getActivity().getSharedPreferences("StatPuck", 0);
         populateSpinner();
 
         mUserSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -69,6 +78,9 @@ public class HomeFragment extends BaseFragment {
             public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
                 if (mUsers.get(position) != null) {
                     getController().setCurrentUsername(mUsers.get(position).getFirstName() + " " + mUsers.get(position).getLastName());
+                    SharedPreferences.Editor editor = mSettings.edit();
+                    editor.putString(PREF_USER, mUsers.get(position).getId());
+                    editor.commit();
                 }
             }
 
@@ -111,12 +123,27 @@ public class HomeFragment extends BaseFragment {
     private void populateSpinner(){
         mUsers = new ArrayList<>();
 
-        for(User user: DataManager.get().getUsers()){
-            mUsers.add(user);
+        File root = new File(this.getContext().getFilesDir(), "users");
+        if (!root.exists()) {
+            root.mkdirs();
+            return;
+        }
+
+        File[] users = root.listFiles();
+
+        String prefUser = mSettings.getString(PREF_USER, "");
+        int id = 0;
+        for(int i=0; i<users.length; i++){
+            User newUser = User.depackageForm(IO.loadFile(users[i]));
+            mUsers.add(newUser);
+            if (prefUser.trim().equalsIgnoreCase(newUser.getId().trim())) {
+                id = i;
+            }
         }
 
         mSpinnerAdapter = new UserArrayAdapter(getController(), R.layout.spinner_dropdown_item, mUsers);
         mUserSpinner.setAdapter(mSpinnerAdapter);
+        mUserSpinner.setSelection(id);
     }
 
     private PopupWindow inflateNewUserPopup(ViewGroup container){
@@ -142,12 +169,17 @@ public class HomeFragment extends BaseFragment {
             public void onClick(View view) {
                 if (!mFirstNameEditText.getText().toString().matches("") || !mLastNameEditText.getText().toString().matches("")) {
                     User newUser = new User(UUID.randomUUID().toString(), mFirstNameEditText.getText().toString(), mLastNameEditText.getText().toString());
-                    DataManager.get().addUser(newUser);
+                    IO.saveFile(newUser.packageForm(), new File(getContext().getFilesDir().getAbsolutePath() +  "/users/" + newUser.getId() + ".user"));
                     mUsers.add(newUser);
+                    populateSpinner();
                     mSpinnerAdapter.notifyDataSetChanged();
                     mUserSpinner.setSelection(mSpinnerAdapter.getCount() - 1);
                     popupWindow.dismiss();
                     getController().setCurrentUsername(mFirstNameEditText.getText().toString() + " " + mLastNameEditText.getText().toString());
+
+                    SharedPreferences.Editor editor = mSettings.edit();
+                    editor.putString(PREF_USER, newUser.getId());
+                    editor.commit();
                 }
             }
         });
