@@ -12,9 +12,9 @@ public class User {
     private String mId;
 
     public User(String id, String firstName, String lastName){
-        this.mId = id;
-        this.mFirstName = firstName;
-        this.mLastName = lastName;
+        this.mId = id.trim();
+        this.mFirstName = firstName.trim();
+        this.mLastName = lastName.trim();
     }
 
     public String getId() {

@@ -10,12 +10,16 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.media.MediaScannerConnection;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.v4.content.ContextCompat;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.Pair;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -40,7 +44,6 @@ import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
-import com.github.mikephil.charting.utils.ColorTemplate;
 import com.google.gson.Gson;
 import com.thirdbridge.pucksensor.R;
 import com.thirdbridge.pucksensor.ble.BluetoothLeService;
@@ -52,21 +55,20 @@ import com.thirdbridge.pucksensor.models.ShotTest;
 import com.thirdbridge.pucksensor.models.User;
 import com.thirdbridge.pucksensor.utils.BaseFragment;
 import com.thirdbridge.pucksensor.utils.Constants;
+import com.thirdbridge.pucksensor.utils.IO;
 import com.thirdbridge.pucksensor.utils.MathHelper;
 import com.thirdbridge.pucksensor.utils.Shot;
 import com.thirdbridge.pucksensor.utils.ble_utils.Point2D;
 import com.thirdbridge.pucksensor.utils.ble_utils.Point3D;
 
+import java.io.File;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
-import java.util.Random;
 import java.util.UUID;
 
 /**
@@ -76,6 +78,7 @@ import java.util.UUID;
 public class ShotStatsFragment extends BaseFragment {
 
 	private static String TAG = ShotStatsFragment.class.getSimpleName();
+    private static String FOLDER_SAVE_SHOT = "Shots";
 
 	private static final int DUMMY_DATA = 0;
 	private static final int XYZ_DATA = 1;
@@ -96,6 +99,7 @@ public class ShotStatsFragment extends BaseFragment {
     private static final int[] GRAPH_COLOR = {Color.BLUE, Color.RED};
     private static final int[] RECENT_NAME = {R.string.recent_shot1, R.string.recent_shot2, R.string.recent_shot3, R.string.recent_shot4};
 
+
     // Saving local instance
     SharedPreferences mSettings;
 
@@ -114,11 +118,6 @@ public class ShotStatsFragment extends BaseFragment {
 
 	//Loading screen
 	private RelativeLayout mLoadingScreenRelativeLayout;
-
-	//popup items
-	private Button mSaveTestPopupButton;
-	private Button mCancelSaveTestPopupButton;
-	private EditText mTestDescriptionEditText;
 
 	private boolean mTestWasRun = false;
 	private int dataCounter = 0;
@@ -140,8 +139,8 @@ public class ShotStatsFragment extends BaseFragment {
     // Core
     private boolean mShotDetected = false;
     private int mIdDatas = 0;
-    private Point3D[] mAccDatas = new Point3D[Shot.getMax()];
-    private double[] mRotDatas = new double[Shot.getMax()];
+    private Point3D[] mAccDatas = new Point3D[Shot.getMaxData()];
+    private double[] mRotDatas = new double[Shot.getMaxData()];
     private Shot[] mRecent = new Shot[4];
     private boolean mNotFilter;
     private int mPauseGraph = 2000; //Sample
@@ -449,7 +448,6 @@ public class ShotStatsFragment extends BaseFragment {
 		mRotationChart = (LineChart) v.findViewById(R.id.rotation_stats_chart);
 		mTopRotationTextView = (TextView) v.findViewById(R.id.top_rotation_textview);
 
-		final PopupWindow popupWindow = inflateSaveTestPopup(container);
 
 		mStartStopButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -524,19 +522,33 @@ public class ShotStatsFragment extends BaseFragment {
 		mSaveButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (mTestWasRun && !mTestRunning) {
-                    ((EditText) popupWindow.getContentView().findViewById(R.id.test_description_edittext)).setText("");
-                    popupWindow.setFocusable(true);
-                    popupWindow.update();
-                    popupWindow.showAtLocation(container, Gravity.TOP, 0, 200);
-
-                    InputMethodManager imm = (InputMethodManager)
-                            getController().getSystemService(Context.INPUT_METHOD_SERVICE);
-                    if (imm != null) {
-                        imm.toggleSoftInput(InputMethodManager.SHOW_IMPLICIT, 0);
-                    }
-
+                // Save on a known place every shot shown
+                File rootsd = Environment.getExternalStorageDirectory();
+                File root = new File(rootsd.getAbsolutePath(), FOLDER_SAVE_SHOT);
+                if (!root.exists()) {
+                    root.mkdirs();
                 }
+
+                List<Integer> id = new ArrayList<Integer>();
+                if (mFirstCheck != -1) {
+                    id.add(mFirstCheck);
+                }
+                if (mSecondCheck != -1) {
+                    id.add(mSecondCheck);
+                }
+
+                for (int i=0; i<id.size(); i++) {
+                    Pair<String, String> saveData = mRecent[id.get(i)].packageFormCSV();
+                    File file = new File(root, saveData.first);
+                    IO.saveFile(saveData.second, file);
+                    Toast.makeText(getContext(), "Save " + getString(RECENT_NAME[id.get(i)]) + " in " + file, Toast.LENGTH_LONG).show();
+
+                    Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+                    intent.setData(Uri.fromFile(file));
+                    getActivity().sendBroadcast(intent);
+                }
+
+
             }
         });
 
@@ -664,7 +676,7 @@ public class ShotStatsFragment extends BaseFragment {
 			mSensorStartingTextView.setVisibility(View.GONE);
 			mStartStopButton.setVisibility(View.VISIBLE);
 			mSaveButton.setVisibility(View.VISIBLE);
-		}
+        }
 	}
 
 	private void deactivateTestButtons(){
@@ -727,48 +739,6 @@ public class ShotStatsFragment extends BaseFragment {
             mRotationChart.fitScreen();
             mRotationChart.notifyDataSetChanged();
 		}
-	}
-
-	private PopupWindow inflateSaveTestPopup(ViewGroup container) {
-
-		LayoutInflater layoutInflater
-				= (LayoutInflater) getController().getBaseContext()
-				.getSystemService(getController().LAYOUT_INFLATER_SERVICE);
-
-		final View popupView = layoutInflater.inflate(R.layout.save_test_popup, container, false);
-
-		mSaveTestPopupButton = (Button) popupView.findViewById(R.id.save_test_button);
-		mCancelSaveTestPopupButton = (Button) popupView.findViewById(R.id.cancel_test_button);
-		mTestDescriptionEditText = (EditText) popupView.findViewById(R.id.test_description_edittext);
-
-		final PopupWindow popupWindow = new PopupWindow(
-				popupView,
-				1000,
-				ViewGroup.LayoutParams.WRAP_CONTENT);
-
-		mSaveTestPopupButton.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View view) {
-				saveTest(mTestDescriptionEditText.getText().toString());
-				popupWindow.dismiss();
-			}
-		});
-
-		mCancelSaveTestPopupButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                popupWindow.dismiss();
-            }
-        });
-
-		return popupWindow;
-	}
-
-	private void saveTest(String testDescription) {
-		DateFormat df = new SimpleDateFormat("EEE, d MMM yyyy HH:mm a");
-		String date = df.format(Calendar.getInstance().getTime());
-		ShotTest shotTest = new ShotTest(mUser.getId(), mUser.getFirstName() + " " + mUser.getLastName(), date, testDescription, mAccelData, mSpeedData, mRotationData);
-		DataManager.get().addTest(shotTest);
 	}
 
 	private void setupAccelChart() {
@@ -1442,7 +1412,7 @@ public class ShotStatsFragment extends BaseFragment {
                     mRecent[3] = mRecent[2];
                     mRecent[2] = mRecent[1];
                     mRecent[1] = mRecent[0];
-                    mRecent[0] = new Shot(mAccDatas, mRotDatas);
+                    mRecent[0] = new Shot(mAccDatas, mRotDatas, mUser);
                     populateCharts();
                     populateStatisticsFields();
                     mIterGraph = 0;
@@ -1502,7 +1472,7 @@ public class ShotStatsFragment extends BaseFragment {
                         mRecent[3] = mRecent[2];
                         mRecent[2] = mRecent[1];
                         mRecent[1] = mRecent[0];
-                        mRecent[0] = new Shot(sendAcc, sendRot);
+                        mRecent[0] = new Shot(sendAcc, sendRot, mUser);
                         // 2. If trigger, than show
                         populateCharts();
                         populateStatisticsFields();
@@ -1518,7 +1488,7 @@ public class ShotStatsFragment extends BaseFragment {
             mRecent[3] = mRecent[2];
             mRecent[2] = mRecent[1];
             mRecent[1] = mRecent[0];
-            mRecent[0] = new Shot(acceleration, rotation);
+            mRecent[0] = new Shot(acceleration, rotation, mUser);
             populateCharts();
             populateStatisticsFields();
         } else {
@@ -1568,7 +1538,7 @@ public class ShotStatsFragment extends BaseFragment {
                 mRecent[3] = mRecent[2];
                 mRecent[2] = mRecent[1];
                 mRecent[1] = mRecent[0];
-                mRecent[0] = new Shot(sendAcc, sendRot);
+                mRecent[0] = new Shot(sendAcc, sendRot, mUser);
                 populateCharts();
                 populateStatisticsFields();
             } else {
@@ -1633,12 +1603,18 @@ public class ShotStatsFragment extends BaseFragment {
                 mPuckSpeedXYZ = (float) Math.sqrt(Math.pow((accelX) * GRAVITY * mTimeStep, 2) +
                         Math.pow((accelY) * GRAVITY * mTimeStep, 2) + Math.pow((accelZ) * GRAVITY * mTimeStep, 2)) / 1000f + mPuckSpeedXYZ;
 
+                //Complete recent data
+                mRecent[idData.get(id)].setAccelerationXYZ(accelXYZ, i);
+                mRecent[idData.get(id)].setSpeedXYZ(mPuckSpeedXYZ, i);
+
                 addAccelEntry(i * mTimeStep + "", i, (float) accelXYZ, newSetRequired, idData.get(id), id);
                 addSpeedEntry(i * mTimeStep + "", i, mPuckSpeedXYZ, newSetRequired, idData.get(id), id);
                 addRotationEntry(i * mTimeStep + "", i, (float) mRecent[idData.get(id)].getRotations()[i], newSetRequired, idData.get(id), id);
 
                 newSetRequired = false;
             }
+            mRecent[idData.get(id)].setMax(mAccelMax[id], mSpeedMax[id], mRotationMax[id]);
+
         }
     }
 
@@ -1665,4 +1641,5 @@ public class ShotStatsFragment extends BaseFragment {
             mAngularLayout.setVisibility(View.GONE);
         }
     }
+
 }
