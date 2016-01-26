@@ -53,6 +53,7 @@ import com.thirdbridge.pucksensor.models.User;
 import com.thirdbridge.pucksensor.utils.BaseFragment;
 import com.thirdbridge.pucksensor.utils.Constants;
 import com.thirdbridge.pucksensor.utils.MathHelper;
+import com.thirdbridge.pucksensor.utils.Shot;
 import com.thirdbridge.pucksensor.utils.ble_utils.Point2D;
 import com.thirdbridge.pucksensor.utils.ble_utils.Point3D;
 
@@ -84,14 +85,16 @@ public class ShotStatsFragment extends BaseFragment {
 
     private static final double STAMP = 2.0; // This is the delta time between sending, need to calculate instead TODO
     private static final int MINIMAL_G = 0; // Actually +1
-    private static final float MINIMAL_NOISE_G = 0.6f;
-    private static final int MAX_DATA = 1000;
+    private static final float MINIMAL_NOISE_G = 0.1f;
     private static final boolean DEBUG = true;
     private static final String THRESHOLD_G = "THRESHOLD_G";
     private static final String CHECK_ACCEL = "CHECK_ACCEL";
     private static final String CHECK_SPEED = "CHECK_SPEED";
     private static final String CHECK_ROTATION = "CHECK_ROTATION";
     private static final String CHECK_NOT_FILTER = "CHECK_NOT_FILTER";
+
+    private static final int[] GRAPH_COLOR = {Color.BLUE, Color.RED};
+    private static final int[] RECENT_NAME = {R.string.recent_shot1, R.string.recent_shot2, R.string.recent_shot3, R.string.recent_shot4};
 
     // Saving local instance
     SharedPreferences mSettings;
@@ -128,12 +131,18 @@ public class ShotStatsFragment extends BaseFragment {
     private TextView mPeakAccTV;
     private SeekBar mPeakAccSB;
 
+    //TODO
+    private CheckBox[] mRecentResult;
+    private int mFirstCheck = 0;
+    private int mSecondCheck = -1;
+    private boolean mCanTouchThis = true;
+
     // Core
-    private boolean mNewSetRequired = true;
     private boolean mShotDetected = false;
     private int mIdDatas = 0;
-    private Point3D[] mAccDatas = new Point3D[MAX_DATA];
-    private double[] mRotDatas = new double[MAX_DATA];
+    private Point3D[] mAccDatas = new Point3D[Shot.getMax()];
+    private double[] mRotDatas = new double[Shot.getMax()];
+    private Shot[] mRecent = new Shot[4];
     private boolean mNotFilter;
     private int mPauseGraph = 2000; //Sample
     private int mIterGraph = 0;
@@ -144,7 +153,7 @@ public class ShotStatsFragment extends BaseFragment {
     private LinearLayout mAccelLayout;
 	private LineChart mAccelChart;
 	private TextView mTopAccelXYZTextView;
-	private float mAccelMax = 0f;
+	private float[] mAccelMax = {0f, 0f};
 	private String mAccelData;
 	private boolean mAccelDataVisibleX = false;
 	private boolean mAccelDataVisibleY = false;
@@ -155,7 +164,7 @@ public class ShotStatsFragment extends BaseFragment {
     private LinearLayout mSpeedLayout;
 	private LineChart mSpeedChart;
 	private TextView mTopSpeedXYZTextView;
-	private float mSpeedMax = 0f;
+	private float[] mSpeedMax = {0f, 0f};
 	private float mPuckSpeedXYZ = 0f;
 	private float mPuckSpeedOffset = 0f;
 	private String mSpeedData;
@@ -166,7 +175,7 @@ public class ShotStatsFragment extends BaseFragment {
     private Button mHackButton;
 
 	//Rotation Chart
-    private float mRotationMax = 0f;
+    private float[] mRotationMax = {0f, 0f};
     private LinearLayout mAngularLayout;
 	private LineChart mRotationChart;
 	private TextView mTopRotationTextView;
@@ -300,6 +309,48 @@ public class ShotStatsFragment extends BaseFragment {
         mAccelLayout = (LinearLayout) v.findViewById(R.id.accel_layout);
         mSpeedLayout = (LinearLayout) v.findViewById(R.id.speed_layout);
         mAngularLayout = (LinearLayout) v.findViewById(R.id.angular_layout);
+
+        mRecentResult = new CheckBox[4];
+        mRecentResult[0] = (CheckBox) v.findViewById(R.id.recent_result1);
+        mRecentResult[1] = (CheckBox) v.findViewById(R.id.recent_result2);
+        mRecentResult[2] = (CheckBox) v.findViewById(R.id.recent_result3);
+        mRecentResult[3] = (CheckBox) v.findViewById(R.id.recent_result4);
+
+        for (int i=0; i<mRecentResult.length; i++) {
+            mRecentResult[i].setText(RECENT_NAME[i]);
+        }
+
+        mRecentResult[0].setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (mCanTouchThis)
+                    checkRecent(0, isChecked);
+            }
+        });
+
+        mRecentResult[1].setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (mCanTouchThis)
+                    checkRecent(1, isChecked);
+            }
+        });
+
+        mRecentResult[2].setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (mCanTouchThis)
+                    checkRecent(2, isChecked);
+            }
+        });
+
+        mRecentResult[3].setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (mCanTouchThis)
+                    checkRecent(3, isChecked);
+            }
+        });
 
 		//Accel chart
 		mAccelChart = (LineChart) v.findViewById(R.id.accel_stats_chart);
@@ -529,6 +580,43 @@ public class ShotStatsFragment extends BaseFragment {
 		return v;
 	}
 
+    private void checkRecent(int id, boolean isChecked) {
+        if (isChecked) {
+            if (mFirstCheck == -1) {
+                mFirstCheck = id;
+            } else if (mSecondCheck == -1) {
+                mSecondCheck = id;
+            } else {
+                mFirstCheck = mSecondCheck;
+                mSecondCheck = id;
+            }
+        } else {
+            if (mFirstCheck == id) {
+                mFirstCheck = -1;
+            }
+            if (mSecondCheck == id) {
+                mSecondCheck = -1;
+            }
+        }
+
+        mCanTouchThis = false; // Prevent infinite loop
+        mRecentResult[0].setChecked(false);
+        mRecentResult[1].setChecked(false);
+        mRecentResult[2].setChecked(false);
+        mRecentResult[3].setChecked(false);
+
+        if (mFirstCheck != -1) {
+            mRecentResult[mFirstCheck].setChecked(true);
+        }
+        if (mSecondCheck != -1) {
+            mRecentResult[mSecondCheck].setChecked(true);
+        }
+        mCanTouchThis = true;
+
+        populateCharts();
+        populateStatisticsFields();
+    }
+
 	@Override
 	public void onViewCreated(View view, Bundle savedInstanceState) {
 		super.onViewCreated(view, savedInstanceState);
@@ -591,19 +679,53 @@ public class ShotStatsFragment extends BaseFragment {
 	private void populateStatisticsFields() {
 
 		if (mAccelChart != null) {
+            float max = 0;
+            for (int i=0; i<mAccelMax.length; i++) {
+                if (mAccelMax[i] > max) {
+                    max = mAccelMax[i];
+                }
+            }
+            YAxis leftAxis = mAccelChart.getAxisLeft();
+            leftAxis.setAxisMaxValue(Math.abs(max));
+            leftAxis.setAxisMinValue(0);
 			//accel
-			mTopAccelXYZTextView.setText(MathHelper.round(mAccelMax, 2) + "g");
+			mTopAccelXYZTextView.setText(MathHelper.round(mAccelMax[0], 2) + "g and " + MathHelper.round(mAccelMax[1], 2) + "g");
+            mAccelChart.fitScreen();
+            mAccelChart.notifyDataSetChanged();
+
 		}
 
 		if (mSpeedChart != null) {
+            float max = 0;
+            for (int i=0; i<mSpeedMax.length; i++) {
+                if (mSpeedMax[i] > max) {
+                    max = mSpeedMax[i];
+                }
+            }
+            YAxis leftAxis = mSpeedChart.getAxisLeft();
+            leftAxis.setAxisMaxValue(Math.abs(max));
+            leftAxis.setAxisMinValue(0);
 			//speed
-			mTopSpeedXYZTextView.setText(MathHelper.round(mSpeedMax, 2) + " m/s");
+			mTopSpeedXYZTextView.setText(MathHelper.round(mSpeedMax[0], 2) + " m/s and " + MathHelper.round(mSpeedMax[1], 2) + "m/s");
+            mSpeedChart.fitScreen();
+            mSpeedChart.notifyDataSetChanged();
+
 		}
 
-        // TODO Enable it
 		if (mRotationChart != null) {
+            float max = 0;
+            for (int i=0; i<mRotationMax.length; i++) {
+                if (mRotationMax[i] > max) {
+                    max = mRotationMax[i];
+                }
+            }
+            YAxis leftAxis = mRotationChart.getAxisLeft();
+            leftAxis.setAxisMaxValue(Math.abs(max));
+            leftAxis.setAxisMinValue(0);
 			//rotation
-			mTopRotationTextView.setText(MathHelper.round(mRotationMax, 2) + " degrees/s");
+			mTopRotationTextView.setText(MathHelper.round(mRotationMax[0], 2) + " degrees/s and" + MathHelper.round(mRotationMax[1], 2) + "degrees/s");
+            mRotationChart.fitScreen();
+            mRotationChart.notifyDataSetChanged();
 		}
 	}
 
@@ -653,8 +775,6 @@ public class ShotStatsFragment extends BaseFragment {
 		mAccelChart.setNoDataTextDescription("");
 
 		mAccelChart.setAutoScaleMinMaxEnabled(true);
-
-		mAccelChart.getLegend().setEnabled(false);
 
 		// enable touch gestures
 		mAccelChart.setTouchEnabled(false);
@@ -722,68 +842,33 @@ public class ShotStatsFragment extends BaseFragment {
 			List<String> xValues = shotTestAccelData.getXVals();
 			String dataType = shotTestAccelData.getDataSetByIndex(i).getLabel();
 
-			mNewSetRequired = true;
 
-			switch (dataType) {
-				case "":
-					for (int k = 0; k < yEntries.size(); k++) {
-						//addAccelEntry(DUMMY_DATA, xValues.get(k), 0, false);
-						mNewSetRequired = false;
-					}
-					break;
-				case "XYZ":
-					for (int k = 0; k < yEntries.size(); k++) {
-						addAccelEntry(XYZ_DATA, xValues.get(yEntries.get(k).getXIndex()), yEntries.get(k).getVal(), true);
-						mNewSetRequired = false;
-					}
-					break;
-				default:
-					break;
-			}
 		}
 
 	}
 
-	private void addAccelEntry(int dataType, String xValue, float yValue, boolean showEntry) {
+	private void addAccelEntry(String xValue, int xValueInt, float yValue, boolean newData, int idName, int id) {
 
 		LineData data = mAccelChart.getData();
 
 		if (data != null) {
 			LineDataSet currentLineDataSet = null;
 
-			// add a new x-value first
-			if (mPreviewTest) {
-				if (!data.getXVals().contains(xValue)) {
-					data.addXValue(xValue);
-				}
-			} else {
-				if (!data.getXVals().contains(xValue + " ms"))
-					data.addXValue(xValue + " ms");
-			}
+            if (!data.getXVals().contains(xValue + " ms"))
+                data.addXValue(xValue + " ms");
 
-			if (Math.abs(yValue) > Math.abs(mAccelMax)) {
-				YAxis leftAxis = mAccelChart.getAxisLeft();
-				leftAxis.setAxisMaxValue(Math.abs(yValue));
-				leftAxis.setAxisMinValue(0);
-			}
-
-            if (mNewSetRequired) {
-                mAccelMax = 0;
-                data.clearValues();
-                currentLineDataSet = createSet("XYZ", ColorTemplate.getHoloBlue(), 2f, 2f, true);
+            if (newData) {
+                mAccelMax[id] = 0;
+                currentLineDataSet = createSet(getActivity().getString(RECENT_NAME[idName]), GRAPH_COLOR[id], 1f, 1f, true);
                 data.addDataSet(currentLineDataSet);
                 mAccelDataSetIndexXYZ = data.getIndexOfDataSet(currentLineDataSet);
 
 
             }
-            if (!mPreviewTest) {
-                data.addEntry(new Entry(yValue, data.getXValCount()), mAccelDataSetIndexXYZ);
-            } else {
-                data.addEntry(new Entry(yValue, data.getXVals().indexOf(xValue)), mAccelDataSetIndexXYZ);
-            }
+            data.addEntry(new Entry(yValue, xValueInt), mAccelDataSetIndexXYZ);
 
-            if (Math.abs(yValue) > Math.abs(mAccelMax)) {
-                mAccelMax = Math.abs(yValue);
+            if (Math.abs(yValue) > Math.abs(mAccelMax[id])) {
+                mAccelMax[id] = Math.abs(yValue);
             }
 
 		}
@@ -795,7 +880,6 @@ public class ShotStatsFragment extends BaseFragment {
 
 		mSpeedChart.setAutoScaleMinMaxEnabled(true);
 
-		mSpeedChart.getLegend().setEnabled(false);
 
 		// enable touch gestures
 		mSpeedChart.setTouchEnabled(false);
@@ -864,30 +948,12 @@ public class ShotStatsFragment extends BaseFragment {
 
 			String dataType = shotTestSpeedData.getDataSetByIndex(i).getLabel();
 
-			mNewSetRequired = true;
-
-			switch (dataType) {
-				case "":
-					for (int k = 0; k < yEntries.size(); k++) {
-						//addSpeedEntry(DUMMY_DATA, xValues.get(k), 0, false);
-						mNewSetRequired = false;
-					}
-					break;
-				case "XYZ":
-					for (int k = 0; k < yEntries.size(); k++) {
-						addSpeedEntry(XYZ_DATA, xValues.get(yEntries.get(k).getXIndex()), yEntries.get(k).getVal(), true);
-						mNewSetRequired = false;
-					}
-					break;
-				default:
-					break;
-			}
 		}
 
 		dismissLoadingScreen();
 	}
 
-	private void addSpeedEntry(int dataType, String xValue, float yValue, boolean showEntry) {
+	private void addSpeedEntry(String xValue, int xValueInt, float yValue, boolean newData, int idName, int id) {
 
 		LineData data = mSpeedChart.getData();
 
@@ -904,27 +970,18 @@ public class ShotStatsFragment extends BaseFragment {
 					data.addXValue(xValue + " ms");
 			}
 
-			if (Math.abs(yValue) > Math.abs(mSpeedMax)) {
-				YAxis leftAxis = mSpeedChart.getAxisLeft();
-				leftAxis.setAxisMaxValue(Math.abs(yValue));
-				leftAxis.setAxisMinValue(0);
-			}
 
-            if (mNewSetRequired) {
-                mSpeedMax = 0;
-                data.clearValues();
-                currentLineDataSet = createSet("XYZ", ColorTemplate.getHoloBlue(), 2f, 2f, true);
+            if (newData) {
+                mSpeedMax[id] = 0;
+                currentLineDataSet = createSet(getActivity().getString(RECENT_NAME[idName]), GRAPH_COLOR[id], 1f, 1f, true);
                 data.addDataSet(currentLineDataSet);
                 mSpeedDataSetIndexXYZ = data.getIndexOfDataSet(currentLineDataSet);
 
             }
-            if (!mPreviewTest)
-                data.addEntry(new Entry(yValue, data.getXValCount()), mSpeedDataSetIndexXYZ);
-            else
-                data.addEntry(new Entry(yValue, data.getXVals().indexOf(xValue)), mSpeedDataSetIndexXYZ);
+            data.addEntry(new Entry(yValue, xValueInt), mSpeedDataSetIndexXYZ);
 
-            if (Math.abs(yValue) > Math.abs(mSpeedMax)) {
-                mSpeedMax = Math.abs(yValue);
+            if (Math.abs(yValue) > Math.abs(mSpeedMax[id])) {
+                mSpeedMax[id] = Math.abs(yValue);
             }
 		}
 	}
@@ -996,13 +1053,11 @@ public class ShotStatsFragment extends BaseFragment {
 			List<Entry> yEntries = shotTestRotationData.getDataSetByIndex(i).getYVals();
 			List<String> xValues = shotTestRotationData.getXVals();
 
-			for (int k = 0; k < yEntries.size(); k++) {
-				addRotationEntry(xValues.get(k), yEntries.get(k).getVal());
-			}
+
 		}
 	}
 
-	private void addRotationEntry(String xValue, float yValue) {
+	private void addRotationEntry(String xValue, int xValueInt, float yValue, boolean newData, int idName, int id) {
 
 		LineData data = mRotationChart.getData();
 
@@ -1010,25 +1065,23 @@ public class ShotStatsFragment extends BaseFragment {
 
             LineDataSet currentLineDataSet = null;
 
-            if (mNewSetRequired) {
-                mRotationMax = 0;
-                data.clearValues();
-                currentLineDataSet = createSet("Puck rotation over time (degrees/s)", ColorTemplate.getHoloBlue(), 2f, 2f, true);
+            if (!data.getXVals().contains(xValue + " ms"))
+                data.addXValue(xValue + " ms");
+
+            if (newData) {
+                mRotationMax[id] = 0;
+                currentLineDataSet = createSet(getActivity().getString(RECENT_NAME[idName]), GRAPH_COLOR[id], 1f, 1f, true);
                 data.addDataSet(currentLineDataSet);
                 mRotationDataSetIndex = data.getIndexOfDataSet(currentLineDataSet);
             }
 
-            if (Math.abs(yValue) > Math.abs(mRotationMax)) {
-                mRotationMax = yValue;
-                YAxis leftAxis = mRotationChart.getAxisLeft();
-                leftAxis.setAxisMaxValue(Math.abs(yValue));
-                leftAxis.setAxisMinValue(0);
+            if (Math.abs(yValue) > Math.abs(mRotationMax[id])) {
+                mRotationMax[id] = Math.abs(yValue);
             }
 
 
 			// add a new x-value first
-			data.addXValue(xValue + " ms");
-            data.addEntry(new Entry(yValue, data.getXValCount()), mRotationDataSetIndex);
+            data.addEntry(new Entry(yValue, xValueInt), mRotationDataSetIndex);
 
 		}
 	}
@@ -1038,7 +1091,7 @@ public class ShotStatsFragment extends BaseFragment {
 		LineDataSet set = new LineDataSet(null, setTitle);
         set.setAxisDependency(YAxis.AxisDependency.LEFT);
 		set.setColor(lineColor);
-		set.setCircleColor(Color.BLACK);
+		set.setCircleColor(lineColor);
 		set.setLineWidth(lineWidth);
 		set.setCircleSize(circleSize);
 		set.setFillAlpha(65);
@@ -1386,7 +1439,11 @@ public class ShotStatsFragment extends BaseFragment {
                     mAccDatas[mIdDatas] = newAcceleration;
                     mRotDatas[mIdDatas] = rotation;
                 } else if (mIdDatas == mAccDatas.length) {
-                    populateCharts(mAccDatas, mRotDatas);
+                    mRecent[3] = mRecent[2];
+                    mRecent[2] = mRecent[1];
+                    mRecent[1] = mRecent[0];
+                    mRecent[0] = new Shot(mAccDatas, mRotDatas);
+                    populateCharts();
                     populateStatisticsFields();
                     mIterGraph = 0;
                 } else {
@@ -1399,8 +1456,10 @@ public class ShotStatsFragment extends BaseFragment {
             } else {
                 if (mLastStage != mNotFilter) {
                     // Reset
+                    mIterGraph = 0;
                     mLastStage = mNotFilter;
                     mSendData = true;
+
                 }
                 if (mSendData) {
                     mIterGraph++;
@@ -1440,9 +1499,12 @@ public class ShotStatsFragment extends BaseFragment {
                             sendAcc[i] = mAccDatas[i];
                             sendRot[i] = mRotDatas[i];
                         }
-
+                        mRecent[3] = mRecent[2];
+                        mRecent[2] = mRecent[1];
+                        mRecent[1] = mRecent[0];
+                        mRecent[0] = new Shot(sendAcc, sendRot);
                         // 2. If trigger, than show
-                        populateCharts(sendAcc, sendRot);
+                        populateCharts();
                         populateStatisticsFields();
                     }
                 }
@@ -1453,7 +1515,11 @@ public class ShotStatsFragment extends BaseFragment {
 
 	private void onDummyChanged(Point3D[] acceleration, double[] rotation) {
         if (mNotFilter) {
-            populateCharts(acceleration, rotation);
+            mRecent[3] = mRecent[2];
+            mRecent[2] = mRecent[1];
+            mRecent[1] = mRecent[0];
+            mRecent[0] = new Shot(acceleration, rotation);
+            populateCharts();
             populateStatisticsFields();
         } else {
             // 1. Analyse data (Simulated data, normally, only one a a time)
@@ -1499,7 +1565,11 @@ public class ShotStatsFragment extends BaseFragment {
                 }
 
                 // 2. If trigger, than show
-                populateCharts(sendAcc, sendRot);
+                mRecent[3] = mRecent[2];
+                mRecent[2] = mRecent[1];
+                mRecent[1] = mRecent[0];
+                mRecent[0] = new Shot(sendAcc, sendRot);
+                populateCharts();
                 populateStatisticsFields();
             } else {
                 Toast.makeText(this.getActivity(), "Not parsing done", Toast.LENGTH_SHORT).show();
@@ -1509,119 +1579,9 @@ public class ShotStatsFragment extends BaseFragment {
 
 	}
 
-	private void populateCharts(Point3D puckAcceleration, double rotation) {
-        /*
-		dataCounter++;
 
-		String currentTime = String.valueOf(System.currentTimeMillis() - mTestStartTime);
+    private void populateCharts() {
 
-		if (lastDataTime != -1) {
-			lastDataTime = Float.valueOf(currentTime);
-		} else {
-			lastDataTime = mTestStartTime;
-		}
-
-		double accelX = puckAcceleration.x;
-		double accelY = puckAcceleration.y;
-		double accelZ = puckAcceleration.z;
-		double accelXYZ = Math.sqrt(Math.pow(accelX, 2) + Math.pow(accelY, 2) + Math.pow(accelZ, 2));
-
-		//Calibrate the puck
-		if ((System.currentTimeMillis() - mTestStartTime) < mCalibrationTime) {
-			if (mAverageGravityOffset == 0) {
-				mAccelChart.setNoDataText("Calibrating sensors...");
-				mAccelChart.invalidate();
-				mSpeedChart.setNoDataText("Calibrating sensors...");
-				mSpeedChart.invalidate();
-				mRotationChart.setNoDataText("Calibration sensors...");
-				mRotationChart.invalidate();
-			}
-			mAverageGravityOffset += accelXYZ;
-			mAverageAccelX += accelX;
-			mAverageAccelY += accelY;
-			mAverageAccelZ += accelZ;
-		} else {
-			if (!mCalculatedAverageOffset) {
-				mAverageGravityOffset /= dataCounter;
-				mAverageAccelX /= dataCounter;
-				mAverageAccelY /= dataCounter;
-				mAverageAccelZ /= dataCounter;
-
-				mTimeStep = (float) ((System.currentTimeMillis() - mTestStartTime) / (dataCounter * 1000.0));
-				mPuckSpeedOffset = 0f;
-				mCalculatedAverageOffset = true;
-
-				mAccelChart.getAxisLeft().setDrawGridLines(true);
-				mSpeedChart.getAxisLeft().setDrawGridLines(true);
-				mRotationChart.getAxisLeft().setDrawGridLines(true);
-				mAccelChart.getAxisLeft().setEnabled(true);
-				mSpeedChart.getAxisLeft().setEnabled(true);
-				mRotationChart.getAxisLeft().setEnabled(true);
-
-				Log.i("Average Data", "Found average gravity contribution: " + mAverageGravityOffset + " and average X accel: " + mAverageAccelX + " and average Y accel:" + mAverageAccelY + " and average Z accel:" + mAverageAccelZ);
-				Log.i("Average Data", "Got :" + String.valueOf(dataCounter) + " data in: " + String.valueOf(mCalibrationTime) + "ms");
-				Log.i("Average Data", "Average time step " + String.valueOf(mTimeStep));
-			}
-
-			boolean eventHasOccured = Math.abs(accelX-mAverageAccelX) > mEventDetection || Math.abs(accelY-mAverageAccelY) > mEventDetection || Math.abs(accelZ-mAverageAccelZ) > mEventDetection;
-
-			if(!eventHasOccured){
-				mAccelIsGravityCounter++;
-				if (mAccelIsGravityCounter > mDataCountWithoutEvent) {
-					mShowingSpeed = false;
-					mShowingAccel = false;
-					mNewSpeedDataSetRequired = true;
-					mNewAccelDataSetRequired = true;
-				}
-			}
-			else {
-				mShowingSpeed = true;
-				mShowingAccel = true;
-				mAccelIsGravityCounter = 0;
-			}
-
-			mPuckSpeedOffset += (mSpeedGravityOffsetRatio*GRAVITY * mTimeStep);
-
-			mPuckSpeedX += (accelX) * GRAVITY * mTimeStep;
-			mPuckSpeedY += (accelY) * GRAVITY * mTimeStep;
-			mPuckSpeedZ += (accelZ ) * GRAVITY * mTimeStep;
-
-			mPuckSpeedXYZ = (float) Math.sqrt(Math.pow((accelX) * GRAVITY * mTimeStep, 2) +
-                    Math.pow((accelY) * GRAVITY * mTimeStep, 2) + Math.pow((accelZ ) * GRAVITY * mTimeStep, 2));
-
-
-			if (mPuckSpeedXYZ <= 0 || !mShowingSpeed || !mShowingAccel) {
-				mPuckSpeedXYZ = 0;
-				mPuckSpeedX = 0;
-				mPuckSpeedY = 0;
-				mPuckSpeedZ = 0;
-				mPuckSpeedOffset = 0;
-			}
-
-			accelXYZ -= mAverageGravityOffset;
-
-			int dataPrintFrequency = mPrintDataFrequency;
-
-
-			if (dataCounter % dataPrintFrequency == 0) {
-				addAccelEntry(DUMMY_DATA, currentTime, 0, true);
-				addAccelEntry(XYZ_DATA, currentTime, (float) accelXYZ, mShowingAccel);
-
-
-				mNewAccelDataSetRequired = false;
-
-				addSpeedEntry(DUMMY_DATA, currentTime, 0, true);
-				addSpeedEntry(XYZ_DATA, currentTime, mPuckSpeedXYZ, mShowingSpeed);
-
-				mNewSpeedDataSetRequired = false;
-
-				addRotationEntry(currentTime, (float) rotation);
-			}
-		}
-*/
-	}
-
-    private void populateCharts(Point3D[] puckAcceleration, double[] rotation) {
 
         double time = 0.0f; // Use stamp
 
@@ -1629,51 +1589,57 @@ public class ShotStatsFragment extends BaseFragment {
         LineData aData = new LineData();
         aData.setValueTextColor(Color.BLACK);
         mAccelChart.setData(aData);
+        mAccelMax[0] = 0f;
+        mAccelMax[1] = 0f;
 
         mSpeedChart.clear();
         LineData sData = new LineData();
         sData.setValueTextColor(Color.BLACK);
         mSpeedChart.setData(sData);
+        mSpeedMax[0] = 0f;
+        mSpeedMax[1] = 0;
 
         mRotationChart.clear();
         LineData rData = new LineData();
         rData.setValueTextColor(Color.BLACK);
         mRotationChart.setData(rData);
+        mRotationMax[0] = 0f;
+        mRotationMax[1] = 0f;
 
-
-        mNewSetRequired = true;
-
-        mPuckSpeedXYZ = 0f;
-
-
-        for (int i=0; i<rotation.length; i++) {
-            double accelX = puckAcceleration[i].x;
-            double accelY = puckAcceleration[i].y;
-            double accelZ = puckAcceleration[i].z;
-            double accelXYZ = Math.sqrt(Math.pow(accelX, 2) + Math.pow(accelY, 2) + Math.pow(accelZ, 2));
-
-            // TODO Cancel gravity
-
-            mTimeStep = (float)STAMP;
-
-            mPuckSpeedXYZ = (float) Math.sqrt(Math.pow((accelX) * GRAVITY * mTimeStep, 2) +
-                    Math.pow((accelY) * GRAVITY * mTimeStep, 2) + Math.pow((accelZ ) * GRAVITY * mTimeStep, 2))/1000f + mPuckSpeedXYZ;
-
-            addAccelEntry(XYZ_DATA, i *mTimeStep+"", (float) accelXYZ, true);
-            addSpeedEntry(XYZ_DATA, i * mTimeStep + "", mPuckSpeedXYZ, true);
-            addRotationEntry(i * mTimeStep + "", (float) rotation[i]);
-
-            mNewSetRequired = false;
+        //See which one we can do
+        List<Integer> idData = new ArrayList<Integer>();
+        if (mFirstCheck!= -1 && mRecent[mFirstCheck] != null) {
+            idData.add(mFirstCheck);
         }
-        mAccelChart.fitScreen();
-        mAccelChart.notifyDataSetChanged();
+        if (mSecondCheck != -1 && mRecent[mSecondCheck] != null) {
+            idData.add(mSecondCheck);
+        }
 
-        mSpeedChart.fitScreen();
-        mSpeedChart.notifyDataSetChanged();
+        for (int id=0; id<idData.size(); id++) {
+            Log.d(TAG, "ID: " + idData.get(id) + " using color " + GRAPH_COLOR[id]);
+            boolean newSetRequired = true;
 
-        mRotationChart.fitScreen();
-        mRotationChart.notifyDataSetChanged();
+            mPuckSpeedXYZ = 0f;
 
+
+            for (int i = 0; i < mRecent[idData.get(id)].getRotations().length; i++) {
+                double accelX = mRecent[idData.get(id)].getAccelerations()[i].x;
+                double accelY = mRecent[idData.get(id)].getAccelerations()[i].y;
+                double accelZ = mRecent[idData.get(id)].getAccelerations()[i].z;
+                double accelXYZ = Math.sqrt(Math.pow(accelX, 2) + Math.pow(accelY, 2) + Math.pow(accelZ, 2));
+
+                mTimeStep = (float) STAMP;
+
+                mPuckSpeedXYZ = (float) Math.sqrt(Math.pow((accelX) * GRAVITY * mTimeStep, 2) +
+                        Math.pow((accelY) * GRAVITY * mTimeStep, 2) + Math.pow((accelZ) * GRAVITY * mTimeStep, 2)) / 1000f + mPuckSpeedXYZ;
+
+                addAccelEntry(i * mTimeStep + "", i, (float) accelXYZ, newSetRequired, idData.get(id), id);
+                addSpeedEntry(i * mTimeStep + "", i, mPuckSpeedXYZ, newSetRequired, idData.get(id), id);
+                addRotationEntry(i * mTimeStep + "", i, (float) mRecent[idData.get(id)].getRotations()[i], newSetRequired, idData.get(id), id);
+
+                newSetRequired = false;
+            }
+        }
     }
 
     private void showAcceleration(boolean show) {

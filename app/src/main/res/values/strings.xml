@@ -49,6 +49,10 @@
     <string name="show_speed">Show speed</string>
     <string name="show_angular">Show angular speed</string>
     <string name="peak_acc">(DEV) Peak acceleration threshold: </string>
+    <string name="recent_shot1">Last shot: </string>
+    <string name="recent_shot2">Previous shot 1: </string>
+    <string name="recent_shot3">Previous shot 2: </string>
+    <string name="recent_shot4">Previous shot 3: </string>
 
 
     <!-- Acceleration Chart -->

@@ -118,6 +118,37 @@
                 android:id="@+id/generate_button" />
 
             <LinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <CheckBox
+                    android:id="@+id/recent_result1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true" />
+
+                <CheckBox
+                    android:id="@+id/recent_result2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="false" />
+
+                <CheckBox
+                    android:id="@+id/recent_result3"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="false" />
+
+                <CheckBox
+                    android:id="@+id/recent_result4"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="false" />
+
+            </LinearLayout>
+
+            <LinearLayout
                 android:layout_below="@+id/test_control_linear_layout"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
