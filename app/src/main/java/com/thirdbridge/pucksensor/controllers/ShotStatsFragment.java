@@ -83,10 +83,18 @@ public class ShotStatsFragment extends BaseFragment {
 	private static final int Z_DATA = 4;
 
     private static final double STAMP = 2.0; // This is the delta time between sending, need to calculate instead TODO
-    private static final int MINIMAL_G = 1;
-    private static final float MINIMAL_NOISE_G = 0.5f;
+    private static final int MINIMAL_G = 0; // Actually +1
+    private static final float MINIMAL_NOISE_G = 0.6f;
     private static final int MAX_DATA = 1000;
+    private static final boolean DEBUG = true;
+    private static final String THRESHOLD_G = "THRESHOLD_G";
+    private static final String CHECK_ACCEL = "CHECK_ACCEL";
+    private static final String CHECK_SPEED = "CHECK_SPEED";
+    private static final String CHECK_ROTATION = "CHECK_ROTATION";
+    private static final String CHECK_NOT_FILTER = "CHECK_NOT_FILTER";
 
+    // Saving local instance
+    SharedPreferences mSettings;
 
 	private boolean mTestRunning = false;
 	private User mUser;
@@ -127,6 +135,9 @@ public class ShotStatsFragment extends BaseFragment {
     private Point3D[] mAccDatas = new Point3D[MAX_DATA];
     private double[] mRotDatas = new double[MAX_DATA];
     private boolean mNotFilter;
+    private int mPauseGraph = 2000; //Sample
+    private int mIterGraph = 0;
+    private boolean mSendData = false;
 
 	//Accel Chart
     private LinearLayout mAccelLayout;
@@ -161,9 +172,15 @@ public class ShotStatsFragment extends BaseFragment {
 	private String mRotationData;
 
 	//Calibration
-	private int mCalibrationTime = 2000;
+	private int mCalibrationTime = 1000;
 	private float mTimeStep = 0f;
 	private final double GRAVITY = 9.80665;
+    private boolean mCalibrationDone = false;
+    private float mAccelSumX = 0f;
+    private float mAccelSumY = 0f;
+    private float mAccelSumZ = 0f;
+    private int mCalibrationDot = 0;
+
 
 
 	//Accel Chart
@@ -191,14 +208,6 @@ public class ShotStatsFragment extends BaseFragment {
 
 
 
-	private void setTestVariables(){
-
-		//Calibration time in miliseconds
-		mCalibrationTime = 2000;
-	}
-
-
-
 	public static ShotStatsFragment newInstance(User user) {
 		Bundle args = new Bundle();
 		args.putString(Constants.CURRENT_USER, new Gson().toJson(user, User.class));
@@ -221,7 +230,7 @@ public class ShotStatsFragment extends BaseFragment {
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
+        super.onCreate(savedInstanceState);
 
 		if (getArguments().containsKey(Constants.CURRENT_USER)) {
 			mUser = new Gson().fromJson(getArguments().getString(Constants.CURRENT_USER), User.class);
@@ -229,8 +238,6 @@ public class ShotStatsFragment extends BaseFragment {
 			mShotTest = new Gson().fromJson(getArguments().getString(Constants.TEST_DATA), ShotTest.class);
 			mPreviewTest = true;
 		}
-
-		setTestVariables();
 
 		if (!mPreviewTest) {
 			initializeBluetooth();
@@ -281,8 +288,11 @@ public class ShotStatsFragment extends BaseFragment {
         mPeakAccTV = (TextView) v.findViewById(R.id.peak_acc_number);
         mPeakAccSB = (SeekBar) v.findViewById(R.id.peak_acc_seekbar);
 
-        mPeakAccTV.setText("" + MINIMAL_G);
-        mPeakAccSB.setProgress(Integer.parseInt(mPeakAccTV.getText().toString()));
+        mSettings = getActivity().getSharedPreferences("StatPuck", 0);
+
+        String value = "" + (mSettings.getInt(THRESHOLD_G, MINIMAL_G)+1);
+        mPeakAccTV.setText(value);
+        mPeakAccSB.setProgress(Integer.parseInt(mPeakAccTV.getText().toString())-1);
 
 
         // Main structure
@@ -295,64 +305,76 @@ public class ShotStatsFragment extends BaseFragment {
 		mTopAccelXYZTextView = (TextView) v.findViewById(R.id.top_accel_xyz_textview);
 
 		// DEBUGGING DATA
+        mFilterCheckB.setChecked(mSettings.getBoolean(CHECK_NOT_FILTER, mFilterCheckB.isChecked()));
         mNotFilter = mFilterCheckB.isChecked();
 
         mFilterCheckB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                SharedPreferences.Editor editor = mSettings.edit();
+                editor.putBoolean(CHECK_NOT_FILTER, isChecked);
+                editor.commit();
                 mNotFilter = isChecked;
             }
         });
 
-        mHackButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mSensorStartingProgressBar.setVisibility(View.GONE);
-                mSensorStartingTextView.setVisibility(View.GONE);
-                mStartStopButton.setVisibility(View.VISIBLE);
-                mSaveButton.setVisibility(View.VISIBLE);
+        if (DEBUG) {
+            mHackButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    mSensorStartingProgressBar.setVisibility(View.GONE);
+                    mSensorStartingTextView.setVisibility(View.GONE);
+                    mStartStopButton.setVisibility(View.VISIBLE);
+                    mSaveButton.setVisibility(View.VISIBLE);
 
 
-            }
-        });
-
-
-		mGenerateButton.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View v) {
-                mAccelChart.getAxisLeft().setDrawGridLines(true);
-                mSpeedChart.getAxisLeft().setDrawGridLines(true);
-                mRotationChart.getAxisLeft().setDrawGridLines(true);
-                mAccelChart.getAxisLeft().setEnabled(true);
-                mSpeedChart.getAxisLeft().setEnabled(true);
-                mRotationChart.getAxisLeft().setEnabled(true);
-                int item = 1500;
-                Point3D[] acc = new Point3D[item];
-                double[] rot = new double[item];
-
-                for (int i=0; i<item; i++) {
-                    if (i < 200) {
-                        acc[i] = new Point3D(Math.random()*0.8, 0.0f, 0.0f);
-                    } else if (i < 500) {
-                        acc[i] = new Point3D((i-200f)*(1f/300f)*10, 0.0f, 0.0f);
-                    } else if (i<1000) {
-                        acc[i] = new Point3D((1-((i-500f)*(1f/500f)))*10, 0.0f, 0.0f);
-                    } else if (i<1200) {
-                        acc[i] = new Point3D(((i-1000f)*(1f/200f))*20, 0.0f, 0.0f);
-                    } else {
-                        acc[i] = new Point3D((1-((i-1200f)*(1f/300f)))*20, 0.0f, 0.0f);
-                    }
-                    rot[i] = Math.random()*i;
                 }
-                onDummyChanged(acc, rot);
-			}
-		});
+            });
+
+
+            mGenerateButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    mAccelChart.getAxisLeft().setDrawGridLines(true);
+                    mSpeedChart.getAxisLeft().setDrawGridLines(true);
+                    mRotationChart.getAxisLeft().setDrawGridLines(true);
+                    mAccelChart.getAxisLeft().setEnabled(true);
+                    mSpeedChart.getAxisLeft().setEnabled(true);
+                    mRotationChart.getAxisLeft().setEnabled(true);
+                    int item = 1500;
+                    Point3D[] acc = new Point3D[item];
+                    double[] rot = new double[item];
+
+                    for (int i = 0; i < item; i++) {
+                        if (i < 200) {
+                            acc[i] = new Point3D(Math.random() * 0.8, 0.0f, 0.0f);
+                        } else if (i < 500) {
+                            acc[i] = new Point3D((i - 200f) * (1f / 300f) * 10, 0.0f, 0.0f);
+                        } else if (i < 1000) {
+                            acc[i] = new Point3D((1 - ((i - 500f) * (1f / 500f))) * 10, 0.0f, 0.0f);
+                        } else if (i < 1200) {
+                            acc[i] = new Point3D(((i - 1000f) * (1f / 200f)) * 20, 0.0f, 0.0f);
+                        } else {
+                            acc[i] = new Point3D((1 - ((i - 1200f) * (1f / 300f))) * 20, 0.0f, 0.0f);
+                        }
+                        rot[i] = Math.random() * i;
+                    }
+                    onDummyChanged(acc, rot);
+                }
+            });
+        } else {
+            mHackButton.setVisibility(View.GONE);
+            mGenerateButton.setVisibility(View.GONE);
+        }
 
 
         mPeakAccSB.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                mPeakAccTV.setText("" + progress);
+                mPeakAccTV.setText("" + (progress+1));
+                SharedPreferences.Editor editor = mSettings.edit();
+                editor.putInt(THRESHOLD_G, progress);
+                editor.commit();
             }
 
             @Override
@@ -380,7 +402,7 @@ public class ShotStatsFragment extends BaseFragment {
             @Override
             public void onClick(View view) {
 
-                if (true/*mSensorReady*/) {
+                if (DEBUG || mSensorReady) {
 
                     mSaveButton.setBackground(ContextCompat.getDrawable(getContext(), R.drawable.small_button_shadow));
 
@@ -465,6 +487,9 @@ public class ShotStatsFragment extends BaseFragment {
             }
         });
 
+        mAccCheckB.setChecked(mSettings.getBoolean(CHECK_ACCEL, mAccCheckB.isChecked()));
+        mSpeedCheckB.setChecked(mSettings.getBoolean(CHECK_SPEED, mSpeedCheckB.isChecked()));
+        mAngularCheckB.setChecked(mSettings.getBoolean(CHECK_ROTATION, mAngularCheckB.isChecked()));
         showAcceleration(mAccCheckB.isChecked());
         showSpeed(mSpeedCheckB.isChecked());
         showAngularSpeed(mAngularCheckB.isChecked());
@@ -473,6 +498,9 @@ public class ShotStatsFragment extends BaseFragment {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 showAcceleration(isChecked);
+                SharedPreferences.Editor editor = mSettings.edit();
+                editor.putBoolean(CHECK_ACCEL, isChecked);
+                editor.commit();
             }
         });
 
@@ -480,6 +508,9 @@ public class ShotStatsFragment extends BaseFragment {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 showSpeed(isChecked);
+                SharedPreferences.Editor editor = mSettings.edit();
+                editor.putBoolean(CHECK_SPEED, isChecked);
+                editor.commit();
             }
         });
 
@@ -487,6 +518,9 @@ public class ShotStatsFragment extends BaseFragment {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 showAngularSpeed(isChecked);
+                SharedPreferences.Editor editor = mSettings.edit();
+                editor.putBoolean(CHECK_ROTATION, isChecked);
+                editor.commit();
             }
         });
 
@@ -762,7 +796,7 @@ public class ShotStatsFragment extends BaseFragment {
 		mSpeedChart.getLegend().setEnabled(false);
 
 		// enable touch gestures
-		mSpeedChart.setTouchEnabled(true);
+		mSpeedChart.setTouchEnabled(false);
 
 		// enable scaling and dragging
 		mSpeedChart.setDragEnabled(true);
@@ -899,7 +933,7 @@ public class ShotStatsFragment extends BaseFragment {
 		mRotationChart.setAutoScaleMinMaxEnabled(true);
 
 		// enable touch gestures
-		mRotationChart.setTouchEnabled(true);
+		mRotationChart.setTouchEnabled(false);
 
 		// enable scaling and dragging
 		mRotationChart.setDragEnabled(true);
@@ -1294,14 +1328,115 @@ public class ShotStatsFragment extends BaseFragment {
 			accelZ = accelerationLowSensor.z;
 
 			acceleration = new Point3D(accelX,accelY,accelZ);
+            double accelXYZ = Math.sqrt(Math.pow(accelX, 2) + Math.pow(accelY, 2) + Math.pow(accelZ, 2));
 
 			rotation = Sensor.PUCK_ACCELEROMETER.convertRotation(value);
 
 			if (mTestRunning) {
-				populateCharts(acceleration, rotation);
+                calculationMethod(acceleration, rotation);
 			}
 		}
 	}
+
+    /**
+     * Method to calibrate and see is data can be present to the screen as a "shot".
+     * @param acceleration The X, Y and Z acceleration.
+     * @param rotation The angular speed
+     */
+    private void calculationMethod(Point3D acceleration, double rotation) {
+        if (!mCalibrationDone) {
+            // Calibration process
+            mAccelSumX += Math.abs(acceleration.x); // Don't care about the direction.
+            mAccelSumY += Math.abs(acceleration.y); // Don't care about the direction.
+            mAccelSumZ += Math.abs(acceleration.z); // Don't care about the direction.
+
+            mCalibrationDot ++;
+
+            if (mCalibrationDot >= mCalibrationTime) {
+                mCalibrationDone = true;
+                mAccelSumX /= mCalibrationDot;
+                mAccelSumY /= mCalibrationDot;
+                mAccelSumZ /= mCalibrationDot;
+            }
+
+            if (mCalibrationDot == 1) {
+                mAccelChart.getAxisLeft().setDrawGridLines(true);
+                mSpeedChart.getAxisLeft().setDrawGridLines(true);
+                mRotationChart.getAxisLeft().setDrawGridLines(true);
+                mAccelChart.getAxisLeft().setEnabled(true);
+                mSpeedChart.getAxisLeft().setEnabled(true);
+                mRotationChart.getAxisLeft().setEnabled(true);
+            }
+        } else {
+            double accelX = Math.abs(acceleration.x) - mAccelSumX;
+            double accelY = Math.abs(acceleration.y) - mAccelSumY;
+            double accelZ = Math.abs(acceleration.z) - mAccelSumZ;
+            Point3D newAcceleration = new Point3D(accelX, accelY, accelZ);
+            if (mNotFilter) {
+                // Fill up every data and than let it unavailable for 2 sec
+                if (mIdDatas < mAccDatas.length) {
+                    mAccDatas[mIdDatas] = newAcceleration;
+                    mRotDatas[mIdDatas] = rotation;
+                } else if (mIdDatas == mAccDatas.length) {
+                    populateCharts(mAccDatas, mRotDatas);
+                    populateStatisticsFields();
+                    mIterGraph = 0;
+                } else {
+                    mIterGraph++;
+                    if (mIterGraph >= mPauseGraph) {
+                        mIdDatas = 0;
+                    }
+                }
+                mIdDatas ++;
+            } else {
+                if (mSendData) {
+                    mIterGraph++;
+                    if (mIterGraph >= mPauseGraph) {
+                        mIdDatas = 0;
+                        mSendData = false;
+                        mShotDetected = false;
+                    }
+                } else {
+                    double accelXYZ = Math.sqrt(Math.pow(accelX, 2) + Math.pow(accelY, 2) + Math.pow(accelZ, 2));
+                    if (accelXYZ > Integer.parseInt(mPeakAccTV.getText().toString())) {
+                        // Case 1, Find a peak
+                        mShotDetected = true;
+                        mAccDatas[mIdDatas] = newAcceleration;
+                        mRotDatas[mIdDatas] = rotation;
+                        mIdDatas++;
+                    } else if (accelXYZ > MINIMAL_NOISE_G) {
+                        // Case 2 , just add
+                        mAccDatas[mIdDatas] = newAcceleration;
+                        mRotDatas[mIdDatas] = rotation;
+                        mIdDatas++;
+
+                    } else if (accelXYZ <= MINIMAL_NOISE_G && mShotDetected) {
+                        // Case 3, Ready to send data
+                        // Normally check to discard the next 1000 data for rebound issue
+                        mSendData = true;
+                    } else {
+                        mIdDatas = 0;
+                    }
+
+                    if (mSendData) {
+                        //Rebuild data...
+                        Point3D[] sendAcc = new Point3D[mIdDatas];
+                        double[] sendRot = new double[mIdDatas];
+
+                        for (int i = 0; i < sendRot.length; i++) {
+                            sendAcc[i] = mAccDatas[i];
+                            sendRot[i] = mRotDatas[i];
+                        }
+
+                        // 2. If trigger, than show
+                        populateCharts(sendAcc, sendRot);
+                        populateStatisticsFields();
+                    }
+                }
+            }
+        }
+
+    }
 
 	private void onDummyChanged(Point3D[] acceleration, double[] rotation) {
         if (mNotFilter) {
