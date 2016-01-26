@@ -138,6 +138,7 @@ public class ShotStatsFragment extends BaseFragment {
     private int mPauseGraph = 2000; //Sample
     private int mIterGraph = 0;
     private boolean mSendData = false;
+    private boolean mLastStage;
 
 	//Accel Chart
     private LinearLayout mAccelLayout;
@@ -307,6 +308,7 @@ public class ShotStatsFragment extends BaseFragment {
 		// DEBUGGING DATA
         mFilterCheckB.setChecked(mSettings.getBoolean(CHECK_NOT_FILTER, mFilterCheckB.isChecked()));
         mNotFilter = mFilterCheckB.isChecked();
+        mLastStage = mNotFilter;
 
         mFilterCheckB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -1373,6 +1375,12 @@ public class ShotStatsFragment extends BaseFragment {
             double accelZ = Math.abs(acceleration.z) - mAccelSumZ;
             Point3D newAcceleration = new Point3D(accelX, accelY, accelZ);
             if (mNotFilter) {
+                if (mLastStage != mNotFilter) {
+                    //Reset
+                    mLastStage = mNotFilter;
+                    mIdDatas = 2*mAccDatas.length;
+                    mIterGraph = 0;
+                }
                 // Fill up every data and than let it unavailable for 2 sec
                 if (mIdDatas < mAccDatas.length) {
                     mAccDatas[mIdDatas] = newAcceleration;
@@ -1389,6 +1397,11 @@ public class ShotStatsFragment extends BaseFragment {
                 }
                 mIdDatas ++;
             } else {
+                if (mLastStage != mNotFilter) {
+                    // Reset
+                    mLastStage = mNotFilter;
+                    mSendData = true;
+                }
                 if (mSendData) {
                     mIterGraph++;
                     if (mIterGraph >= mPauseGraph) {
