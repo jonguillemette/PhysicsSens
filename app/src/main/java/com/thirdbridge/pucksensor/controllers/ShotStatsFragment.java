@@ -3,6 +3,7 @@ package com.thirdbridge.pucksensor.controllers;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -100,6 +101,18 @@ public class ShotStatsFragment extends BaseFragment {
     private static final int[] RECENT_NAME = {R.string.recent_shot1, R.string.recent_shot2, R.string.recent_shot3, R.string.recent_shot4};
 
 
+    private static final int SETTINGS_READ = 2;
+    private static final int SETTINGS_NEW  = 3;
+    private static final int DATA          = 4;
+    private static final int DATA_READY    = 5;
+    private static final int DATA_END      = 6;
+    private static final int DATA_START    = 8;
+    private static final int DATA_DRAFT    = 10;
+    private static final byte VALIDITY_TOKEN = 0x3D;
+    private static final int[] DEFAULT = {VALIDITY_TOKEN, 0x00, 0x00, 255, 0x00, 0x01, 0x01, 0x01}; //LOW 128 (2G)
+
+
+
     // Saving local instance
     SharedPreferences mSettings;
 
@@ -147,6 +160,8 @@ public class ShotStatsFragment extends BaseFragment {
     private int mIterGraph = 0;
     private boolean mSendData = false;
     private boolean mLastStage;
+    private long mDelta = -1;
+    private long mTime = 0;
 
 	//Accel Chart
     private LinearLayout mAccelLayout;
@@ -189,6 +204,7 @@ public class ShotStatsFragment extends BaseFragment {
     private float mAccelSumY = 0f;
     private float mAccelSumZ = 0f;
     private int mCalibrationDot = 0;
+    private boolean mSendOnce = false;
 
 
 
@@ -374,11 +390,10 @@ public class ShotStatsFragment extends BaseFragment {
             mHackButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    mSensorStartingProgressBar.setVisibility(View.GONE);
+                    /*mSensorStartingProgressBar.setVisibility(View.GONE);
                     mSensorStartingTextView.setVisibility(View.GONE);
                     mStartStopButton.setVisibility(View.VISIBLE);
-                    mSaveButton.setVisibility(View.VISIBLE);
-
+                    mSaveButton.setVisibility(View.VISIBLE);*/
 
                 }
             });
@@ -427,6 +442,33 @@ public class ShotStatsFragment extends BaseFragment {
                 SharedPreferences.Editor editor = mSettings.edit();
                 editor.putInt(THRESHOLD_G, progress);
                 editor.commit();
+
+                long value = progress + 1;
+                //TODO Use noise found
+                int[] newSettings = {VALIDITY_TOKEN, 0x00, 0x00, 0x00, 0x00, 0x10, 0x10, 0x10};
+                byte[] send = new byte[20];
+                send[0] = SETTINGS_NEW;
+                send[1] = 0; //Battery, don't care
+                for (int i=0; i<18; i++) {
+                    if (i < newSettings.length) {
+                        send[2+i] = (byte)newSettings[i];
+                    } else {
+                        send[2+i] = 0;
+                    }
+                }
+                if (value < 15) {
+                    value = value * 2048 / 16;
+                    send[5] = (byte)(value & 255);
+                    send[6] = (byte) (value/256 & 255);
+                    Log.i(TAG, "New value: " + send[5] + ", " + send[6]);
+                }
+                else
+                {
+                    value = value * 2048 / 400;
+                    send[7] = (byte)(value & 255);
+                    send[8] = (byte) (value/256 & 255);
+                }
+                writeBLE(send);
             }
 
             @Override
@@ -514,6 +556,8 @@ public class ShotStatsFragment extends BaseFragment {
                         dataCounter = 0;
                         mTestRunning = true;
                         mTestStartTime = System.currentTimeMillis();
+                        byte[] send = {DATA_READY, 0x00};
+                        writeBLE(send);
                     }
                 }
             }
@@ -591,6 +635,16 @@ public class ShotStatsFragment extends BaseFragment {
 
 		return v;
 	}
+
+    private void writeBLE(byte[] values) {
+        if (mBtGatt != null) {
+            Log.i(TAG, "Everything ready");
+            BluetoothGattCharacteristic carac =  mBtGatt.getService(SensorDetails.UUID_PUCK_ACC_SERV).getCharacteristic(SensorDetails.UUID_PUCK_WRITE);
+            Log.i(TAG, "Service: " + carac + " " + carac.toString());
+            carac.setValue(values);
+            Log.i(TAG, "Sending successfull: " + mBtGatt.writeCharacteristic(carac));
+        }
+    }
 
     private void checkRecent(int id, boolean isChecked) {
         if (isChecked) {
@@ -1321,9 +1375,52 @@ public class ShotStatsFragment extends BaseFragment {
 
 	private void onCharacteristicWrite(String uuidStr, int status) {
 		Log.d(TAG, "onCharacteristicWrite: " + uuidStr);
+        boolean begin = mBtGatt.beginReliableWrite();
+        Log.i(TAG, "Begin successfull: " + begin);
+        if (begin) {
+            Log.i(TAG, "Execute successfull: " + mBtGatt.executeReliableWrite());
+        }
 	}
 
 	private void onCharacteristicChanged(String uuidStr, byte[] value) {
+        // Parsing system:
+        switch(value[0]) {
+            default:
+            case SETTINGS_READ:
+                if (value[2] != VALIDITY_TOKEN && !mSendOnce) {
+                    // Settings don't care, send default ones
+                    byte[] send = new byte[20];
+                    send[0] = SETTINGS_NEW;
+                    send[1] = 0; //Battery, don't care
+                    for (int i=0; i<18; i++) {
+                        if (i < DEFAULT.length) {
+                            send[2+i] = (byte)DEFAULT[i];
+                        } else {
+                            send[2+i] = 0;
+                        }
+                    }
+                    writeBLE(send);
+                    mSendOnce = true;
+                }
+                break;
+            case DATA:
+
+                break;
+            case DATA_DRAFT:
+
+                break;
+            case DATA_END:
+
+                break;
+            case DATA_START:
+
+                break;
+        }
+        String val = "";
+        for (int i=0; i<value.length; i++) {
+            val += value[i] + ", ";
+        }
+        Log.i(TAG, "Value: " + val);
 		Point3D accelerationLowSensor;
 		Point2D accelerationHighSensor;
 		Point3D acceleration;
@@ -1392,7 +1489,12 @@ public class ShotStatsFragment extends BaseFragment {
                 mSpeedChart.getAxisLeft().setEnabled(true);
                 mRotationChart.getAxisLeft().setEnabled(true);
             }
+            mTime = 0;
         } else {
+            if (mTime % 100 == 0) {
+                Log.d(TAG, "Time: " + System.currentTimeMillis());
+            }
+            mTime++;
             double accelX = Math.abs(acceleration.x) - mAccelSumX;
             double accelY = Math.abs(acceleration.y) - mAccelSumY;
             double accelZ = Math.abs(acceleration.z) - mAccelSumZ;
