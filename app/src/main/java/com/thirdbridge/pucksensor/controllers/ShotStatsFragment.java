@@ -3,7 +3,6 @@ package com.thirdbridge.pucksensor.controllers;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
-import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -11,7 +10,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.Color;
-import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -21,17 +19,13 @@ import android.support.v4.content.ContextCompat;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Pair;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
-import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.PopupWindow;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
@@ -51,7 +45,6 @@ import com.thirdbridge.pucksensor.ble.BluetoothLeService;
 import com.thirdbridge.pucksensor.ble.GattInfo;
 import com.thirdbridge.pucksensor.ble.Sensor;
 import com.thirdbridge.pucksensor.ble.SensorDetails;
-import com.thirdbridge.pucksensor.database.DataManager;
 import com.thirdbridge.pucksensor.models.ShotTest;
 import com.thirdbridge.pucksensor.models.User;
 import com.thirdbridge.pucksensor.utils.BaseFragment;
@@ -63,11 +56,10 @@ import com.thirdbridge.pucksensor.utils.ble_utils.Point2D;
 import com.thirdbridge.pucksensor.utils.ble_utils.Point3D;
 
 import java.io.File;
-import java.text.DateFormat;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -109,8 +101,7 @@ public class ShotStatsFragment extends BaseFragment {
     private static final int DATA_START    = 8;
     private static final int DATA_DRAFT    = 10;
     private static final byte VALIDITY_TOKEN = 0x3D;
-    private static final int[] DEFAULT = {VALIDITY_TOKEN, 0x00, 0x00, 255, 0x00, 0x01, 0x01, 0x01}; //LOW 128 (2G)
-
+    private static final int[] DEFAULT = {VALIDITY_TOKEN, 0x00, 0x00, 255, 0x00, 0x01, 0x01, 0x01}; //(2G)
 
 
     // Saving local instance
@@ -122,6 +113,8 @@ public class ShotStatsFragment extends BaseFragment {
 	private boolean mPreviewTest = false;
 	private double mTestStartTime = -1.0000;
 	private double lastDataTime = -1.0000;
+    private boolean mProgressChange = true;
+    private int[] mActualSettings = DEFAULT.clone();
 
 	private Button mStartStopButton;
 	private Button mSaveButton;
@@ -134,6 +127,9 @@ public class ShotStatsFragment extends BaseFragment {
 
 	private boolean mTestWasRun = false;
 	private int dataCounter = 0;
+
+    private Thread mBackgroundThread;
+    private boolean mPause = true;
 
     // Menu
     private CheckBox mAccCheckB;
@@ -232,6 +228,60 @@ public class ShotStatsFragment extends BaseFragment {
 	private DecimalFormat decimal = new DecimalFormat("+0.00;-0.00");
 
 
+    // Thread running
+    Runnable mRun = new Runnable() {
+        @Override
+        public void run() {
+            while(true) {
+                if (mProgressChange && mSettings != null && mBtGatt != null) {
+
+                    long value = mSettings.getInt(THRESHOLD_G, MINIMAL_G)+1;
+                    //TODO Use noise found
+                    byte[] send = new byte[20];
+                    send[0] = SETTINGS_NEW;
+                    send[1] = 0; //Battery, don't care
+
+                    if (value < 15) {
+                        value = value * 2048 / 16;
+                        mActualSettings[1] = 0;
+                        mActualSettings[2] = 0;
+                        mActualSettings[3] = (int) (value & 255);
+                        mActualSettings[4] = (int) (value/256 & 255);
+                        Log.i(TAG, "New value: " + mActualSettings[3] + ", " + mActualSettings[4]);
+                    }
+                    else
+                    {
+                        value = value * 2048 / 400;
+                        mActualSettings[1] = (int) (value & 255);
+                        mActualSettings[2] = (int) (value/256 & 255);
+                        mActualSettings[3] = 0;
+                        mActualSettings[4] = 0;
+                        Log.i(TAG, "New value: " + mActualSettings[1] + ", " + mActualSettings[2]);
+                    }
+                    for (int i=0; i<18; i++) {
+                        if (i < mActualSettings.length) {
+                            send[2+i] = (byte)mActualSettings[i];
+                        } else {
+                            send[2+i] = 0;
+                        }
+                    };
+                    try {
+                        writeBLE(send);
+                        mProgressChange = false;
+                    } catch(Exception e) {}
+                }
+
+                try {
+                    Thread.sleep(1000);
+                } catch (Exception e) {
+
+                }
+                if (mPause) {
+                    break;
+                }
+            }
+        }
+    };
 
 	public static ShotStatsFragment newInstance(User user) {
 		Bundle args = new Bundle();
@@ -248,7 +298,7 @@ public class ShotStatsFragment extends BaseFragment {
 		args.putString(Constants.TEST_DATA, new Gson().toJson(shotTest, ShotTest.class));
 
 		ShotStatsFragment fragment = new ShotStatsFragment();
-		fragment.setArguments(args);
+        fragment.setArguments(args);
 
 		return fragment;
 	}
@@ -277,16 +327,26 @@ public class ShotStatsFragment extends BaseFragment {
 			getController().registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
 			mIsReceiving = true;
 		}
+        mPause = false;
+        mBackgroundThread = new Thread(mRun);
+        mBackgroundThread.start();
+
 	}
 
 	@Override
 	public void onPause() {
-		Log.d(TAG, "onPause");
+        Log.d(TAG, "onPause");
 		super.onPause();
 		if (mIsReceiving) {
 			getController().unregisterReceiver(mGattUpdateReceiver);
 			mIsReceiving = false;
 		}
+        mPause = true;
+        try {
+            mBackgroundThread.join();
+        } catch (Exception e) {
+
+        }
 	}
 
 	@Override
@@ -442,33 +502,7 @@ public class ShotStatsFragment extends BaseFragment {
                 SharedPreferences.Editor editor = mSettings.edit();
                 editor.putInt(THRESHOLD_G, progress);
                 editor.commit();
-
-                long value = progress + 1;
-                //TODO Use noise found
-                int[] newSettings = {VALIDITY_TOKEN, 0x00, 0x00, 0x00, 0x00, 0x10, 0x10, 0x10};
-                byte[] send = new byte[20];
-                send[0] = SETTINGS_NEW;
-                send[1] = 0; //Battery, don't care
-                for (int i=0; i<18; i++) {
-                    if (i < newSettings.length) {
-                        send[2+i] = (byte)newSettings[i];
-                    } else {
-                        send[2+i] = 0;
-                    }
-                }
-                if (value < 15) {
-                    value = value * 2048 / 16;
-                    send[5] = (byte)(value & 255);
-                    send[6] = (byte) (value/256 & 255);
-                    Log.i(TAG, "New value: " + send[5] + ", " + send[6]);
-                }
-                else
-                {
-                    value = value * 2048 / 400;
-                    send[7] = (byte)(value & 255);
-                    send[8] = (byte) (value/256 & 255);
-                }
-                writeBLE(send);
+                mProgressChange = true;
             }
 
             @Override
@@ -557,7 +591,9 @@ public class ShotStatsFragment extends BaseFragment {
                         mTestRunning = true;
                         mTestStartTime = System.currentTimeMillis();
                         byte[] send = {DATA_READY, 0x00};
-                        writeBLE(send);
+                        try {
+                            writeBLE(send);
+                        } catch (Exception e) {}
                     }
                 }
             }
@@ -636,13 +672,22 @@ public class ShotStatsFragment extends BaseFragment {
 		return v;
 	}
 
-    private void writeBLE(byte[] values) {
-        if (mBtGatt != null) {
+    private void writeBLE(byte[] values) throws Exception{
+        if (mBtGatt != null && mSensorReady) {
             Log.i(TAG, "Everything ready");
-            BluetoothGattCharacteristic carac =  mBtGatt.getService(SensorDetails.UUID_PUCK_ACC_SERV).getCharacteristic(SensorDetails.UUID_PUCK_WRITE);
+            if (mBtGatt.getService(SensorDetails.UUID_PUCK_ACC_SERV) == null) {
+                throw new Exception();
+            }
+            BluetoothGattCharacteristic carac = mBtGatt.getService(SensorDetails.UUID_PUCK_ACC_SERV).getCharacteristic(SensorDetails.UUID_PUCK_WRITE);
+            if (carac == null) {
+                throw new Exception();
+            }
             Log.i(TAG, "Service: " + carac + " " + carac.toString());
             carac.setValue(values);
             Log.i(TAG, "Sending successfull: " + mBtGatt.writeCharacteristic(carac));
+
+        } else {
+            throw new Exception();
         }
     }
 
@@ -1399,8 +1444,12 @@ public class ShotStatsFragment extends BaseFragment {
                             send[2+i] = 0;
                         }
                     }
-                    writeBLE(send);
-                    mSendOnce = true;
+                    try {
+                        writeBLE(send);
+                        mSendOnce = true;
+                    } catch (Exception e) {
+
+                    }
                 }
                 break;
             case DATA:
@@ -1421,6 +1470,17 @@ public class ShotStatsFragment extends BaseFragment {
             val += value[i] + ", ";
         }
         Log.i(TAG, "Value: " + val);
+        if (value[0] != SETTINGS_READ) {
+            double[] accelHigh = getAccelHigh(value);
+            double[] accelLow = getAccelLow(value);
+            double[] gyro = getGyro(value);
+
+            Log.i(TAG, "Check first: AH: " + accelHigh[0] + " AL: " + accelLow[0] + " Gyro: " + gyro[0]);
+        }
+
+        if (true) {
+            return;
+        }
 		Point3D accelerationLowSensor;
 		Point2D accelerationHighSensor;
 		Point3D acceleration;
@@ -1742,6 +1802,84 @@ public class ShotStatsFragment extends BaseFragment {
         } else {
             mAngularLayout.setVisibility(View.GONE);
         }
+    }
+
+    private double[] getAccelHigh(byte[] values) {
+        // According to protocol, byte 2-19 on normal mode and 2-7 on draft
+        double[] retValue;
+        if (values[0] == DATA_DRAFT) {
+            retValue = new double[1];
+            short value = (short)values[2];
+            value |= (short)values[3] << 8;
+            retValue[0] = ((double)value * 400)/2048;
+        } else {
+            retValue = new double[3];
+
+            short value = (short)values[2];
+            value |= (short)values[3] << 8;
+            retValue[0] = ((double)value * 400)/2048;
+
+            value = (short)values[8];
+            value |= (short)values[9] << 8;
+            retValue[1] = ((double)value * 400)/2048;
+
+            value = (short)values[14];
+            value |= (short)values[15] << 8;
+            retValue[2] = ((double)value * 400)/2048;
+        }
+        return retValue;
+    }
+
+    private double[] getAccelLow(byte[] values) {
+        // According to protocol, byte 2-19 on normal mode and 2-7 on draft
+        double[] retValue;
+        if (values[0] == DATA_DRAFT) {
+            retValue = new double[1];
+            short value = (short)values[4];
+            value |= (short)values[5] << 8;
+            retValue[0] = ((double)value * 16)/2048;
+        } else {
+            retValue = new double[3];
+
+            short value = (short)values[4];
+            value |= (short)values[5] << 8;
+            retValue[0] = ((double)value * 16)/2048;
+
+            value = (short)values[10];
+            value |= (short)values[11] << 8;
+            retValue[1] = ((double)value * 16)/2048;
+
+            value = (short)values[16];
+            value |= (short)values[17] << 8;
+            retValue[2] = ((double)value * 16)/2048;
+        }
+        return retValue;
+    }
+
+    private double[] getGyro(byte[] values) {
+        // According to protocol, byte 2-19 on normal mode and 2-7 on draft
+        double[] retValue;
+        if (values[0] == DATA_DRAFT) {
+            retValue = new double[1];
+            short value = (short)values[6];
+            value |= (short)values[7] << 8;
+            retValue[0] = ((double)value * 2000)/32767;
+        } else {
+            retValue = new double[3];
+
+            short value = (short)values[6];
+            value |= (short)values[7] << 8;
+            retValue[0] = ((double)value * 2000)/32767;
+
+            value = (short)values[12];
+            value |= (short)values[13] << 8;
+            retValue[1] = ((double)value * 2000)/32767;
+
+            value = (short)values[18];
+            value |= (short)values[19] << 8;
+            retValue[2] = ((double)value * 2000)/32767;
+        }
+        return retValue;
     }
 
 }
