@@ -138,6 +138,8 @@ public class ShotStatsFragment extends BaseFragment {
     private CheckBox mFilterCheckB;
     private TextView mPeakAccTV;
     private SeekBar mPeakAccSB;
+    private ProgressBar mCalibratePB;
+    private Button mCalibrateBtn;
 
     //TODO
     private CheckBox[] mRecentResult;
@@ -227,6 +229,11 @@ public class ShotStatsFragment extends BaseFragment {
 	private BluetoothGattService mConnControlService = null;
 	private DecimalFormat decimal = new DecimalFormat("+0.00;-0.00");
 
+    // Calibration
+    private double[] mCalibrationValue = {0,0,0};
+    private int mCalibrateNb = 0;
+    boolean mStartCalibration = false;
+
 
     // Thread running
     Runnable mRun = new Runnable() {
@@ -234,7 +241,6 @@ public class ShotStatsFragment extends BaseFragment {
         public void run() {
             while(true) {
                 if (mProgressChange && mSettings != null && mBtGatt != null) {
-
                     long value = mSettings.getInt(THRESHOLD_G, MINIMAL_G)+1;
                     //TODO Use noise found
                     byte[] send = new byte[20];
@@ -247,7 +253,6 @@ public class ShotStatsFragment extends BaseFragment {
                         mActualSettings[2] = 0;
                         mActualSettings[3] = (int) (value & 255);
                         mActualSettings[4] = (int) (value/256 & 255);
-                        Log.i(TAG, "New value: " + mActualSettings[3] + ", " + mActualSettings[4]);
                     }
                     else
                     {
@@ -256,15 +261,17 @@ public class ShotStatsFragment extends BaseFragment {
                         mActualSettings[2] = (int) (value/256 & 255);
                         mActualSettings[3] = 0;
                         mActualSettings[4] = 0;
-                        Log.i(TAG, "New value: " + mActualSettings[1] + ", " + mActualSettings[2]);
                     }
+                    String sendValue = send[0] + ", " + send[1] + ", ";
                     for (int i=0; i<18; i++) {
                         if (i < mActualSettings.length) {
                             send[2+i] = (byte)mActualSettings[i];
                         } else {
                             send[2+i] = 0;
                         }
+                        sendValue+= send[2+i] + ", ";
                     };
+                    Log.i(TAG, "New settings: " + sendValue);
                     try {
                         writeBLE(send);
                         mProgressChange = false;
@@ -280,6 +287,49 @@ public class ShotStatsFragment extends BaseFragment {
                     break;
                 }
             }
+        }
+    };
+
+    Runnable mStartCalibrationRunnable = new Runnable() {
+        @Override
+        public void run() {
+            mActualSettings[5] = 0;
+            mActualSettings[6] = 0;
+            mActualSettings[7] = 0;
+
+            mProgressChange = true;
+
+            try {
+                // Sleep fo 1sec (setting thread delay) + 50 ms (IC max delay for settings)
+                Thread.sleep(1050);
+            } catch (Exception e) {}
+
+            mCalibrationValue[0] = 0;
+            mCalibrationValue[1] = 0;
+            mCalibrationValue[2] = 0;
+            mCalibrateNb = 0;
+            mStartCalibration = true;
+
+            while (mCalibrateNb< 100) {}
+
+            mStartCalibration = false;
+            mCalibrationValue[0] = (mCalibrationValue[0] / mCalibrateNb) % 256;
+            mCalibrationValue[1] = (mCalibrationValue[1] / mCalibrateNb) % 256;
+            mCalibrationValue[2] = (mCalibrationValue[2] / mCalibrateNb) % 256;
+
+            mActualSettings[5] = (int)mCalibrationValue[0];
+            mActualSettings[6] = (int)mCalibrationValue[1];
+            mActualSettings[7] = (int)mCalibrationValue[2];
+
+            mProgressChange = true;
+
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mCalibrateBtn.setVisibility(View.VISIBLE);
+                    mCalibratePB.setVisibility(View.GONE);
+                }
+            });
         }
     };
 
@@ -372,6 +422,10 @@ public class ShotStatsFragment extends BaseFragment {
         mFilterCheckB = (CheckBox) v.findViewById(R.id.filter_off_check);
         mPeakAccTV = (TextView) v.findViewById(R.id.peak_acc_number);
         mPeakAccSB = (SeekBar) v.findViewById(R.id.peak_acc_seekbar);
+        mCalibrateBtn = (Button) v.findViewById(R.id.calibrate_button);
+        mCalibratePB = (ProgressBar) v.findViewById(R.id.calibrate_progress);
+        mCalibratePB.setIndeterminate(true);
+        mCalibratePB.setVisibility(View.GONE);
 
         mSettings = getActivity().getSharedPreferences("StatPuck", 0);
 
@@ -446,15 +500,26 @@ public class ShotStatsFragment extends BaseFragment {
             }
         });
 
+        mCalibrateBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mCalibratePB.setVisibility(View.VISIBLE);
+                mCalibrateBtn.setVisibility(View.GONE);
+
+                Thread t = new Thread(mStartCalibrationRunnable);
+                t.start();
+
+            }
+        });
+
         if (DEBUG) {
             mHackButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    /*mSensorStartingProgressBar.setVisibility(View.GONE);
+                    mSensorStartingProgressBar.setVisibility(View.GONE);
                     mSensorStartingTextView.setVisibility(View.GONE);
                     mStartStopButton.setVisibility(View.VISIBLE);
-                    mSaveButton.setVisibility(View.VISIBLE);*/
-
+                    mSaveButton.setVisibility(View.VISIBLE);
                 }
             });
 
@@ -530,7 +595,7 @@ public class ShotStatsFragment extends BaseFragment {
             public void onClick(View view) {
 
                 if (DEBUG || mSensorReady) {
-
+                    mCalibrateBtn.setVisibility(View.VISIBLE);
                     mSaveButton.setBackground(ContextCompat.getDrawable(getContext(), R.drawable.small_button_shadow));
 
                     if (mTestRunning) {
@@ -1474,6 +1539,13 @@ public class ShotStatsFragment extends BaseFragment {
             double[] accelHigh = getAccelHigh(value);
             double[] accelLow = getAccelLow(value);
             double[] gyro = getGyro(value);
+
+            if (value[0] == DATA_DRAFT && mStartCalibration) {
+                mCalibrationValue[0] += (double) (short) value[2];
+                mCalibrationValue[1] += (double) (short) value[4];
+                mCalibrationValue[2] += (double) (short) value[6];
+                mCalibrateNb++;
+            }
 
             Log.i(TAG, "Check first: AH: " + accelHigh[0] + " AL: " + accelLow[0] + " Gyro: " + gyro[0]);
         }

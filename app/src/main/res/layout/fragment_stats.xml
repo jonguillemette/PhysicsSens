@@ -104,7 +104,16 @@
                 android:layout_height="wrap_content"
                 android:checked="false"
                 android:text="Filter off" />
-
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Calibrate"
+                android:id="@+id/calibrate_button" />
+            <ProgressBar
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Calibrate"
+                android:id="@+id/calibrate_progress" />
             <Button
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
