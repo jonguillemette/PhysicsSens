@@ -48,5 +48,5 @@ public class SensorDetails {
 		//Puck sensor
 		UUID_PUCK_ACC_SERV = fromString("00002000-0000-1000-8000-00805f9b34fb"),
 		UUID_PUCK_DATA = fromString("00002e00-0000-1000-8000-00805f9b34fb"),
-		UUID_PUCK_CONF = null;
+		UUID_PUCK_WRITE = fromString("00002e01-0000-1000-8000-00805f9b34fb");
 }

@@ -1,6 +1,7 @@
 package com.thirdbridge.pucksensor.controllers;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -16,30 +17,36 @@ import android.widget.PopupWindow;
 import android.widget.Spinner;
 
 import com.thirdbridge.pucksensor.R;
-import com.thirdbridge.pucksensor.database.DataManager;
 import com.thirdbridge.pucksensor.models.User;
 import com.thirdbridge.pucksensor.utils.BaseFragment;
+import com.thirdbridge.pucksensor.utils.IO;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 /**
  * Created by Christophe on 2015-10-14.
+ * Modified by Jayson Dalpe since 2016-01-26
  */
 public class HomeFragment extends BaseFragment {
+    private final static String PREF_USER = "PREF_USER";
 
-    private Button shotTestButton;
-    private ImageButton newUserImageButton;
-    private Spinner userSpinner;
-    private Button saveUserButton;
-    private Button cancelUserButton;
-    private EditText firstNameEditText;
-    private EditText lastNameEditText;
+    // Saving local instance
+    SharedPreferences mSettings;
 
-    private List<User> users;
-    private List<String> userNames;
-    private ArrayAdapter<User> spinnerAdapter;
+    private Button mShotTextButton;
+    private ImageButton mNewUserImageButton;
+    private Spinner mUserSpinner;
+    private Button mSaveUserButton;
+    private Button mCancelUserButton;
+    private EditText mFirstNameEditText;
+    private EditText mLastNameEditText;
+
+    private List<User> mUsers;
+    private List<String> mUserNames;
+    private ArrayAdapter<User> mSpinnerAdapter;
 
     public static HomeFragment newInstance(){
         return new HomeFragment();
@@ -57,17 +64,21 @@ public class HomeFragment extends BaseFragment {
 
         View v = inflater.inflate(R.layout.fragment_home, container, false);
 
-        shotTestButton = (Button) v.findViewById(R.id.shot_test_button);
-        newUserImageButton = (ImageButton) v.findViewById(R.id.new_user_image_button);
-        userSpinner = (Spinner) v.findViewById(R.id.user_spinner);
+        mShotTextButton = (Button) v.findViewById(R.id.shot_test_button);
+        mNewUserImageButton = (ImageButton) v.findViewById(R.id.new_user_image_button);
+        mUserSpinner = (Spinner) v.findViewById(R.id.user_spinner);
 
+        mSettings = getActivity().getSharedPreferences("StatPuck", 0);
         populateSpinner();
 
-        userSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+        mUserSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
-                if(users.get(position) != null) {
-                    getController().setCurrentUsername(users.get(position).getFirstName() + " " + users.get(position).getLastName());
+                if (mUsers.get(position) != null) {
+                    getController().setCurrentUsername(mUsers.get(position).getFirstName() + " " + mUsers.get(position).getLastName());
+                    SharedPreferences.Editor editor = mSettings.edit();
+                    editor.putString(PREF_USER, mUsers.get(position).getId());
+                    editor.commit();
                 }
             }
 
@@ -80,25 +91,27 @@ public class HomeFragment extends BaseFragment {
 
         final PopupWindow popupWindow = inflateNewUserPopup(container);
 
-        newUserImageButton.setOnClickListener(new View.OnClickListener() {
+        mNewUserImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                ((EditText)popupWindow.getContentView().findViewById(R.id.first_name)).setText("");
-                ((EditText)popupWindow.getContentView().findViewById(R.id.last_name)).setText("");
+                ((EditText) popupWindow.getContentView().findViewById(R.id.first_name)).setText("");
+                ((EditText) popupWindow.getContentView().findViewById(R.id.last_name)).setText("");
                 popupWindow.setFocusable(true);
                 popupWindow.update();
                 popupWindow.showAtLocation(container, Gravity.TOP, 0, 200);
             }
         });
 
-        shotTestButton.setOnClickListener(new View.OnClickListener() {
+        mShotTextButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(userSpinner.getSelectedItemPosition() != -1) {
+                // Reenable link
+                getController().gotoShotStats((User) mUserSpinner.getSelectedItem());
+                /*if(mUserSpinner.getSelectedItemPosition() != -1) {
                     if (getController().isBleDeviceConnected()) {
-                        getController().gotoShotStats((User)userSpinner.getSelectedItem());
+                        getController().gotoShotStats((User)mUserSpinner.getSelectedItem());
                     }
-                }
+                }*/
             }
         });
 
@@ -106,14 +119,29 @@ public class HomeFragment extends BaseFragment {
     }
 
     private void populateSpinner(){
-        users = new ArrayList<>();
+        mUsers = new ArrayList<>();
 
-        for(User user: DataManager.get().getUsers()){
-            users.add(user);
+        File root = new File(this.getContext().getFilesDir(), "users");
+        if (!root.exists()) {
+            root.mkdirs();
+            return;
         }
 
-        spinnerAdapter = new UserArrayAdapter(getController(), R.layout.spinner_dropdown_item, users);
-        userSpinner.setAdapter(spinnerAdapter);
+        File[] users = root.listFiles();
+
+        String prefUser = mSettings.getString(PREF_USER, "");
+        int id = 0;
+        for(int i=0; i<users.length; i++){
+            User newUser = User.depackageForm(IO.loadFile(users[i]));
+            mUsers.add(newUser);
+            if (prefUser.trim().equalsIgnoreCase(newUser.getId().trim())) {
+                id = i;
+            }
+        }
+
+        mSpinnerAdapter = new UserArrayAdapter(getController(), R.layout.spinner_dropdown_item, mUsers);
+        mUserSpinner.setAdapter(mSpinnerAdapter);
+        mUserSpinner.setSelection(id);
     }
 
     private PopupWindow inflateNewUserPopup(ViewGroup container){
@@ -124,32 +152,37 @@ public class HomeFragment extends BaseFragment {
 
         final View popupView = layoutInflater.inflate(R.layout.new_user_popup, container, false);
 
-        saveUserButton = (Button) popupView.findViewById(R.id.save_user_button);
-        cancelUserButton = (Button) popupView.findViewById(R.id.cancel_button);
-        firstNameEditText = (EditText) popupView.findViewById(R.id.first_name);
-        lastNameEditText = (EditText) popupView.findViewById(R.id.last_name);
+        mSaveUserButton = (Button) popupView.findViewById(R.id.save_user_button);
+        mCancelUserButton = (Button) popupView.findViewById(R.id.cancel_button);
+        mFirstNameEditText = (EditText) popupView.findViewById(R.id.first_name);
+        mLastNameEditText = (EditText) popupView.findViewById(R.id.last_name);
 
         final PopupWindow popupWindow = new PopupWindow(
                 popupView,
                 1000,
                 ViewGroup.LayoutParams.WRAP_CONTENT);
 
-        saveUserButton.setOnClickListener(new View.OnClickListener() {
+        mSaveUserButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(!firstNameEditText.getText().toString().matches("") || !lastNameEditText.getText().toString().matches("")){
-                    User newUser = new User(UUID.randomUUID().toString(),firstNameEditText.getText().toString(),lastNameEditText.getText().toString());
-                    DataManager.get().addUser(newUser);
-                    users.add(newUser);
-                    spinnerAdapter.notifyDataSetChanged();
-                    userSpinner.setSelection(spinnerAdapter.getCount() - 1);
+                if (!mFirstNameEditText.getText().toString().matches("") || !mLastNameEditText.getText().toString().matches("")) {
+                    User newUser = new User(UUID.randomUUID().toString(), mFirstNameEditText.getText().toString(), mLastNameEditText.getText().toString());
+                    IO.saveFile(newUser.packageForm(), new File(getContext().getFilesDir().getAbsolutePath() +  "/users/" + newUser.getId() + ".user"));
+                    mUsers.add(newUser);
+                    populateSpinner();
+                    mSpinnerAdapter.notifyDataSetChanged();
+                    mUserSpinner.setSelection(mSpinnerAdapter.getCount() - 1);
                     popupWindow.dismiss();
-                    getController().setCurrentUsername(firstNameEditText.getText().toString() + " " + lastNameEditText.getText().toString());
+                    getController().setCurrentUsername(mFirstNameEditText.getText().toString() + " " + mLastNameEditText.getText().toString());
+
+                    SharedPreferences.Editor editor = mSettings.edit();
+                    editor.putString(PREF_USER, newUser.getId());
+                    editor.commit();
                 }
             }
         });
 
-        cancelUserButton.setOnClickListener(new View.OnClickListener() {
+        mCancelUserButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 popupWindow.dismiss();

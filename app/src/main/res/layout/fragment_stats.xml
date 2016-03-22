@@ -78,44 +78,128 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <LinearLayout
+            <CheckBox
+                android:id="@+id/show_acceleration_check"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="@dimen/stats_box_margin"
-                android:layout_marginStart="@dimen/stats_box_margin"
+                android:checked="true"
+                android:text="@string/show_acceleration" />
+
+            <CheckBox
+                android:id="@+id/show_speed_check"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="false"
+                android:text="@string/show_speed" />
+
+            <CheckBox
+                android:id="@+id/show_angular_check"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="false"
+                android:text="@string/show_angular" />
+            <CheckBox
+                android:id="@+id/filter_off_check"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="false"
+                android:text="Filter off" />
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Calibrate"
+                android:id="@+id/calibrate_button" />
+            <ProgressBar
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Calibrate"
+                android:id="@+id/calibrate_progress" />
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Hack"
+                android:id="@+id/demo_start_button" />
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Generate"
+                android:id="@+id/generate_button" />
+
+            <LinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
                 android:orientation="horizontal">
 
                 <CheckBox
-                    android:id="@+id/accel_individual_axes_checkbox"
+                    android:id="@+id/recent_result1"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:checked="false"
-                    android:text="@string/individualAxes" />
+                    android:checked="true" />
 
                 <CheckBox
-                    android:id="@+id/accel_x_checkbox"
+                    android:id="@+id/recent_result2"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:checked="false"
-                    android:visibility="gone"
-                    android:text="@string/xAxisData" />
+                    android:checked="false" />
 
                 <CheckBox
-                    android:id="@+id/accel_y_checkbox"
+                    android:id="@+id/recent_result3"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:checked="false"
-                    android:visibility="gone"
-                    android:text="@string/yAxisData" />
+                    android:checked="false" />
 
                 <CheckBox
-                    android:id="@+id/accel_z_checkbox"
+                    android:id="@+id/recent_result4"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:checked="false"
-                    android:visibility="gone"
-                    android:text="@string/zAxisData" />
+                    android:checked="false" />
+
             </LinearLayout>
+
+            <LinearLayout
+                android:layout_below="@+id/test_control_linear_layout"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                android:id="@+id/peak_acc_label"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/stats_test_button_height"
+                android:checked="false"
+                android:text="@string/peak_acc"
+                android:layout_gravity="center_horizontal"
+                android:textAllCaps="false"
+                android:textColor="@color/instruction_grey"
+                android:textSize="@dimen/stat_button_text_size"
+                android:layout_marginEnd="@dimen/stats_box_margin"
+                android:layout_marginStart="@dimen/stats_box_margin"
+                />
+
+                <TextView
+                    android:id="@+id/peak_acc_number"
+                    android:layout_width="wrap_content"
+                    android:layout_height="@dimen/stats_test_button_height"
+                    android:checked="false"
+                    android:text="0"
+                    android:layout_gravity="center_horizontal"
+                    android:textAllCaps="false"
+                    android:textColor="@color/instruction_grey"
+                    android:textSize="@dimen/stat_button_text_size"
+                    android:layout_marginEnd="@dimen/stats_box_margin"
+                    android:layout_marginStart="@dimen/stats_box_margin"
+                    />
+
+                <SeekBar
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/peak_acc_seekbar"
+                    android:layout_weight="1"
+                    android:max="20" />
+
+            </LinearLayout>
+
 
             <LinearLayout
                 android:layout_width="fill_parent"
@@ -124,7 +208,8 @@
                 android:layout_marginEnd="@dimen/stats_box_margin"
                 android:layout_marginStart="@dimen/stats_box_margin"
                 android:orientation="horizontal"
-                android:weightSum="10">
+                android:weightSum="10"
+                android:id="@+id/accel_layout">
 
                 <LinearLayout
                     android:id="@+id/accel_stats_linear_layout"
@@ -217,193 +302,10 @@
 
                     </LinearLayout>
 
-                    <LinearLayout
-                        android:id="@+id/accel_x_stats_box_linear_layout"
-                        android:layout_width="fill_parent"
-                        android:layout_height="wrap_content"
-                        android:visibility="gone"
-                        android:orientation="vertical">
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/topAccelX"
-                                android:textColor="@color/dark_grey"
-                                android:textSize="@dimen/stats_text_size" />
-
-                            <View
-
-                                android:layout_width="14dp"
-                                android:layout_height="14dp"
-                                android:layout_marginStart="10dp"
-                                android:layout_gravity="center_vertical"
-                                android:background="@color/red" />
-
-                        </LinearLayout>
-
-                        <View
-                            android:layout_width="match_parent"
-                            android:layout_height="2dp"
-                            android:layout_marginBottom="@dimen/stats_separator_margin"
-                            android:layout_marginTop="@dimen/stats_separator_margin"
-                            android:background="@color/light_grey" />
-
-
-                        <TextView
-                            android:id="@+id/top_accel_x_textview"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="end"
-                            android:layout_marginBottom="@dimen/stats_bottom_margin"
-                            android:layout_marginEnd="@dimen/stats_right_margin"
-                            android:textColor="@color/primary_blue"
-                            android:textSize="@dimen/stats_text_size" />
-
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/accel_y_stats_box_linear_layout"
-                        android:layout_width="fill_parent"
-                        android:layout_height="wrap_content"
-                        android:visibility="gone"
-                        android:orientation="vertical">
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/topAccelY"
-                                android:textColor="@color/dark_grey"
-                                android:textSize="@dimen/stats_text_size" />
-
-                            <View
-
-                                android:layout_width="14dp"
-                                android:layout_height="14dp"
-                                android:layout_marginStart="10dp"
-                                android:layout_gravity="center_vertical"
-                                android:background="@color/green" />
-
-                        </LinearLayout>
-
-                        <View
-                            android:layout_width="match_parent"
-                            android:layout_height="2dp"
-                            android:layout_marginBottom="@dimen/stats_separator_margin"
-                            android:layout_marginTop="@dimen/stats_separator_margin"
-                            android:background="@color/light_grey" />
-
-                        <TextView
-                            android:id="@+id/top_accel_y_textview"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="end"
-                            android:layout_marginBottom="@dimen/stats_bottom_margin"
-                            android:layout_marginEnd="@dimen/stats_right_margin"
-                            android:textColor="@color/primary_blue"
-                            android:textSize="@dimen/stats_text_size" />
-
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/accel_z_stats_box_linear_layout"
-                        android:layout_width="fill_parent"
-                        android:layout_height="wrap_content"
-                        android:visibility="gone"
-                        android:orientation="vertical">
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/topAccelZ"
-                                android:textColor="@color/dark_grey"
-                                android:textSize="@dimen/stats_text_size" />
-
-                            <View
-
-                                android:layout_width="14dp"
-                                android:layout_height="14dp"
-                                android:layout_marginStart="10dp"
-                                android:layout_gravity="center_vertical"
-                                android:background="@color/magenta" />
-
-                        </LinearLayout>
-
-                        <View
-                            android:layout_width="match_parent"
-                            android:layout_height="2dp"
-                            android:layout_marginBottom="@dimen/stats_separator_margin"
-                            android:layout_marginTop="@dimen/stats_separator_margin"
-                            android:background="@color/light_grey" />
-
-                        <TextView
-                            android:id="@+id/top_accel_z_textview"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="end"
-                            android:layout_marginBottom="@dimen/stats_bottom_margin"
-                            android:layout_marginEnd="@dimen/stats_right_margin"
-                            android:textColor="@color/primary_blue"
-                            android:textSize="@dimen/stats_text_size" />
-
-                    </LinearLayout>
-
                 </LinearLayout>
 
             </LinearLayout>
 
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="@dimen/stats_box_margin"
-                android:layout_marginStart="@dimen/stats_box_margin"
-                android:orientation="horizontal">
-
-                <CheckBox
-                    android:id="@+id/speed_individual_axes_checkbox"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:checked="false"
-                    android:text="@string/individualAxes" />
-
-                <CheckBox
-                    android:id="@+id/speed_x_checkbox"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:checked="false"
-                    android:visibility="gone"
-                    android:text="@string/xAxisData" />
-
-                <CheckBox
-                    android:id="@+id/speed_y_checkbox"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:checked="false"
-                    android:visibility="gone"
-                    android:text="@string/yAxisData" />
-
-                <CheckBox
-                    android:id="@+id/speed_z_checkbox"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:checked="false"
-                    android:visibility="gone"
-                    android:text="@string/zAxisData" />
-            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="fill_parent"
@@ -412,7 +314,8 @@
                 android:layout_marginEnd="@dimen/stats_box_margin"
                 android:layout_marginStart="@dimen/stats_box_margin"
                 android:orientation="horizontal"
-                android:weightSum="10">
+                android:weightSum="10"
+                android:id="@+id/speed_layout">
 
                 <LinearLayout
                     android:id="@+id/speed_stats_linear_layout"
@@ -506,151 +409,6 @@
 
                     </LinearLayout>
 
-                    <LinearLayout
-                        android:id="@+id/speed_x_stats_box_linear_layout"
-                        android:layout_width="fill_parent"
-                        android:layout_height="wrap_content"
-                        android:visibility="gone"
-                        android:orientation="vertical">
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/topSpeedX"
-                                android:textColor="@color/dark_grey"
-                                android:textSize="@dimen/stats_text_size" />
-
-                            <View
-
-                                android:layout_width="14dp"
-                                android:layout_height="14dp"
-                                android:layout_marginStart="10dp"
-                                android:layout_gravity="center_vertical"
-                                android:background="@color/red" />
-
-                        </LinearLayout>
-
-                        <View
-                            android:layout_width="match_parent"
-                            android:layout_height="2dp"
-                            android:layout_marginBottom="@dimen/stats_separator_margin"
-                            android:layout_marginTop="@dimen/stats_separator_margin"
-                            android:background="@color/light_grey" />
-
-                        <TextView
-                            android:id="@+id/top_speed_x_textview"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="end"
-                            android:layout_marginBottom="@dimen/stats_bottom_margin"
-                            android:layout_marginEnd="@dimen/stats_right_margin"
-                            android:textColor="@color/primary_blue"
-                            android:textSize="@dimen/stats_text_size" />
-
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/speed_y_stats_box_linear_layout"
-                        android:layout_width="fill_parent"
-                        android:layout_height="wrap_content"
-                        android:visibility="gone"
-                        android:orientation="vertical">
-
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/topSpeedY"
-                                android:textColor="@color/dark_grey"
-                                android:textSize="@dimen/stats_text_size" />
-
-                            <View
-
-                                android:layout_width="14dp"
-                                android:layout_height="14dp"
-                                android:layout_marginStart="10dp"
-                                android:layout_gravity="center_vertical"
-                                android:background="@color/green" />
-
-                        </LinearLayout>
-
-                        <View
-                            android:layout_width="match_parent"
-                            android:layout_height="2dp"
-                            android:layout_marginBottom="@dimen/stats_separator_margin"
-                            android:layout_marginTop="@dimen/stats_separator_margin"
-                            android:background="@color/light_grey" />
-
-                        <TextView
-                            android:id="@+id/top_speed_y_textview"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="end"
-                            android:layout_marginBottom="@dimen/stats_bottom_margin"
-                            android:layout_marginEnd="@dimen/stats_right_margin"
-                            android:textColor="@color/primary_blue"
-                            android:textSize="@dimen/stats_text_size" />
-
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/speed_z_stats_box_linear_layout"
-                        android:layout_width="fill_parent"
-                        android:layout_height="wrap_content"
-                        android:visibility="gone"
-                        android:orientation="vertical">
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/topSpeedZ"
-                                android:textColor="@color/dark_grey"
-                                android:textSize="@dimen/stats_text_size" />
-
-                            <View
-
-                                android:layout_width="14dp"
-                                android:layout_height="14dp"
-                                android:layout_marginStart="10dp"
-                                android:layout_gravity="center_vertical"
-                                android:background="@color/magenta" />
-
-                        </LinearLayout>
-
-                        <View
-                            android:layout_width="match_parent"
-                            android:layout_height="2dp"
-                            android:layout_marginBottom="@dimen/stats_separator_margin"
-                            android:layout_marginTop="@dimen/stats_separator_margin"
-                            android:background="@color/light_grey" />
-
-                        <TextView
-                            android:id="@+id/top_speed_z_textview"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="end"
-                            android:layout_marginBottom="@dimen/stats_bottom_margin"
-                            android:layout_marginEnd="@dimen/stats_right_margin"
-                            android:textColor="@color/primary_blue"
-                            android:textSize="@dimen/stats_text_size" />
-
-                    </LinearLayout>
-
                 </LinearLayout>
 
             </LinearLayout>
@@ -662,7 +420,8 @@
                 android:layout_marginEnd="@dimen/stats_box_margin"
                 android:layout_marginStart="@dimen/stats_box_margin"
                 android:orientation="horizontal"
-                android:weightSum="10">
+                android:weightSum="10"
+                android:id="@+id/angular_layout">
 
                 <LinearLayout
                     android:id="@+id/rotation_stats_linear_layout"
