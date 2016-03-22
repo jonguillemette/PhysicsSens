@@ -3,7 +3,6 @@ package com.thirdbridge.pucksensor.controllers;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -18,7 +17,6 @@ import android.widget.PopupWindow;
 import android.widget.Spinner;
 
 import com.thirdbridge.pucksensor.R;
-import com.thirdbridge.pucksensor.database.DataManager;
 import com.thirdbridge.pucksensor.models.User;
 import com.thirdbridge.pucksensor.utils.BaseFragment;
 import com.thirdbridge.pucksensor.utils.IO;

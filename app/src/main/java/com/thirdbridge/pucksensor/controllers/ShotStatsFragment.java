@@ -1,6 +1,5 @@
 package com.thirdbridge.pucksensor.controllers;
 
-import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
@@ -45,20 +44,14 @@ import com.thirdbridge.pucksensor.ble.BluetoothLeService;
 import com.thirdbridge.pucksensor.ble.GattInfo;
 import com.thirdbridge.pucksensor.ble.Sensor;
 import com.thirdbridge.pucksensor.ble.SensorDetails;
-import com.thirdbridge.pucksensor.models.ShotTest;
 import com.thirdbridge.pucksensor.models.User;
 import com.thirdbridge.pucksensor.utils.BaseFragment;
 import com.thirdbridge.pucksensor.utils.Constants;
 import com.thirdbridge.pucksensor.utils.IO;
 import com.thirdbridge.pucksensor.utils.MathHelper;
 import com.thirdbridge.pucksensor.utils.Shot;
-import com.thirdbridge.pucksensor.utils.ble_utils.Point2D;
-import com.thirdbridge.pucksensor.utils.ble_utils.Point3D;
 
 import java.io.File;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -73,26 +66,19 @@ public class ShotStatsFragment extends BaseFragment {
 	private static String TAG = ShotStatsFragment.class.getSimpleName();
     private static String FOLDER_SAVE_SHOT = "Shots";
 
-	private static final int DUMMY_DATA = 0;
-	private static final int XYZ_DATA = 1;
-	private static final int X_DATA = 2;
-	private static final int Y_DATA = 3;
-	private static final int Z_DATA = 4;
-
-    private static final double STAMP = 2.0; // This is the delta time between sending, need to calculate instead TODO
+    private static final double STAMP = 1.25;
+    private static final double DRAFT_STAMP = 50/3;
     private static final int MINIMAL_G = 0; // Actually +1
-    private static final float MINIMAL_NOISE_G = 0.1f;
     private static final boolean DEBUG = true;
     private static final String THRESHOLD_G = "THRESHOLD_G";
     private static final String CHECK_ACCEL = "CHECK_ACCEL";
     private static final String CHECK_SPEED = "CHECK_SPEED";
     private static final String CHECK_ROTATION = "CHECK_ROTATION";
-    private static final String CHECK_NOT_FILTER = "CHECK_NOT_FILTER";
 
     private static final int[] GRAPH_COLOR = {Color.BLUE, Color.RED};
     private static final int[] RECENT_NAME = {R.string.recent_shot1, R.string.recent_shot2, R.string.recent_shot3, R.string.recent_shot4};
 
-
+    // PROTOCOL CMD
     private static final int SETTINGS_READ = 2;
     private static final int SETTINGS_NEW  = 3;
     private static final int DATA          = 4;
@@ -100,19 +86,17 @@ public class ShotStatsFragment extends BaseFragment {
     private static final int DATA_END      = 6;
     private static final int DATA_START    = 8;
     private static final int DATA_DRAFT    = 10;
+
+    // PROTOCOL DEFAULT SETTINGS
     private static final byte VALIDITY_TOKEN = 0x3D;
     private static final int[] DEFAULT = {VALIDITY_TOKEN, 0x00, 0x00, 255, 0x00, 0x01, 0x01, 0x01}; //(2G)
-
 
     // Saving local instance
     SharedPreferences mSettings;
 
 	private boolean mTestRunning = false;
 	private User mUser;
-	private ShotTest mShotTest;
 	private boolean mPreviewTest = false;
-	private double mTestStartTime = -1.0000;
-	private double lastDataTime = -1.0000;
     private boolean mProgressChange = true;
     private int[] mActualSettings = DEFAULT.clone();
 
@@ -126,7 +110,6 @@ public class ShotStatsFragment extends BaseFragment {
 	private RelativeLayout mLoadingScreenRelativeLayout;
 
 	private boolean mTestWasRun = false;
-	private int dataCounter = 0;
 
     private Thread mBackgroundThread;
     private boolean mPause = true;
@@ -135,30 +118,24 @@ public class ShotStatsFragment extends BaseFragment {
     private CheckBox mAccCheckB;
     private CheckBox mSpeedCheckB;
     private CheckBox mAngularCheckB;
-    private CheckBox mFilterCheckB;
     private TextView mPeakAccTV;
     private SeekBar mPeakAccSB;
     private ProgressBar mCalibratePB;
     private Button mCalibrateBtn;
 
-    //TODO
+    // Check management
     private CheckBox[] mRecentResult;
     private int mFirstCheck = 0;
     private int mSecondCheck = -1;
     private boolean mCanTouchThis = true;
 
     // Core
-    private boolean mShotDetected = false;
-    private int mIdDatas = 0;
-    private Point3D[] mAccDatas = new Point3D[Shot.getMaxData()];
-    private double[] mRotDatas = new double[Shot.getMaxData()];
+    private double[] mAccelCircularBuffer = new double[Shot.getMaxDraftData()];
+    private double[] mRotCircularBuffer = new double[Shot.getMaxDraftData()];
+    private int mCircularIndex = 0;
     private Shot[] mRecent = new Shot[4];
-    private boolean mNotFilter;
-    private int mPauseGraph = 2000; //Sample
-    private int mIterGraph = 0;
-    private boolean mSendData = false;
-    private boolean mLastStage;
-    private long mDelta = -1;
+    private int mRealIndex;
+    private Shot mReal;
     private long mTime = 0;
 
 	//Accel Chart
@@ -166,11 +143,7 @@ public class ShotStatsFragment extends BaseFragment {
 	private LineChart mAccelChart;
 	private TextView mTopAccelXYZTextView;
 	private float[] mAccelMax = {0f, 0f};
-	private String mAccelData;
-	private boolean mAccelDataVisibleX = false;
-	private boolean mAccelDataVisibleY = false;
-	private boolean mAccelDataVisibleZ = false;
-	private boolean mCalculatedAverageOffset = false;
+
 
 	//Speed Chart
     private LinearLayout mSpeedLayout;
@@ -178,11 +151,6 @@ public class ShotStatsFragment extends BaseFragment {
 	private TextView mTopSpeedXYZTextView;
 	private float[] mSpeedMax = {0f, 0f};
 	private float mPuckSpeedXYZ = 0f;
-	private float mPuckSpeedOffset = 0f;
-	private String mSpeedData;
-	private boolean mSpeedDataVisibleX = false;
-	private boolean mSpeedDataVisibleY = false;
-	private boolean mSpeedDataVisibleZ = false;
 	private Button mGenerateButton;
     private Button mHackButton;
 
@@ -191,7 +159,6 @@ public class ShotStatsFragment extends BaseFragment {
     private LinearLayout mAngularLayout;
 	private LineChart mRotationChart;
 	private TextView mTopRotationTextView;
-	private String mRotationData;
 
 	//Calibration
 	private int mCalibrationTime = 1000;
@@ -216,7 +183,6 @@ public class ShotStatsFragment extends BaseFragment {
 	private boolean mSensorReady = false;
     private int mRotationDataSetIndex;
 	private BluetoothLeService mBtLeService = null;
-	private BluetoothDevice mBluetoothDevice = null;
 	private BluetoothGatt mBtGatt = null;
 	private List<BluetoothGattService> mServiceList = null;
 	private static final int GATT_TIMEOUT = 100; // milliseconds
@@ -227,7 +193,6 @@ public class ShotStatsFragment extends BaseFragment {
 	private List<Sensor> mEnabledSensors = new ArrayList<>();
 	private BluetoothGattService mOadService = null;
 	private BluetoothGattService mConnControlService = null;
-	private DecimalFormat decimal = new DecimalFormat("+0.00;-0.00");
 
     // Calibration
     private double[] mCalibrationValue = {0,0,0};
@@ -242,7 +207,7 @@ public class ShotStatsFragment extends BaseFragment {
             while(true) {
                 if (mProgressChange && mSettings != null && mBtGatt != null) {
                     long value = mSettings.getInt(THRESHOLD_G, MINIMAL_G)+1;
-                    //TODO Use noise found
+
                     byte[] send = new byte[20];
                     send[0] = SETTINGS_NEW;
                     send[1] = 0; //Battery, don't care
@@ -343,15 +308,6 @@ public class ShotStatsFragment extends BaseFragment {
 		return fragment;
 	}
 
-	public static ShotStatsFragment newPreviewStatsInstance(ShotTest shotTest) {
-		Bundle args = new Bundle();
-		args.putString(Constants.TEST_DATA, new Gson().toJson(shotTest, ShotTest.class));
-
-		ShotStatsFragment fragment = new ShotStatsFragment();
-        fragment.setArguments(args);
-
-		return fragment;
-	}
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -360,7 +316,6 @@ public class ShotStatsFragment extends BaseFragment {
 		if (getArguments().containsKey(Constants.CURRENT_USER)) {
 			mUser = new Gson().fromJson(getArguments().getString(Constants.CURRENT_USER), User.class);
 		} else {
-			mShotTest = new Gson().fromJson(getArguments().getString(Constants.TEST_DATA), ShotTest.class);
 			mPreviewTest = true;
 		}
 
@@ -419,7 +374,6 @@ public class ShotStatsFragment extends BaseFragment {
         mAccCheckB = (CheckBox) v.findViewById(R.id.show_acceleration_check);
         mSpeedCheckB = (CheckBox) v.findViewById(R.id.show_speed_check);
         mAngularCheckB = (CheckBox) v.findViewById(R.id.show_angular_check);
-        mFilterCheckB = (CheckBox) v.findViewById(R.id.filter_off_check);
         mPeakAccTV = (TextView) v.findViewById(R.id.peak_acc_number);
         mPeakAccSB = (SeekBar) v.findViewById(R.id.peak_acc_seekbar);
         mCalibrateBtn = (Button) v.findViewById(R.id.calibrate_button);
@@ -485,21 +439,6 @@ public class ShotStatsFragment extends BaseFragment {
 		mAccelChart = (LineChart) v.findViewById(R.id.accel_stats_chart);
 		mTopAccelXYZTextView = (TextView) v.findViewById(R.id.top_accel_xyz_textview);
 
-		// DEBUGGING DATA
-        mFilterCheckB.setChecked(mSettings.getBoolean(CHECK_NOT_FILTER, mFilterCheckB.isChecked()));
-        mNotFilter = mFilterCheckB.isChecked();
-        mLastStage = mNotFilter;
-
-        mFilterCheckB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                SharedPreferences.Editor editor = mSettings.edit();
-                editor.putBoolean(CHECK_NOT_FILTER, isChecked);
-                editor.commit();
-                mNotFilter = isChecked;
-            }
-        });
-
         mCalibrateBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -527,31 +466,6 @@ public class ShotStatsFragment extends BaseFragment {
             mGenerateButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    mAccelChart.getAxisLeft().setDrawGridLines(true);
-                    mSpeedChart.getAxisLeft().setDrawGridLines(true);
-                    mRotationChart.getAxisLeft().setDrawGridLines(true);
-                    mAccelChart.getAxisLeft().setEnabled(true);
-                    mSpeedChart.getAxisLeft().setEnabled(true);
-                    mRotationChart.getAxisLeft().setEnabled(true);
-                    int item = 1500;
-                    Point3D[] acc = new Point3D[item];
-                    double[] rot = new double[item];
-
-                    for (int i = 0; i < item; i++) {
-                        if (i < 200) {
-                            acc[i] = new Point3D(Math.random() * 0.8, 0.0f, 0.0f);
-                        } else if (i < 500) {
-                            acc[i] = new Point3D((i - 200f) * (1f / 300f) * 10, 0.0f, 0.0f);
-                        } else if (i < 1000) {
-                            acc[i] = new Point3D((1 - ((i - 500f) * (1f / 500f))) * 10, 0.0f, 0.0f);
-                        } else if (i < 1200) {
-                            acc[i] = new Point3D(((i - 1000f) * (1f / 200f)) * 20, 0.0f, 0.0f);
-                        } else {
-                            acc[i] = new Point3D((1 - ((i - 1200f) * (1f / 300f))) * 20, 0.0f, 0.0f);
-                        }
-                        rot[i] = Math.random() * i;
-                    }
-                    onDummyChanged(acc, rot);
                 }
             });
         } else {
@@ -602,9 +516,6 @@ public class ShotStatsFragment extends BaseFragment {
                         mTestRunning = false;
                         mStartStopButton.setText(getString(R.string.reset));
                         mStartStopButton.setCompoundDrawablesWithIntrinsicBounds(R.drawable.reset, 0, 0, 0);
-                        mAccelData = new Gson().toJson(mAccelChart.getLineData(), LineData.class);
-                        mSpeedData = new Gson().toJson(mSpeedChart.getLineData(), LineData.class);
-                        mRotationData = new Gson().toJson(mRotationChart.getLineData(), LineData.class);
                         populateStatisticsFields();
                     } else if (mTestWasRun) {
                         mTestWasRun = false;
@@ -635,8 +546,6 @@ public class ShotStatsFragment extends BaseFragment {
                         mRotationChart.clear();
 
 
-                        mPuckSpeedOffset = 0f;
-                        mCalculatedAverageOffset = false;
 
                         setupAccelChart();
                         setupSpeedChart();
@@ -651,10 +560,7 @@ public class ShotStatsFragment extends BaseFragment {
                         mStartStopButton.setText(getString(R.string.stopTest));
                         mStartStopButton.setCompoundDrawablesWithIntrinsicBounds(android.R.drawable.ic_delete, 0, 0, 0);
 
-                        lastDataTime = 0;
-                        dataCounter = 0;
                         mTestRunning = true;
-                        mTestStartTime = System.currentTimeMillis();
                         byte[] send = {DATA_READY, 0x00};
                         try {
                             writeBLE(send);
@@ -811,7 +717,7 @@ public class ShotStatsFragment extends BaseFragment {
 
 			mLoadingScreenRelativeLayout.setVisibility(View.VISIBLE);
 			mDescriptionTextView.setVisibility(View.VISIBLE);
-			mDescriptionTextView.setText("Test performed by user:" + mShotTest.getUsername() + " on " + mShotTest.getDate() + "\r\n\r\n" + mShotTest.getDescription());
+			//mDescriptionTextView.setText("Test performed by user:" + mShotTest.getUsername() + " on " + mShotTest.getDate() + "\r\n\r\n" + mShotTest.getDescription());
 
 			mStartStopButton.setVisibility(View.GONE);
 			mSaveButton.setVisibility(View.GONE);
@@ -846,10 +752,6 @@ public class ShotStatsFragment extends BaseFragment {
 	private void deactivateTestButtons(){
 		mStartStopButton.setEnabled(false);
 		mSaveButton.setEnabled(false);
-	}
-
-	private void dismissLoadingScreen() {
-		mLoadingScreenRelativeLayout.setVisibility(View.GONE);
 	}
 
 	private void populateStatisticsFields() {
@@ -960,29 +862,12 @@ public class ShotStatsFragment extends BaseFragment {
 		rightAxis.setEnabled(false);
 
 		if (mPreviewTest) {
-			setSavedAccelData();
 			mAccelChart.getAxisLeft().setDrawGridLines(true);
 			mAccelChart.getAxisLeft().setEnabled(true);
 		}
 	}
 
-	private void setSavedAccelData() {
-        // To another job
-		LineData shotTestAccelData = new Gson().fromJson(mShotTest.getAccelData(), LineData.class);
-
-		for (int i = 0; i < shotTestAccelData.getDataSetCount(); i++) {
-
-			List<Entry> yEntries = shotTestAccelData.getDataSetByIndex(i).getYVals();
-			List<String> xValues = shotTestAccelData.getXVals();
-			String dataType = shotTestAccelData.getDataSetByIndex(i).getLabel();
-
-
-		}
-
-	}
-
 	private void addAccelEntry(String xValue, int xValueInt, float yValue, boolean newData, int idName, int id) {
-
 		LineData data = mAccelChart.getData();
 
 		if (data != null) {
@@ -1004,16 +889,13 @@ public class ShotStatsFragment extends BaseFragment {
             if (Math.abs(yValue) > Math.abs(mAccelMax[id])) {
                 mAccelMax[id] = Math.abs(yValue);
             }
-
 		}
 	}
-
 
 	private void setupSpeedChart() {
 		mSpeedChart.setNoDataTextDescription("");
 
 		mSpeedChart.setAutoScaleMinMaxEnabled(true);
-
 
 		// enable touch gestures
 		mSpeedChart.setTouchEnabled(false);
@@ -1065,26 +947,9 @@ public class ShotStatsFragment extends BaseFragment {
 		rightAxis.setEnabled(false);
 
 		if (mPreviewTest) {
-			setSavedSpeedData();
 			mSpeedChart.getAxisLeft().setDrawGridLines(true);
 			mSpeedChart.getAxisLeft().setEnabled(true);
 		}
-	}
-
-	private void setSavedSpeedData() {
-
-		LineData shotTestSpeedData = new Gson().fromJson(mShotTest.getSpeedData(), LineData.class);
-
-		for (int i = 0; i < shotTestSpeedData.getDataSetCount(); i++) {
-
-			List<Entry> yEntries = shotTestSpeedData.getDataSetByIndex(i).getYVals();
-			List<String> xValues = shotTestSpeedData.getXVals();
-
-			String dataType = shotTestSpeedData.getDataSetByIndex(i).getLabel();
-
-		}
-
-		dismissLoadingScreen();
 	}
 
 	private void addSpeedEntry(String xValue, int xValueInt, float yValue, boolean newData, int idName, int id) {
@@ -1092,7 +957,6 @@ public class ShotStatsFragment extends BaseFragment {
 		LineData data = mSpeedChart.getData();
 
 		if (data != null) {
-
 			LineDataSet currentLineDataSet = null;
 
 			// add a new x-value first
@@ -1104,13 +968,11 @@ public class ShotStatsFragment extends BaseFragment {
 					data.addXValue(xValue + " ms");
 			}
 
-
             if (newData) {
                 mSpeedMax[id] = 0;
                 currentLineDataSet = createSet(getActivity().getString(RECENT_NAME[idName]), GRAPH_COLOR[id], 1f, 1f, true);
                 data.addDataSet(currentLineDataSet);
                 mSpeedDataSetIndexXYZ = data.getIndexOfDataSet(currentLineDataSet);
-
             }
             data.addEntry(new Entry(yValue, xValueInt), mSpeedDataSetIndexXYZ);
 
@@ -1174,29 +1036,15 @@ public class ShotStatsFragment extends BaseFragment {
 		rightAxis.setEnabled(false);
 
 		if (mPreviewTest) {
-			setSavedRotationData();
 			mRotationChart.getAxisLeft().setDrawGridLines(true);
 			mRotationChart.getAxisLeft().setEnabled(true);
 		}
 	}
 
-	private void setSavedRotationData() {
-		LineData shotTestRotationData = new Gson().fromJson(mShotTest.getRotationData(), LineData.class);
-
-		for (int i = 0; i < shotTestRotationData.getDataSetCount(); i++) {
-			List<Entry> yEntries = shotTestRotationData.getDataSetByIndex(i).getYVals();
-			List<String> xValues = shotTestRotationData.getXVals();
-
-
-		}
-	}
-
 	private void addRotationEntry(String xValue, int xValueInt, float yValue, boolean newData, int idName, int id) {
-
 		LineData data = mRotationChart.getData();
 
 		if (data != null) {
-
             LineDataSet currentLineDataSet = null;
 
             if (!data.getXVals().contains(xValue + " ms"))
@@ -1212,7 +1060,6 @@ public class ShotStatsFragment extends BaseFragment {
             if (Math.abs(yValue) > Math.abs(mRotationMax[id])) {
                 mRotationMax[id] = Math.abs(yValue);
             }
-
 
 			// add a new x-value first
             data.addEntry(new Entry(yValue, xValueInt), mRotationDataSetIndex);
@@ -1244,9 +1091,6 @@ public class ShotStatsFragment extends BaseFragment {
 			mTestRunning = false;
 			mStartStopButton.setText(getString(R.string.reset));
 			mStartStopButton.setCompoundDrawablesWithIntrinsicBounds(R.drawable.reset, 0, 0, 0);
-			mAccelData = new Gson().toJson(mAccelChart.getLineData(), LineData.class);
-			mSpeedData = new Gson().toJson(mSpeedChart.getLineData(), LineData.class);
-			mRotationData = new Gson().toJson(mRotationChart.getLineData(), LineData.class);
 			populateStatisticsFields();
 		}
 	}
@@ -1271,7 +1115,6 @@ public class ShotStatsFragment extends BaseFragment {
 	private void initializeBluetooth() {
 		// BLE
 		mBtLeService = BluetoothLeService.getInstance();
-		mBluetoothDevice = getController().getBluetoothDevice();
 		mServiceList = new ArrayList<>();
 
 		// Initialize sensor list
@@ -1307,7 +1150,6 @@ public class ShotStatsFragment extends BaseFragment {
 	private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
 		@Override
 		public void onReceive(Context context, Intent intent) {
-
 			final String action = intent.getAction();
 			int status = intent.getIntExtra(BluetoothLeService.EXTRA_STATUS, BluetoothGatt.GATT_SUCCESS);
 
@@ -1366,13 +1208,6 @@ public class ShotStatsFragment extends BaseFragment {
 	}
 
 
-	BluetoothGattService getOadService() {
-		return mOadService;
-	}
-
-	BluetoothGattService getConnControlService() {
-		return mConnControlService;
-	}
 
 
 	private void checkOad() {
@@ -1431,12 +1266,9 @@ public class ShotStatsFragment extends BaseFragment {
 	}
 
 	private void enableSensors(boolean enable) {
-
 		for (Sensor sensor : mEnabledSensors) {
 			Log.i(TAG, "Going to enable sensor " + sensor.getService().toString());
-			UUID servUuid = sensor.getService();
 			UUID confUuid = sensor.getConfig();
-			UUID dataUuid = sensor.getData();
 
 			// Skip keys
 			if (confUuid == null)
@@ -1447,21 +1279,8 @@ public class ShotStatsFragment extends BaseFragment {
 			}
 
 			mSensorReady = true;
-			activateTestButtons();/*
-
-            BluetoothGattService serv = mBtGatt.getService(servUuid);
-
-            if(serv != null) {
-                BluetoothGattCharacteristic charac = serv.getCharacteristic(dataUuid);
-                byte value = enable ? sensor.getEnableSensorCode() : Sensor.DISABLE_SENSOR_CODE;
-                mBtLeService.writeCharacteristic(charac, value);
-                mBtLeService.waitIdle(GATT_TIMEOUT);
-
-                mSensorReady = true;
-                activateTestButtons();
-            }*/
+			activateTestButtons();
 		}
-
 	}
 
 	private void enableNotifications(boolean enable) {
@@ -1493,300 +1312,170 @@ public class ShotStatsFragment extends BaseFragment {
 	}
 
 	private void onCharacteristicChanged(String uuidStr, byte[] value) {
-        // Parsing system:
-        switch(value[0]) {
-            default:
-            case SETTINGS_READ:
-                if (value[2] != VALIDITY_TOKEN && !mSendOnce) {
-                    // Settings don't care, send default ones
-                    byte[] send = new byte[20];
-                    send[0] = SETTINGS_NEW;
-                    send[1] = 0; //Battery, don't care
-                    for (int i=0; i<18; i++) {
-                        if (i < DEFAULT.length) {
-                            send[2+i] = (byte)DEFAULT[i];
-                        } else {
-                            send[2+i] = 0;
-                        }
-                    }
-                    try {
-                        writeBLE(send);
-                        mSendOnce = true;
-                    } catch (Exception e) {
 
+        double[] accelHigh = getAccelHigh(value);
+        double[] accelLow = getAccelLow(value);
+        double[] gyro = getGyro(value);
+        if (value[0] != SETTINGS_READ) {
+            if (value[0] == DATA_DRAFT && mStartCalibration) {
+                mCalibrationValue[0] += (double)(short)value[2];
+                mCalibrationValue[1] += (double)(short)value[4];
+                mCalibrationValue[2] += (double)(short)value[6];
+                mCalibrateNb ++;
+
+                mCalibrationValue[0] += (double)(short)value[8];
+                mCalibrationValue[1] += (double)(short)value[10];
+                mCalibrationValue[2] += (double)(short)value[12];
+                mCalibrateNb ++;
+
+                mCalibrationValue[0] += (double)(short)value[14];
+                mCalibrationValue[1] += (double)(short)value[16];
+                mCalibrationValue[2] += (double)(short)value[18];
+                mCalibrateNb ++;
+            } else {
+                double[] realAccel = new double[accelLow.length];
+                for (int i = 0; i < realAccel.length; i++) {
+                    if (accelLow[i] >= 15) {
+                        realAccel[i] = accelHigh[i];
+                    } else {
+                        realAccel[i] = accelLow[i];
                     }
                 }
-                break;
-            case DATA:
+                if (mTestRunning) {
+                    calculationMethod(realAccel, gyro, value[0]);
+                }
+            }
+            Log.i(TAG, "Check first: AH: " + accelHigh[0] + " AL: " + accelLow[0] + " Gyro: " + gyro[0]);
+        } else {
+            if (value[2] != VALIDITY_TOKEN && !mSendOnce) {
+                // Settings don't care, send default ones
+                byte[] send = new byte[20];
+                send[0] = SETTINGS_NEW;
+                send[1] = 0; //Battery, don't care
+                for (int i=0; i<18; i++) {
+                    if (i < DEFAULT.length) {
+                        send[2+i] = (byte)mActualSettings[i];
+                    } else {
+                        send[2+i] = 0;
+                    }
+                }
+                try {
+                    writeBLE(send);
+                    mSendOnce = true;
+                } catch (Exception e) {
 
-                break;
-            case DATA_DRAFT:
+                }
+            }
 
-                break;
-            case DATA_END:
-
-                break;
-            case DATA_START:
-
-                break;
+            for (int i=0; i<mActualSettings.length; i++) {
+                mActualSettings[i] = value[2+i];
+            }
         }
+
         String val = "";
         for (int i=0; i<value.length; i++) {
             val += value[i] + ", ";
         }
         Log.i(TAG, "Value: " + val);
-        if (value[0] != SETTINGS_READ) {
-            double[] accelHigh = getAccelHigh(value);
-            double[] accelLow = getAccelLow(value);
-            double[] gyro = getGyro(value);
 
-            if (value[0] == DATA_DRAFT && mStartCalibration) {
-                mCalibrationValue[0] += (double) (short) value[2];
-                mCalibrationValue[1] += (double) (short) value[4];
-                mCalibrationValue[2] += (double) (short) value[6];
-                mCalibrateNb++;
-            }
-
-            Log.i(TAG, "Check first: AH: " + accelHigh[0] + " AL: " + accelLow[0] + " Gyro: " + gyro[0]);
-        }
-
-        if (true) {
-            return;
-        }
-		Point3D accelerationLowSensor;
-		Point2D accelerationHighSensor;
-		Point3D acceleration;
-		double accelX;
-		double accelY;
-		double accelZ;
-		double rotation;
-
-		if (uuidStr.equals(SensorDetails.UUID_PUCK_DATA.toString())) {
-			accelerationLowSensor = Sensor.PUCK_ACCELEROMETER.convertLowAccel(value);
-			accelerationHighSensor = Sensor.PUCK_ACCELEROMETER.convertHighAccel(value);
-
-			if(accelerationLowSensor.x > 15 || accelerationLowSensor.x < -15){
-				accelX = accelerationHighSensor.x;
-			}
-			else{
-				accelX = accelerationLowSensor.x;
-			}
-
-			if(accelerationLowSensor.y > 15 || accelerationLowSensor.y < -15){
-				accelY = accelerationHighSensor.y;
-			}
-			else{
-				accelY = accelerationLowSensor.y;
-			}
-
-			accelZ = accelerationLowSensor.z;
-
-			acceleration = new Point3D(accelX,accelY,accelZ);
-            double accelXYZ = Math.sqrt(Math.pow(accelX, 2) + Math.pow(accelY, 2) + Math.pow(accelZ, 2));
-
-			rotation = Sensor.PUCK_ACCELEROMETER.convertRotation(value);
-
-			if (mTestRunning) {
-                calculationMethod(acceleration, rotation);
-			}
-		}
 	}
 
     /**
      * Method to calibrate and see is data can be present to the screen as a "shot".
-     * @param acceleration The X, Y and Z acceleration.
+     * @param acceleration The X, Y and Z acceleration all in one.
      * @param rotation The angular speed
+     * @param mode The Mode of transmission
      */
-    private void calculationMethod(Point3D acceleration, double rotation) {
+    private void calculationMethod(double[] acceleration, double rotation[], byte mode) {
         if (!mCalibrationDone) {
-            // Calibration process
-            mAccelSumX += Math.abs(acceleration.x); // Don't care about the direction.
-            mAccelSumY += Math.abs(acceleration.y); // Don't care about the direction.
-            mAccelSumZ += Math.abs(acceleration.z); // Don't care about the direction.
+            // Calibration process (no need now)
+            mCalibrationDone = true;
 
-            mCalibrationDot ++;
+            mAccelChart.getAxisLeft().setDrawGridLines(true);
+            mSpeedChart.getAxisLeft().setDrawGridLines(true);
+            mRotationChart.getAxisLeft().setDrawGridLines(true);
+            mAccelChart.getAxisLeft().setEnabled(true);
+            mSpeedChart.getAxisLeft().setEnabled(true);
+            mRotationChart.getAxisLeft().setEnabled(true);
 
-            if (mCalibrationDot >= mCalibrationTime) {
-                mCalibrationDone = true;
-                mAccelSumX /= mCalibrationDot;
-                mAccelSumY /= mCalibrationDot;
-                mAccelSumZ /= mCalibrationDot;
-            }
-
-            if (mCalibrationDot == 1) {
-                mAccelChart.getAxisLeft().setDrawGridLines(true);
-                mSpeedChart.getAxisLeft().setDrawGridLines(true);
-                mRotationChart.getAxisLeft().setDrawGridLines(true);
-                mAccelChart.getAxisLeft().setEnabled(true);
-                mSpeedChart.getAxisLeft().setEnabled(true);
-                mRotationChart.getAxisLeft().setEnabled(true);
-            }
             mTime = 0;
         } else {
             if (mTime % 100 == 0) {
                 Log.d(TAG, "Time: " + System.currentTimeMillis());
             }
             mTime++;
-            double accelX = Math.abs(acceleration.x) - mAccelSumX;
-            double accelY = Math.abs(acceleration.y) - mAccelSumY;
-            double accelZ = Math.abs(acceleration.z) - mAccelSumZ;
-            Point3D newAcceleration = new Point3D(accelX, accelY, accelZ);
-            if (mNotFilter) {
-                if (mLastStage != mNotFilter) {
-                    //Reset
-                    mLastStage = mNotFilter;
-                    mIdDatas = 2*mAccDatas.length;
-                    mIterGraph = 0;
-                }
-                // Fill up every data and than let it unavailable for 2 sec
-                if (mIdDatas < mAccDatas.length) {
-                    mAccDatas[mIdDatas] = newAcceleration;
-                    mRotDatas[mIdDatas] = rotation;
-                } else if (mIdDatas == mAccDatas.length) {
-                    mRecent[3] = mRecent[2];
-                    mRecent[2] = mRecent[1];
-                    mRecent[1] = mRecent[0];
-                    mRecent[0] = new Shot(mAccDatas, mRotDatas, mUser);
-                    populateCharts();
-                    populateStatisticsFields();
-                    mIterGraph = 0;
-                } else {
-                    mIterGraph++;
-                    if (mIterGraph >= mPauseGraph) {
-                        mIdDatas = 0;
+
+            if (mode == DATA_DRAFT) {
+                for (int i=0; i<acceleration.length; i++) {
+                    // Use circular buffer
+                    mAccelCircularBuffer[mCircularIndex] = acceleration[i];
+                    mRotCircularBuffer[mCircularIndex] = rotation[i];
+                    mCircularIndex++;
+                    if (mCircularIndex >= mAccelCircularBuffer.length) {
+                        mCircularIndex = 0;
                     }
                 }
-                mIdDatas ++;
-            } else {
-                if (mLastStage != mNotFilter) {
-                    // Reset
-                    mIterGraph = 0;
-                    mLastStage = mNotFilter;
-                    mSendData = true;
-
+            } else if (mode == DATA_START) {
+                Log.i(TAG, "START!");
+                //Draw data
+                double[] sendAcc = new double[mAccelCircularBuffer.length];
+                double[] sendRot = new double[mAccelCircularBuffer.length];
+                mCircularIndex ++;
+                if (mCircularIndex >= mAccelCircularBuffer.length) {
+                    mCircularIndex = 0;
                 }
-                if (mSendData) {
-                    mIterGraph++;
-                    if (mIterGraph >= mPauseGraph) {
-                        mIdDatas = 0;
-                        mSendData = false;
-                        mShotDetected = false;
-                    }
-                } else {
-                    double accelXYZ = Math.sqrt(Math.pow(accelX, 2) + Math.pow(accelY, 2) + Math.pow(accelZ, 2));
-                    if (accelXYZ > Integer.parseInt(mPeakAccTV.getText().toString())) {
-                        // Case 1, Find a peak
-                        mShotDetected = true;
-                        mAccDatas[mIdDatas] = newAcceleration;
-                        mRotDatas[mIdDatas] = rotation;
-                        mIdDatas++;
-                    } else if (accelXYZ > MINIMAL_NOISE_G) {
-                        // Case 2 , just add
-                        mAccDatas[mIdDatas] = newAcceleration;
-                        mRotDatas[mIdDatas] = rotation;
-                        mIdDatas++;
-
-                    } else if (accelXYZ <= MINIMAL_NOISE_G && mShotDetected) {
-                        // Case 3, Ready to send data
-                        // Normally check to discard the next 1000 data for rebound issue
-                        mSendData = true;
-                    } else {
-                        mIdDatas = 0;
-                    }
-
-                    if (mSendData) {
-                        //Rebuild data...
-                        Point3D[] sendAcc = new Point3D[mIdDatas];
-                        double[] sendRot = new double[mIdDatas];
-
-                        for (int i = 0; i < sendRot.length; i++) {
-                            sendAcc[i] = mAccDatas[i];
-                            sendRot[i] = mRotDatas[i];
-                        }
-                        mRecent[3] = mRecent[2];
-                        mRecent[2] = mRecent[1];
-                        mRecent[1] = mRecent[0];
-                        mRecent[0] = new Shot(sendAcc, sendRot, mUser);
-                        // 2. If trigger, than show
-                        populateCharts();
-                        populateStatisticsFields();
-                    }
-                }
-            }
-        }
-
-    }
-
-	private void onDummyChanged(Point3D[] acceleration, double[] rotation) {
-        if (mNotFilter) {
-            mRecent[3] = mRecent[2];
-            mRecent[2] = mRecent[1];
-            mRecent[1] = mRecent[0];
-            mRecent[0] = new Shot(acceleration, rotation, mUser);
-            populateCharts();
-            populateStatisticsFields();
-        } else {
-            // 1. Analyse data (Simulated data, normally, only one a a time)
-            boolean sendData = false;
-            mShotDetected = false;
-            mIdDatas = 0; // Normally continue and check if outbound
-            for (int i = 0; i < rotation.length; i++) {
-                double accelX = acceleration[i].x;
-                double accelY = acceleration[i].y;
-                double accelZ = acceleration[i].z;
-                double accelXYZ = Math.sqrt(Math.pow(accelX, 2) + Math.pow(accelY, 2) + Math.pow(accelZ, 2));
-
-                if (accelXYZ > Integer.parseInt(mPeakAccTV.getText().toString())) {
-                    // Case 1, Find a peak
-                    mShotDetected = true;
-                    mAccDatas[mIdDatas] = acceleration[i];
-                    mRotDatas[mIdDatas] = rotation[i];
-                    mIdDatas++;
-                } else if (accelXYZ > MINIMAL_NOISE_G) {
-                    // Case 2 , just add
-                    mAccDatas[mIdDatas] = acceleration[i];
-                    mRotDatas[mIdDatas] = rotation[i];
-                    mIdDatas++;
-
-                } else if (accelXYZ <= MINIMAL_NOISE_G && mShotDetected) {
-                    // Case 3, Ready to send data
-                    // Normally check to discard the next 1000 data for rebound issue
-                    sendData = true;
-                    break;
-                } else {
-                    mIdDatas = 0;
-                }
-            }
-
-            if (sendData) {
-                //Rebuild data...
-                Point3D[] sendAcc = new Point3D[mIdDatas];
-                double[] sendRot = new double[mIdDatas];
 
                 for (int i = 0; i < sendRot.length; i++) {
-                    sendAcc[i] = mAccDatas[i];
-                    sendRot[i] = mRotDatas[i];
+                    sendAcc[i] = mAccelCircularBuffer[(mCircularIndex + i) % mAccelCircularBuffer.length];
+                    sendRot[i] = mRotCircularBuffer[(mCircularIndex + i) % mAccelCircularBuffer.length];
                 }
-
-                // 2. If trigger, than show
                 mRecent[3] = mRecent[2];
                 mRecent[2] = mRecent[1];
                 mRecent[1] = mRecent[0];
-                mRecent[0] = new Shot(sendAcc, sendRot, mUser);
+                mRecent[0] = new Shot(Shot.getMaxDraftData(), mUser, true);
+
+                mReal = new Shot(Shot.getMaxData(), mUser, false);
+                mRealIndex = 0;
+
+                for (int i = 0; i < sendRot.length; i++) {
+                    mRecent[0].setAccelerationXYZ(sendAcc[i], i);
+                    mRecent[0].setRotation(sendRot[i], i);
+                }
+
+                for (int i=0; i<acceleration.length; i++) {
+                    // Use circular buffer
+                    mReal.setAccelerationXYZ(acceleration[i], i);
+                    mReal.setRotation(rotation[i], i);
+                    mRealIndex ++;
+                }
+
                 populateCharts();
                 populateStatisticsFields();
-            } else {
-                Toast.makeText(this.getActivity(), "Not parsing done", Toast.LENGTH_SHORT).show();
+                mCircularIndex = 0;
+            } else if (mode == DATA) {
+                for (int i=0; i<acceleration.length; i++) {
+                    // Use circular buffer
+                    mReal.setAccelerationXYZ(acceleration[i], mRealIndex+i);
+                    mReal.setRotation(rotation[i], mRealIndex+i);
+                    mRealIndex ++;
+                }
+            } else if (mode == DATA_END){
+                for (int i=0; i<acceleration.length; i++) {
+                    // Use circular buffer
+                    mReal.setAccelerationXYZ(acceleration[i], mRealIndex+i);
+                    mReal.setRotation(rotation[i], mRealIndex+i);
+                    mRealIndex ++;
+                }
+
+                mRecent[0] = mReal;
+                populateCharts();
+                populateStatisticsFields();
+                mCircularIndex = 0;
             }
         }
-
-
-	}
-
+    }
 
     private void populateCharts() {
-
-
         double time = 0.0f; // Use stamp
 
         mAccelChart.clear();
@@ -1824,24 +1513,30 @@ public class ShotStatsFragment extends BaseFragment {
             boolean newSetRequired = true;
 
             mPuckSpeedXYZ = 0f;
-
-
+            Log.i(TAG, "ABC");
             for (int i = 0; i < mRecent[idData.get(id)].getRotations().length; i++) {
-                double accelX = mRecent[idData.get(id)].getAccelerations()[i].x;
-                double accelY = mRecent[idData.get(id)].getAccelerations()[i].y;
-                double accelZ = mRecent[idData.get(id)].getAccelerations()[i].z;
-                double accelXYZ = Math.sqrt(Math.pow(accelX, 2) + Math.pow(accelY, 2) + Math.pow(accelZ, 2));
+                Log.i(TAG, "ABC: " +  mRecent[idData.get(id)].getAccelerations()[i]);
+                mTimeStep = mRecent[idData.get(id)].isDraft() ? (float) DRAFT_STAMP : (float) STAMP;
 
-                mTimeStep = (float) STAMP;
+                if (mRecent[idData.get(id)].isCooked()) {
+                    addAccelEntry(i * mTimeStep + "", i, (float) mRecent[idData.get(id)].getAccelerations()[i], newSetRequired, idData.get(id), id);
+                } else {
+                    double accelX = mRecent[idData.get(id)].getAccelerationsXYZ()[i].x;
+                    double accelY = mRecent[idData.get(id)].getAccelerationsXYZ()[i].y;
+                    double accelZ = mRecent[idData.get(id)].getAccelerationsXYZ()[i].z;
+                    double accelXYZ = Math.sqrt(Math.pow(accelX, 2) + Math.pow(accelY, 2) + Math.pow(accelZ, 2));
 
-                mPuckSpeedXYZ = (float) Math.sqrt(Math.pow((accelX) * GRAVITY * mTimeStep, 2) +
-                        Math.pow((accelY) * GRAVITY * mTimeStep, 2) + Math.pow((accelZ) * GRAVITY * mTimeStep, 2)) / 1000f + mPuckSpeedXYZ;
 
-                //Complete recent data
-                mRecent[idData.get(id)].setAccelerationXYZ(accelXYZ, i);
+                    mPuckSpeedXYZ = (float) Math.sqrt(Math.pow((accelX) * GRAVITY * mTimeStep, 2) +
+                            Math.pow((accelY) * GRAVITY * mTimeStep, 2) + Math.pow((accelZ) * GRAVITY * mTimeStep, 2)) / 1000f + mPuckSpeedXYZ;
+
+                    //Complete recent data
+                    mRecent[idData.get(id)].setAccelerationXYZ(accelXYZ, i);
+                    addAccelEntry(i * mTimeStep + "", i, (float) accelXYZ, newSetRequired, idData.get(id), id);
+                }
+
+
                 mRecent[idData.get(id)].setSpeedXYZ(mPuckSpeedXYZ, i);
-
-                addAccelEntry(i * mTimeStep + "", i, (float) accelXYZ, newSetRequired, idData.get(id), id);
                 addSpeedEntry(i * mTimeStep + "", i, mPuckSpeedXYZ, newSetRequired, idData.get(id), id);
                 addRotationEntry(i * mTimeStep + "", i, (float) mRecent[idData.get(id)].getRotations()[i], newSetRequired, idData.get(id), id);
 
@@ -1877,81 +1572,58 @@ public class ShotStatsFragment extends BaseFragment {
     }
 
     private double[] getAccelHigh(byte[] values) {
-        // According to protocol, byte 2-19 on normal mode and 2-7 on draft
+        // According to protocol, byte 2-19
         double[] retValue;
-        if (values[0] == DATA_DRAFT) {
-            retValue = new double[1];
-            short value = (short)values[2];
-            value |= (short)values[3] << 8;
-            retValue[0] = ((double)value * 400)/2048;
-        } else {
-            retValue = new double[3];
+        retValue = new double[3];
+        int value = (values[2] & 0xFF);
+        value |= (values[3] & 0xFF) << 8;
+        retValue[0] = ((double)value * 400)/2048;
 
-            short value = (short)values[2];
-            value |= (short)values[3] << 8;
-            retValue[0] = ((double)value * 400)/2048;
+        value = (values[8] & 0xFF);
+        value |= (values[9] & 0xFF) << 8;
+        retValue[1] = ((double)value * 400)/2048;
 
-            value = (short)values[8];
-            value |= (short)values[9] << 8;
-            retValue[1] = ((double)value * 400)/2048;
-
-            value = (short)values[14];
-            value |= (short)values[15] << 8;
-            retValue[2] = ((double)value * 400)/2048;
-        }
+        value = (values[14] & 0xFF);
+        value |= (values[15] & 0xFF) << 8;
+        retValue[2] = ((double)value * 400)/2048;
         return retValue;
     }
 
     private double[] getAccelLow(byte[] values) {
-        // According to protocol, byte 2-19 on normal mode and 2-7 on draft
+        // According to protocol, byte 2-19
         double[] retValue;
-        if (values[0] == DATA_DRAFT) {
-            retValue = new double[1];
-            short value = (short)values[4];
-            value |= (short)values[5] << 8;
-            retValue[0] = ((double)value * 16)/2048;
-        } else {
-            retValue = new double[3];
+        retValue = new double[3];
 
-            short value = (short)values[4];
-            value |= (short)values[5] << 8;
-            retValue[0] = ((double)value * 16)/2048;
+        int value = (values[4] & 0xFF);
+        value |= (values[5] & 0xFF) << 8;
+        retValue[0] = ((double)value * 16)/2048;
 
-            value = (short)values[10];
-            value |= (short)values[11] << 8;
-            retValue[1] = ((double)value * 16)/2048;
+        value = (values[10] & 0xFF);
+        value |= (values[11] & 0xFF) << 8;
+        retValue[1] = ((double)value * 16)/2048;
 
-            value = (short)values[16];
-            value |= (short)values[17] << 8;
-            retValue[2] = ((double)value * 16)/2048;
-        }
+        value = (values[16] & 0xFF);
+        value |= (values[17] & 0xFF) << 8;
+        retValue[2] = ((double)value * 16)/2048;
         return retValue;
     }
 
     private double[] getGyro(byte[] values) {
-        // According to protocol, byte 2-19 on normal mode and 2-7 on draft
+        // According to protocol, byte 2-19
         double[] retValue;
-        if (values[0] == DATA_DRAFT) {
-            retValue = new double[1];
-            short value = (short)values[6];
-            value |= (short)values[7] << 8;
-            retValue[0] = ((double)value * 2000)/32767;
-        } else {
-            retValue = new double[3];
+        retValue = new double[3];
 
-            short value = (short)values[6];
-            value |= (short)values[7] << 8;
-            retValue[0] = ((double)value * 2000)/32767;
+        int value = (values[6] & 0xFF);
+        value |= (values[7] & 0xFF) << 8;
+        retValue[0] = ((double)value * 2000)/32767;
 
-            value = (short)values[12];
-            value |= (short)values[13] << 8;
-            retValue[1] = ((double)value * 2000)/32767;
+        value = (values[12] & 0xFF);
+        value |= (values[13] & 0xFF) << 8;
+        retValue[1] = ((double)value * 2000)/32767;
 
-            value = (short)values[18];
-            value |= (short)values[19] << 8;
-            retValue[2] = ((double)value * 2000)/32767;
-        }
+        value = (values[18] & 0xFF);
+        value |= (values[19] & 0xFF) << 8;
+        retValue[2] = ((double)value * 2000)/32767;
         return retValue;
     }
-
 }

@@ -30,10 +30,8 @@ import com.thirdbridge.pucksensor.controllers.HistoryFragment;
 import com.thirdbridge.pucksensor.controllers.HomeFragment;
 import com.thirdbridge.pucksensor.controllers.ScanBleFragment;
 import com.thirdbridge.pucksensor.controllers.ShotStatsFragment;
-import com.thirdbridge.pucksensor.models.ShotTest;
 import com.thirdbridge.pucksensor.models.User;
 import com.thirdbridge.pucksensor.utils.Constants;
-import com.thirdbridge.pucksensor.utils.ble_utils.CustomToast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -193,15 +191,6 @@ public class ContentActivity extends FragmentActivity {
 		ft.commit();
 	}
 
-	private void initializeShotStatsPreviewFragment(ShotTest shotTest) {
-		mStatsFragmentContainer = (FrameLayout) findViewById(R.id.stats_fragment_container);
-		mShotStatsFragment = ShotStatsFragment.newPreviewStatsInstance(shotTest);
-
-		FragmentManager fm = getSupportFragmentManager();
-		FragmentTransaction ft = fm.beginTransaction();
-		ft.replace(R.id.stats_fragment_container, mShotStatsFragment);
-		ft.commit();
-	}
 
 	public void gotoBleScan() {
 		mScanFragmentContainer.setVisibility(View.VISIBLE);
@@ -260,14 +249,6 @@ public class ContentActivity extends FragmentActivity {
 		mActionBarFragment.setActionBarTitle("Shot Test Statistics");
 	}
 
-	public void gotoPreviewShotTest(ShotTest shotTest) {
-		initializeShotStatsPreviewFragment(shotTest);
-		mHomeFragmentContainer.setVisibility(View.GONE);
-		mHistoryFragmentContainer.setVisibility(View.GONE);
-		mStatsFragmentContainer.setVisibility(View.VISIBLE);
-		setVisibleFragment(VisibleFragment.STATS);
-		mActionBarFragment.setActionBarTitle("Shot Test Statistics");
-	}
 
 	public void setVisibleFragment(VisibleFragment visibleFragment) {
 		this.mVisibleFragment = visibleFragment;
@@ -572,7 +553,6 @@ public class ContentActivity extends FragmentActivity {
 		if (f)
 			Log.d(TAG, "BluetoothLeService - success");
 		else {
-			CustomToast.middleBottom(this, "Bind to BluetoothLeService failed");
 			finish();
 		}
 	}

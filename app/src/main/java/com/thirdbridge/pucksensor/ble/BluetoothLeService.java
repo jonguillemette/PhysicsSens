@@ -142,7 +142,7 @@ public class BluetoothLeService extends Service {
     @Override
     public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
       mBusy = false;
-      Log.i(TAG, "onDescriptorWrite");
+      Log.i(TAG, "onDescriptorWrite with UUID: " + descriptor.getUuid());
     }
   };
 

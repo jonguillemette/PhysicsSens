@@ -11,8 +11,6 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.thirdbridge.pucksensor.R;
-import com.thirdbridge.pucksensor.database.DataManager;
-import com.thirdbridge.pucksensor.models.ShotTest;
 import com.thirdbridge.pucksensor.models.User;
 import com.thirdbridge.pucksensor.utils.BaseFragment;
 import com.thirdbridge.pucksensor.utils.Constants;
@@ -34,7 +32,6 @@ public class HistoryFragment extends BaseFragment {
     private RelativeLayout historyHeaderRelativeLayout;
     private static boolean mViewModeOnly;
 
-    private List<ShotTest> mShotTestList;
     private User mUser;
 
     public static HistoryFragment newInstance(){
@@ -46,11 +43,7 @@ public class HistoryFragment extends BaseFragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mShotTestList = new ArrayList<>();
 
-        for(ShotTest shotTest: DataManager.get().getShotTests()){
-            mShotTestList.add(shotTest);
-        }
     }
 
     @Override
@@ -70,17 +63,9 @@ public class HistoryFragment extends BaseFragment {
         mHistoryRecyclerView = (RecyclerView) v.findViewById(R.id.test_history_recycler_view);
         historyHeaderRelativeLayout = (RelativeLayout) v.findViewById(R.id.stats_history_list_header);
 
-
-        if(DataManager.get().getShotTests().size() == 0){
-            mHistoryRecyclerView.setVisibility(View.GONE);
-            historyHeaderRelativeLayout.setVisibility(View.GONE);
-            mEmptyHistoryTextView.setVisibility(View.VISIBLE);
-        }
-        else{
-            historyHeaderRelativeLayout.setVisibility(View.VISIBLE);
-            mHistoryRecyclerView.setVisibility(View.VISIBLE);
-            mEmptyHistoryTextView.setVisibility(View.GONE);
-        }
+        mHistoryRecyclerView.setVisibility(View.GONE);
+        historyHeaderRelativeLayout.setVisibility(View.GONE);
+        mEmptyHistoryTextView.setVisibility(View.VISIBLE);
 
         mHistoryRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
         mShotHistoryAdapter = new ShotHistoryAdapter();
@@ -111,7 +96,7 @@ public class HistoryFragment extends BaseFragment {
             mTestListItemRelativeLayout = (RelativeLayout) itemView.findViewById(R.id.test_list_item_relativelayout);
         }
 
-        public void bindShotTest(final ShotTest shotTest){
+        /*public void bindShotTest(final ShotTest shotTest){
             usernameTextView.setText(shotTest.getUsername());
             dateTextView.setText(shotTest.getDate());
             //todo
@@ -129,7 +114,7 @@ public class HistoryFragment extends BaseFragment {
                 }
             });
 
-        }
+        }*/
     }
 
     private class ShotHistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>{
@@ -144,14 +129,14 @@ public class HistoryFragment extends BaseFragment {
 
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder viewHolder, int i) {
-            ShotTest shotTest = mShotTestList.get(i);
+            //ShotTest shotTest = mShotTestList.get(i);
             ShotHistoryHolder shotHistoryHolder = (ShotHistoryHolder) viewHolder;
-            shotHistoryHolder.bindShotTest(shotTest);
+            //shotHistoryHolder.bindShotTest(shotTest);
         }
 
         @Override
         public int getItemCount() {
-            return mShotTestList.size();
+            return 0;//mShotTestList.size();
         }
     }
 

@@ -1,6 +1,5 @@
 package com.thirdbridge.pucksensor.utils;
 
-import android.util.Log;
 import android.util.Pair;
 
 import com.thirdbridge.pucksensor.models.User;
@@ -14,17 +13,20 @@ import java.util.Calendar;
  * Created by Jayson Dalpé on 2016-01-26.
  */
 public class Shot {
-    private static final int MAX_DATA = 1000;
+    private static final int MAX_DATA = 1360;
+    private static final int MAX_DRAFT_DATA = 108;
 
     private Point3D[] mAccDatas;
     private double[] mRotDatas;
-    private double[] mAccXYZ;
-    private double[] mSpeedXYZ;
+    private double[] mAccTotal;
+    private double[] mSpeedTotal;
     private String mTime;
     private double mMaxAccel = 0;
     private double mMaxSpeed = 0;
     private double mMaxRotation = 0;
     private User mUser;
+    private boolean mCooked;
+    private boolean mDraft = false;
 
 
     public Shot(Point3D[] acceleration, double[] rotation, User user) {
@@ -33,8 +35,8 @@ public class Shot {
             int min = Math.min(rotation.length, MAX_DATA);
             mAccDatas = new Point3D[min];
             mRotDatas = new double[min];
-            mAccXYZ = new double[min];
-            mSpeedXYZ = new double[min];
+            mAccTotal = new double[min];
+            mSpeedTotal = new double[min];
 
             for (int i=0; i<min; i++) {
                 mAccDatas[i] = acceleration[i];
@@ -46,24 +48,57 @@ public class Shot {
 
         DateFormat df = new SimpleDateFormat("dd_MMM_yyyy_HH.mm.ssa");
         mTime = df.format(Calendar.getInstance().getTime());
+        mCooked = false;
     }
 
-    public Point3D[] getAccelerations() {
+
+    public Shot(int length, User user, boolean isDraft) {
+        mUser = user;
+        int min = Math.min(length, MAX_DATA);
+        mRotDatas = new double[min];
+        mAccTotal = new double[min];
+        mSpeedTotal = new double[min];
+
+        DateFormat df = new SimpleDateFormat("dd_MMM_yyyy_HH.mm.ssa");
+        mTime = df.format(Calendar.getInstance().getTime());
+        mCooked = true;
+
+        mDraft = isDraft;
+    }
+
+    public boolean isCooked() {
+        return mCooked;
+    }
+
+    public boolean isDraft() {
+        return mDraft;
+    }
+
+    public Point3D[] getAccelerationsXYZ() {
         return mAccDatas;
+    }
+
+    public double[] getAccelerations() {
+        return mAccTotal;
     }
 
     public double[] getRotations() {
         return mRotDatas;
     }
 
+    public void setRotation(double data, int id) {
+        if (id < mRotDatas.length)
+            mRotDatas[id] = data;
+    }
+
     public void setAccelerationXYZ(double data, int id) {
-        if (id < mAccXYZ.length)
-            mAccXYZ[id] = data;
+        if (id < mAccTotal.length)
+            mAccTotal[id] = data;
     }
 
     public void setSpeedXYZ(double data, int id) {
-        if (id < mSpeedXYZ.length)
-            mSpeedXYZ[id] = data;
+        if (id < mSpeedTotal.length)
+            mSpeedTotal[id] = data;
     }
 
     public void setMax(double acceleration, double speed, double angular) {
@@ -82,8 +117,8 @@ public class Shot {
         text += "Data,\n";
         text += "Acceleration,Speed,Rotation\n";
 
-        for (int i=0; i<mAccDatas.length; i++) {
-            text += mAccXYZ[i] + "," + mSpeedXYZ[i] + "," + mRotDatas[i] + "\n";
+        for (int i=0; i< mAccTotal.length; i++) {
+            text += mAccTotal[i] + "," + mSpeedTotal[i] + "," + mRotDatas[i] + "\n";
         }
 
         String fileName = mUser.getId() + "_" + mTime + ".csv";
@@ -93,4 +128,10 @@ public class Shot {
     public static int getMaxData() {
         return MAX_DATA;
     }
+
+    public static int getMaxDraftData() {
+        return MAX_DRAFT_DATA;
+    }
+
+
 }
