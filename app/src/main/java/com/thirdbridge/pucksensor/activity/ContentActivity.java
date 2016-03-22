@@ -418,6 +418,7 @@ public class ContentActivity extends FragmentActivity {
 			mConnIndex = pos;
 			onConnect();
 		} else {
+			ActionBarFragment.updateBattery(-1);
 			mScanFragment.setStatus("Disconnecting");
 			if (mConnIndex != NO_DEVICE) {
 				mBluetoothLeService.disconnect(mBluetoothDevice.getAddress());

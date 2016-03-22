@@ -114,6 +114,9 @@ public class ShotStatsFragment extends BaseFragment {
     private Thread mBackgroundThread;
     private boolean mPause = true;
 
+    //Battery
+    private int mBatteryLevel = -1;
+
     // Menu
     private CheckBox mAccCheckB;
     private CheckBox mSpeedCheckB;
@@ -140,6 +143,7 @@ public class ShotStatsFragment extends BaseFragment {
 
 	//Accel Chart
     private LinearLayout mAccelLayout;
+    private ProgressBar mAccelProgress;
 	private LineChart mAccelChart;
 	private TextView mTopAccelXYZTextView;
 	private float[] mAccelMax = {0f, 0f};
@@ -147,6 +151,7 @@ public class ShotStatsFragment extends BaseFragment {
 
 	//Speed Chart
     private LinearLayout mSpeedLayout;
+    private ProgressBar mSpeedProgress;
 	private LineChart mSpeedChart;
 	private TextView mTopSpeedXYZTextView;
 	private float[] mSpeedMax = {0f, 0f};
@@ -157,6 +162,7 @@ public class ShotStatsFragment extends BaseFragment {
 	//Rotation Chart
     private float[] mRotationMax = {0f, 0f};
     private LinearLayout mAngularLayout;
+    private ProgressBar mRotationProgress;
 	private LineChart mRotationChart;
 	private TextView mTopRotationTextView;
 
@@ -437,6 +443,8 @@ public class ShotStatsFragment extends BaseFragment {
 
 		//Accel chart
 		mAccelChart = (LineChart) v.findViewById(R.id.accel_stats_chart);
+        mAccelProgress = (ProgressBar) v.findViewById(R.id.accel_stats_progress);
+        mAccelProgress.setVisibility(View.GONE);
 		mTopAccelXYZTextView = (TextView) v.findViewById(R.id.top_accel_xyz_textview);
 
         mCalibrateBtn.setOnClickListener(new View.OnClickListener() {
@@ -497,10 +505,14 @@ public class ShotStatsFragment extends BaseFragment {
 
 		//Speed Chart
 		mSpeedChart = (LineChart) v.findViewById(R.id.speed_stats_chart);
+        mSpeedProgress = (ProgressBar) v.findViewById(R.id.speed_stats_progress);
+        mSpeedProgress.setVisibility(View.GONE);
 		mTopSpeedXYZTextView = (TextView) v.findViewById(R.id.top_speed_xyz_textview);
 
 		//Rotation Chart
 		mRotationChart = (LineChart) v.findViewById(R.id.rotation_stats_chart);
+        mRotationProgress = (ProgressBar) v.findViewById(R.id.rotation_stats_progress);
+        mRotationProgress.setVisibility(View.GONE);
 		mTopRotationTextView = (TextView) v.findViewById(R.id.top_rotation_textview);
 
 
@@ -1313,6 +1325,11 @@ public class ShotStatsFragment extends BaseFragment {
 
 	private void onCharacteristicChanged(String uuidStr, byte[] value) {
 
+        if ((value[1] & 0xFF) != mBatteryLevel) {
+            mBatteryLevel = (value[1] & 0xFF);
+            ActionBarFragment.updateBattery(mBatteryLevel);
+        }
+
         double[] accelHigh = getAccelHigh(value);
         double[] accelLow = getAccelLow(value);
         double[] gyro = getGyro(value);
@@ -1345,7 +1362,7 @@ public class ShotStatsFragment extends BaseFragment {
                     calculationMethod(realAccel, gyro, value[0]);
                 }
             }
-            Log.i(TAG, "Check first: AH: " + accelHigh[0] + " AL: " + accelLow[0] + " Gyro: " + gyro[0]);
+            //Log.i(TAG, "Check first: AH: " + accelHigh[0] + " AL: " + accelLow[0] + " Gyro: " + gyro[0]);
         } else {
             if (value[2] != VALIDITY_TOKEN && !mSendOnce) {
                 // Settings don't care, send default ones
@@ -1376,7 +1393,7 @@ public class ShotStatsFragment extends BaseFragment {
         for (int i=0; i<value.length; i++) {
             val += value[i] + ", ";
         }
-        Log.i(TAG, "Value: " + val);
+        //Log.i(TAG, "Value: " + val);
 
 	}
 
@@ -1527,14 +1544,14 @@ public class ShotStatsFragment extends BaseFragment {
                     double accelXYZ = Math.sqrt(Math.pow(accelX, 2) + Math.pow(accelY, 2) + Math.pow(accelZ, 2));
 
 
-                    mPuckSpeedXYZ = (float) Math.sqrt(Math.pow((accelX) * GRAVITY * mTimeStep, 2) +
-                            Math.pow((accelY) * GRAVITY * mTimeStep, 2) + Math.pow((accelZ) * GRAVITY * mTimeStep, 2)) / 1000f + mPuckSpeedXYZ;
+
 
                     //Complete recent data
                     mRecent[idData.get(id)].setAccelerationXYZ(accelXYZ, i);
                     addAccelEntry(i * mTimeStep + "", i, (float) accelXYZ, newSetRequired, idData.get(id), id);
                 }
 
+                mPuckSpeedXYZ = (float) (mRecent[idData.get(id)].getAccelerations()[i] * GRAVITY * mTimeStep / 1000f + mPuckSpeedXYZ);
 
                 mRecent[idData.get(id)].setSpeedXYZ(mPuckSpeedXYZ, i);
                 addSpeedEntry(i * mTimeStep + "", i, mPuckSpeedXYZ, newSetRequired, idData.get(id), id);
@@ -1545,6 +1562,21 @@ public class ShotStatsFragment extends BaseFragment {
             mRecent[idData.get(id)].setMax(mAccelMax[id], mSpeedMax[id], mRotationMax[id]);
 
         }
+
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (mRecent[0].isDraft()) {
+                    mAccelProgress.setVisibility(View.VISIBLE);
+                    mSpeedProgress.setVisibility(View.VISIBLE);
+                    mRotationProgress.setVisibility(View.VISIBLE);
+                } else {
+                    mAccelProgress.setVisibility(View.GONE);
+                    mSpeedProgress.setVisibility(View.GONE);
+                    mRotationProgress.setVisibility(View.GONE);
+                }
+            }
+        });
     }
 
     private void showAcceleration(boolean show) {

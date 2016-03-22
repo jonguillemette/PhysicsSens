@@ -211,6 +211,7 @@
                 android:weightSum="10"
                 android:id="@+id/accel_layout">
 
+
                 <LinearLayout
                     android:id="@+id/accel_stats_linear_layout"
                     android:layout_width="0dp"
@@ -221,13 +222,25 @@
                     android:orientation="vertical"
                     android:paddingTop="@dimen/stats_box_inner_padding">
 
-                    <TextView
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:paddingStart="@dimen/stats_box_inner_padding"
-                        android:text="@string/accelChartTitle"
-                        android:textColor="@color/dark_grey"
-                        android:textSize="@dimen/stats_text_size" />
+                        android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:paddingStart="@dimen/stats_box_inner_padding"
+                            android:text="@string/accelChartTitle"
+                            android:textColor="@color/dark_grey"
+                            android:textSize="@dimen/stats_text_size" />
+
+                        <ProgressBar
+                            style="?android:attr/progressBarStyleSmall"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:id="@+id/accel_stats_progress"
+                            android:indeterminate="true"/>
+                    </LinearLayout>
 
                     <View
                         android:layout_width="match_parent"
@@ -244,7 +257,6 @@
                         android:layout_marginBottom="5dp"
                         android:layout_marginLeft="5dp"
                         android:layout_marginRight="5dp" />
-
                 </LinearLayout>
 
                 <LinearLayout
@@ -327,13 +339,25 @@
                     android:orientation="vertical"
                     android:paddingTop="@dimen/stats_box_inner_padding">
 
-                    <TextView
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:paddingStart="@dimen/stats_box_inner_padding"
-                        android:text="@string/speedChartTitle"
-                        android:textColor="@color/dark_grey"
-                        android:textSize="@dimen/stats_text_size" />
+                        android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:paddingStart="@dimen/stats_box_inner_padding"
+                            android:text="@string/speedChartTitle"
+                            android:textColor="@color/dark_grey"
+                            android:textSize="@dimen/stats_text_size" />
+
+                        <ProgressBar
+                            style="?android:attr/progressBarStyleSmall"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:id="@+id/speed_stats_progress"
+                            android:indeterminate="true"/>
+                    </LinearLayout>
 
                     <View
                         android:layout_width="match_parent"
@@ -433,13 +457,27 @@
                     android:orientation="vertical"
                     android:paddingTop="@dimen/stats_box_inner_padding">
 
-                    <TextView
+
+
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:paddingStart="@dimen/stats_box_inner_padding"
-                        android:text="@string/rotationChartTitle"
-                        android:textColor="@color/dark_grey"
-                        android:textSize="@dimen/stats_text_size" />
+                        android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:paddingStart="@dimen/stats_box_inner_padding"
+                            android:text="@string/rotationChartTitle"
+                            android:textColor="@color/dark_grey"
+                            android:textSize="@dimen/stats_text_size" />
+
+                        <ProgressBar
+                            style="?android:attr/progressBarStyleSmall"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:id="@+id/rotation_stats_progress"
+                            android:indeterminate="true"/>
+                    </LinearLayout>
 
                     <View
                         android:layout_width="match_parent"
