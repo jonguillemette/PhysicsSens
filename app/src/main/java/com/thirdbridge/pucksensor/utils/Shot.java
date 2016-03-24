@@ -28,6 +28,7 @@ public class Shot {
     private boolean mCooked;
     private boolean mDraft = false;
 
+    private int mMax = 0;
 
     public Shot(Point3D[] acceleration, double[] rotation, User user) {
         mUser = user;
@@ -49,6 +50,7 @@ public class Shot {
         DateFormat df = new SimpleDateFormat("dd_MMM_yyyy_HH.mm.ssa");
         mTime = df.format(Calendar.getInstance().getTime());
         mCooked = false;
+        mMax = rotation.length;
     }
 
 
@@ -64,6 +66,7 @@ public class Shot {
         mCooked = true;
 
         mDraft = isDraft;
+        mMax = length;
     }
 
     public boolean isCooked() {
@@ -123,6 +126,51 @@ public class Shot {
 
         String fileName = mUser.getId() + "_" + mTime + ".csv";
         return new Pair<>(fileName, text);
+    }
+
+    /**
+     * Update the maximum value to get only the first peak.
+     * IMPORTANT: Call this function one all the entry are there.
+     */
+    public void analyze(int threshold) {
+        boolean peak = false;
+        boolean direction;
+        double previousValue = 0;
+        int max = 0;
+        boolean noreturn = false;
+
+
+        for (int i=0; i<mAccTotal.length;i++) {
+
+            // Find threshold peak
+            if (mAccTotal[i] >= (double) threshold && !peak) {
+                peak = true;
+            }
+
+            if (previousValue<=mAccTotal[i]) {
+                // GALLIFREY RISES!
+                direction = true;
+            } else {
+                // SKARO RISES
+                direction = false;
+            }
+
+            if (peak && !direction && !noreturn) {
+                noreturn = true;
+            }
+
+            if (peak && direction && noreturn && mAccTotal[i]<=(double)threshold/4) {
+                max = i-1;
+                break;
+            }
+
+            previousValue = mAccTotal[i];
+        }
+        mMax = max;
+    }
+
+    public int getMax() {
+        return mMax;
     }
 
     public static int getMaxData() {

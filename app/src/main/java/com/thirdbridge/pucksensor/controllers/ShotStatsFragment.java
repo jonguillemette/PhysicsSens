@@ -171,10 +171,6 @@ public class ShotStatsFragment extends BaseFragment {
 	private float mTimeStep = 0f;
 	private final double GRAVITY = 9.80665;
     private boolean mCalibrationDone = false;
-    private float mAccelSumX = 0f;
-    private float mAccelSumY = 0f;
-    private float mAccelSumZ = 0f;
-    private int mCalibrationDot = 0;
     private boolean mSendOnce = false;
 
 
@@ -1394,7 +1390,6 @@ public class ShotStatsFragment extends BaseFragment {
             val += value[i] + ", ";
         }
         //Log.i(TAG, "Value: " + val);
-
 	}
 
     /**
@@ -1485,6 +1480,7 @@ public class ShotStatsFragment extends BaseFragment {
                 }
 
                 mRecent[0] = mReal;
+                mRecent[0].analyze(mPeakAccSB.getProgress()+1);
                 populateCharts();
                 populateStatisticsFields();
                 mCircularIndex = 0;
@@ -1531,7 +1527,7 @@ public class ShotStatsFragment extends BaseFragment {
 
             mPuckSpeedXYZ = 0f;
             Log.i(TAG, "ABC");
-            for (int i = 0; i < mRecent[idData.get(id)].getRotations().length; i++) {
+            for (int i = 0; i < mRecent[idData.get(id)].getMax(); i++) {
                 Log.i(TAG, "ABC: " +  mRecent[idData.get(id)].getAccelerations()[i]);
                 mTimeStep = mRecent[idData.get(id)].isDraft() ? (float) DRAFT_STAMP : (float) STAMP;
 
