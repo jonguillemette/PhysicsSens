@@ -136,7 +136,7 @@ public class ContentActivity extends FragmentActivity {
 
 	private void initializeActionBarFragment() {
 		mActionBarFragmentContainer = (FrameLayout) findViewById(R.id.action_bar_fragment_container);
-		mActionBarFragment = ActionBarFragment.newInstance();
+		mActionBarFragment = ActionBarFragment.getInstance();
 
 		FragmentManager fm = getSupportFragmentManager();
 		FragmentTransaction ft = fm.beginTransaction();
@@ -156,7 +156,7 @@ public class ContentActivity extends FragmentActivity {
 
 	private void initializeHomeFragment() {
 		mHomeFragmentContainer = (FrameLayout) findViewById(R.id.home_fragment_container);
-		mHomeFragment = HomeFragment.newInstance();
+		mHomeFragment = HomeFragment.getInstance();
 
 		FragmentManager fm = getSupportFragmentManager();
 		FragmentTransaction ft = fm.beginTransaction();
@@ -418,7 +418,6 @@ public class ContentActivity extends FragmentActivity {
 			mConnIndex = pos;
 			onConnect();
 		} else {
-			ActionBarFragment.updateBattery(-1);
 			mScanFragment.setStatus("Disconnecting");
 			if (mConnIndex != NO_DEVICE) {
 				mBluetoothLeService.disconnect(mBluetoothDevice.getAddress());

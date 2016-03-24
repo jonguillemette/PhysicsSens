@@ -18,19 +18,6 @@
             android:layout_marginTop="@dimen/start_test_top_margin"
             android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/starting_sensors_textview"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:text="@string/startingSensors" />
-
-            <ProgressBar
-                android:id="@+id/starting_sensors_progressbar"
-                android:layout_width="15dp"
-                android:layout_height="15dp"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginStart="20dp" />
 
             <Button
                 android:id="@+id/start_button"
@@ -44,7 +31,7 @@
                 android:textAllCaps="false"
                 android:textColor="@color/instruction_grey"
                 android:textSize="@dimen/stat_button_text_size"
-                android:visibility="gone" />
+                android:visibility="visible" />
 
             <Button
                 android:id="@+id/save_button"
@@ -59,7 +46,7 @@
                 android:textAllCaps="false"
                 android:textColor="@color/instruction_grey"
                 android:textSize="@dimen/stat_button_text_size"
-                android:visibility="gone" />
+                android:visibility="visible" />
 
             <TextView
                 android:id="@+id/stats_description_textview"
@@ -98,12 +85,6 @@
                 android:layout_height="wrap_content"
                 android:checked="false"
                 android:text="@string/show_angular" />
-            <CheckBox
-                android:id="@+id/filter_off_check"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checked="false"
-                android:text="Filter off" />
             <Button
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

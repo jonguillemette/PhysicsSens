@@ -69,7 +69,7 @@ public class ShotStatsFragment extends BaseFragment {
     private static final double STAMP = 1.25;
     private static final double DRAFT_STAMP = 50/3;
     private static final int MINIMAL_G = 0; // Actually +1
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
     private static final String THRESHOLD_G = "THRESHOLD_G";
     private static final String CHECK_ACCEL = "CHECK_ACCEL";
     private static final String CHECK_SPEED = "CHECK_SPEED";
@@ -102,8 +102,6 @@ public class ShotStatsFragment extends BaseFragment {
 
 	private Button mStartStopButton;
 	private Button mSaveButton;
-	private ProgressBar mSensorStartingProgressBar;
-	private TextView mSensorStartingTextView;
 	private TextView mDescriptionTextView;
 
 	//Loading screen
@@ -113,9 +111,6 @@ public class ShotStatsFragment extends BaseFragment {
 
     private Thread mBackgroundThread;
     private boolean mPause = true;
-
-    //Battery
-    private int mBatteryLevel = -1;
 
     // Menu
     private CheckBox mAccCheckB;
@@ -165,6 +160,7 @@ public class ShotStatsFragment extends BaseFragment {
     private ProgressBar mRotationProgress;
 	private LineChart mRotationChart;
 	private TextView mTopRotationTextView;
+    private int mRotationDataSetIndex;
 
 	//Calibration
 	private int mCalibrationTime = 1000;
@@ -181,33 +177,38 @@ public class ShotStatsFragment extends BaseFragment {
 	//Speed Chart
 	private int mSpeedDataSetIndexXYZ;
 
-	// BLE
-	private boolean mSensorReady = false;
-    private int mRotationDataSetIndex;
-	private BluetoothLeService mBtLeService = null;
-	private BluetoothGatt mBtGatt = null;
-	private List<BluetoothGattService> mServiceList = null;
-	private static final int GATT_TIMEOUT = 100; // milliseconds
-	private boolean mServicesRdy = false;
-	private boolean mIsReceiving = false;
-
-	// SensorTag
-	private List<Sensor> mEnabledSensors = new ArrayList<>();
-	private BluetoothGattService mOadService = null;
-	private BluetoothGattService mConnControlService = null;
-
     // Calibration
     private double[] mCalibrationValue = {0,0,0};
     private int mCalibrateNb = 0;
     boolean mStartCalibration = false;
 
+    //Bluetooth
+    private boolean mSensorReady = false;
+    private boolean mSensorReadyChange = true;
+    private HomeFragment.BluetoothListener mListener = new HomeFragment.BluetoothListener() {
+        @Override
+        public void onBluetoothCommand(byte[] values) {
+            onCharacteristicChanged(values);
+        }
+    };
 
     // Thread running
     Runnable mRun = new Runnable() {
         @Override
         public void run() {
             while(true) {
-                if (mProgressChange && mSettings != null && mBtGatt != null) {
+                if (mSensorReady != mSensorReadyChange) {
+                    if (HomeFragment.getInstance().IsBluetoothReady()) {
+                        mSensorReady = true;
+                        activateTestButtons();
+                    } else {
+                        mSensorReady = false;
+                        deactivateTestButtons();
+                    }
+                    mSensorReadyChange = mSensorReady;
+                }
+
+                if (mProgressChange && mSettings != null) {
                     long value = mSettings.getInt(THRESHOLD_G, MINIMAL_G)+1;
 
                     byte[] send = new byte[20];
@@ -240,7 +241,7 @@ public class ShotStatsFragment extends BaseFragment {
                     };
                     Log.i(TAG, "New settings: " + sendValue);
                     try {
-                        writeBLE(send);
+                        HomeFragment.getInstance().writeBLE(send);
                         mProgressChange = false;
                     } catch(Exception e) {}
                 }
@@ -300,12 +301,13 @@ public class ShotStatsFragment extends BaseFragment {
         }
     };
 
-	public static ShotStatsFragment newInstance(User user) {
+
+    public static ShotStatsFragment newInstance(User user) {
 		Bundle args = new Bundle();
 		args.putString(Constants.CURRENT_USER, new Gson().toJson(user, User.class));
 
 		ShotStatsFragment fragment = new ShotStatsFragment();
-		fragment.setArguments(args);
+        fragment.setArguments(args);
 
 		return fragment;
 	}
@@ -317,23 +319,15 @@ public class ShotStatsFragment extends BaseFragment {
 
 		if (getArguments().containsKey(Constants.CURRENT_USER)) {
 			mUser = new Gson().fromJson(getArguments().getString(Constants.CURRENT_USER), User.class);
-		} else {
-			mPreviewTest = true;
 		}
 
-		if (!mPreviewTest) {
-			initializeBluetooth();
-		}
 	}
 
 	@Override
 	public void onResume() {
 		Log.d(TAG, "onResume");
 		super.onResume();
-		if (!mIsReceiving) {
-			getController().registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
-			mIsReceiving = true;
-		}
+        HomeFragment.getInstance().addBluetoothListener(mListener);
         mPause = false;
         mBackgroundThread = new Thread(mRun);
         mBackgroundThread.start();
@@ -344,10 +338,7 @@ public class ShotStatsFragment extends BaseFragment {
 	public void onPause() {
         Log.d(TAG, "onPause");
 		super.onPause();
-		if (mIsReceiving) {
-			getController().unregisterReceiver(mGattUpdateReceiver);
-			mIsReceiving = false;
-		}
+        HomeFragment.getInstance().removeBluetoothListener(mListener);
         mPause = true;
         try {
             mBackgroundThread.join();
@@ -362,8 +353,6 @@ public class ShotStatsFragment extends BaseFragment {
 
 		View v = inflater.inflate(R.layout.fragment_stats, container, false);
 
-		mSensorStartingProgressBar = (ProgressBar) v.findViewById(R.id.starting_sensors_progressbar);
-		mSensorStartingTextView = (TextView) v.findViewById(R.id.starting_sensors_textview);
 		mStartStopButton = (Button) v.findViewById(R.id.start_button);
 		mSaveButton = (Button) v.findViewById(R.id.save_button);
 		mDescriptionTextView = (TextView) v.findViewById(R.id.stats_description_textview);
@@ -456,15 +445,6 @@ public class ShotStatsFragment extends BaseFragment {
         });
 
         if (DEBUG) {
-            mHackButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    mSensorStartingProgressBar.setVisibility(View.GONE);
-                    mSensorStartingTextView.setVisibility(View.GONE);
-                    mStartStopButton.setVisibility(View.VISIBLE);
-                    mSaveButton.setVisibility(View.VISIBLE);
-                }
-            });
 
 
             mGenerateButton.setOnClickListener(new View.OnClickListener() {
@@ -510,6 +490,7 @@ public class ShotStatsFragment extends BaseFragment {
         mRotationProgress = (ProgressBar) v.findViewById(R.id.rotation_stats_progress);
         mRotationProgress.setVisibility(View.GONE);
 		mTopRotationTextView = (TextView) v.findViewById(R.id.top_rotation_textview);
+
 
 
 		mStartStopButton.setOnClickListener(new View.OnClickListener() {
@@ -571,7 +552,7 @@ public class ShotStatsFragment extends BaseFragment {
                         mTestRunning = true;
                         byte[] send = {DATA_READY, 0x00};
                         try {
-                            writeBLE(send);
+                            HomeFragment.getInstance().writeBLE(send);
                         } catch (Exception e) {}
                     }
                 }
@@ -651,25 +632,6 @@ public class ShotStatsFragment extends BaseFragment {
 		return v;
 	}
 
-    private void writeBLE(byte[] values) throws Exception{
-        if (mBtGatt != null && mSensorReady) {
-            Log.i(TAG, "Everything ready");
-            if (mBtGatt.getService(SensorDetails.UUID_PUCK_ACC_SERV) == null) {
-                throw new Exception();
-            }
-            BluetoothGattCharacteristic carac = mBtGatt.getService(SensorDetails.UUID_PUCK_ACC_SERV).getCharacteristic(SensorDetails.UUID_PUCK_WRITE);
-            if (carac == null) {
-                throw new Exception();
-            }
-            Log.i(TAG, "Service: " + carac + " " + carac.toString());
-            carac.setValue(values);
-            Log.i(TAG, "Sending successfull: " + mBtGatt.writeCharacteristic(carac));
-
-        } else {
-            throw new Exception();
-        }
-    }
-
     private void checkRecent(int id, boolean isChecked) {
         if (isChecked) {
             if (mFirstCheck == -1) {
@@ -727,10 +689,6 @@ public class ShotStatsFragment extends BaseFragment {
 			mDescriptionTextView.setVisibility(View.VISIBLE);
 			//mDescriptionTextView.setText("Test performed by user:" + mShotTest.getUsername() + " on " + mShotTest.getDate() + "\r\n\r\n" + mShotTest.getDescription());
 
-			mStartStopButton.setVisibility(View.GONE);
-			mSaveButton.setVisibility(View.GONE);
-			mSensorStartingProgressBar.setVisibility(View.GONE);
-			mSensorStartingTextView.setVisibility(View.GONE);
 
 			Handler handler = new Handler();
 			handler.postDelayed(new Runnable() {
@@ -744,22 +702,30 @@ public class ShotStatsFragment extends BaseFragment {
 		}
 
 		if (mSensorReady) {
-			activateTestButtons();
+            activateTestButtons();
 		}
 	}
 
 	private void activateTestButtons() {
-		if (mSensorStartingProgressBar != null && mSensorStartingTextView != null && mStartStopButton != null && mSaveButton != null) {
-			mSensorStartingProgressBar.setVisibility(View.GONE);
-			mSensorStartingTextView.setVisibility(View.GONE);
-			mStartStopButton.setVisibility(View.VISIBLE);
-			mSaveButton.setVisibility(View.VISIBLE);
-        }
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (mStartStopButton != null && mSaveButton != null) {
+                    mStartStopButton.setVisibility(View.VISIBLE);
+                    mSaveButton.setVisibility(View.VISIBLE);
+                }
+            }
+        });
 	}
 
 	private void deactivateTestButtons(){
-		mStartStopButton.setEnabled(false);
-		mSaveButton.setEnabled(false);
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mStartStopButton.setEnabled(false);
+                mSaveButton.setEnabled(false);
+            }
+        });
 	}
 
 	private void populateStatisticsFields() {
@@ -1113,219 +1079,7 @@ public class ShotStatsFragment extends BaseFragment {
 		}
 	}
 
-
-	// ////////////////////////////////////////////////////////////////////////////////////////////////
-	//
-	// BLE  methods
-	//
-	// ////////////////////////////////////////////////////////////////////////////////////////////////
-
-	private void initializeBluetooth() {
-		// BLE
-		mBtLeService = BluetoothLeService.getInstance();
-		mServiceList = new ArrayList<>();
-
-		// Initialize sensor list
-		updateSensorList();
-
-		if (!mIsReceiving) {
-			mIsReceiving = true;
-			getController().registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
-		}
-
-		// Create GATT object
-		mBtGatt = BluetoothLeService.getBtGatt();
-
-		// Start service discovery
-		if (!mServicesRdy && mBtGatt != null) {
-			if (mBtLeService.getNumServices() == 0)
-				discoverServices();
-			else
-				displayServices();
-		}
-
-	}
-
-	private static IntentFilter makeGattUpdateIntentFilter() {
-		final IntentFilter fi = new IntentFilter();
-		fi.addAction(BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED);
-		fi.addAction(BluetoothLeService.ACTION_DATA_NOTIFY);
-		fi.addAction(BluetoothLeService.ACTION_DATA_WRITE);
-		fi.addAction(BluetoothLeService.ACTION_DATA_READ);
-		return fi;
-	}
-
-	private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
-		@Override
-		public void onReceive(Context context, Intent intent) {
-			final String action = intent.getAction();
-			int status = intent.getIntExtra(BluetoothLeService.EXTRA_STATUS, BluetoothGatt.GATT_SUCCESS);
-
-			if (BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
-				if (status == BluetoothGatt.GATT_SUCCESS) {
-					displayServices();
-					checkOad();
-				} else {
-					Toast.makeText(getController().getApplication(), "Service discovery failed", Toast.LENGTH_LONG).show();
-					return;
-				}
-			} else if (BluetoothLeService.ACTION_DATA_NOTIFY.equals(action)) {
-				// Notification
-				byte[] value = intent.getByteArrayExtra(BluetoothLeService.EXTRA_DATA);
-				String uuidStr = intent.getStringExtra(BluetoothLeService.EXTRA_UUID);
-				onCharacteristicChanged(uuidStr, value);
-			} else if (BluetoothLeService.ACTION_DATA_WRITE.equals(action)) {
-				// Data written
-				String uuidStr = intent.getStringExtra(BluetoothLeService.EXTRA_UUID);
-				onCharacteristicWrite(uuidStr, status);
-			} else if (BluetoothLeService.ACTION_DATA_READ.equals(action)) {
-				// Data read
-				String uuidStr = intent.getStringExtra(BluetoothLeService.EXTRA_UUID);
-				byte[] value = intent.getByteArrayExtra(BluetoothLeService.EXTRA_DATA);
-				//onCharacteristicsRead(uuidStr,value,status);
-			}
-
-			if (status != BluetoothGatt.GATT_SUCCESS) {
-				setError("GATT error code: " + status);
-			}
-		}
-	};
-
-
-	//
-	// Application implementation
-	//
-	private void updateSensorList() {
-		mEnabledSensors.clear();
-
-		for (int i = 0; i < Sensor.SENSOR_LIST.length; i++) {
-			Sensor sensor = Sensor.SENSOR_LIST[i];
-			if (isEnabledByPrefs(sensor)) {
-				mEnabledSensors.add(sensor);
-			}
-		}
-	}
-
-	boolean isEnabledByPrefs(final Sensor sensor) {
-		String preferenceKeyString = "pref_" + sensor.name().toLowerCase(Locale.ENGLISH) + "_on";
-
-		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getController());
-
-		Boolean defaultValue = true;
-		return prefs.getBoolean(preferenceKeyString, defaultValue);
-	}
-
-
-
-
-	private void checkOad() {
-		// Check if OAD is supported (needs OAD and Connection Control service)
-		mOadService = null;
-		mConnControlService = null;
-
-		for (int i = 0; i < mServiceList.size() && (mOadService == null || mConnControlService == null); i++) {
-			BluetoothGattService srv = mServiceList.get(i);
-			if (srv.getUuid().equals(GattInfo.OAD_SERVICE_UUID)) {
-				mOadService = srv;
-			}
-			if (srv.getUuid().equals(GattInfo.CC_SERVICE_UUID)) {
-				mConnControlService = srv;
-			}
-		}
-	}
-
-
-	private void discoverServices() {
-		if (mBtGatt.discoverServices()) {
-			mServiceList.clear();
-			setStatus("Service discovery started");
-		} else {
-			setError("Service discovery start failed");
-		}
-	}
-
-	private void displayServices() {
-
-		mServicesRdy = true;
-
-		try {
-			mServiceList = mBtLeService.getSupportedGattServices();
-		} catch (Exception e) {
-			e.printStackTrace();
-			mServicesRdy = false;
-		}
-
-		// Characteristics descriptor readout done
-		if (mServicesRdy) {
-			setStatus("Service discovery complete");
-			enableSensors(true);
-			enableNotifications(true);
-		} else {
-			setError("Failed to read services");
-		}
-	}
-
-	private void setError(String txt) {
-		Log.i(TAG, String.format("GOT ERROR %s", txt));
-	}
-
-	private void setStatus(String txt) {
-		Log.i(TAG, String.format("GOT STATUS %s", txt));
-	}
-
-	private void enableSensors(boolean enable) {
-		for (Sensor sensor : mEnabledSensors) {
-			Log.i(TAG, "Going to enable sensor " + sensor.getService().toString());
-			UUID confUuid = sensor.getConfig();
-
-			// Skip keys
-			if (confUuid == null)
-				break;
-
-			for (int i = 0; i < mBtGatt.getServices().size(); i++) {
-				Log.i(TAG, String.format("Going to display service %d %s", i, mBtGatt.getServices().get(i).getUuid()));
-			}
-
-			mSensorReady = true;
-			activateTestButtons();
-		}
-	}
-
-	private void enableNotifications(boolean enable) {
-		for (Sensor sensor : mEnabledSensors) {
-			UUID servUuid = sensor.getService();
-			UUID dataUuid = sensor.getData();
-			BluetoothGattService serv = mBtGatt.getService(servUuid);
-
-			if(serv != null) {
-				BluetoothGattCharacteristic charac = serv.getCharacteristic(dataUuid);
-
-				mBtLeService.setCharacteristicNotification(charac, enable);
-				mBtLeService.waitIdle(GATT_TIMEOUT);
-			}
-			else{
-				mSensorReady = false;
-				deactivateTestButtons();
-			}
-		}
-	}
-
-	private void onCharacteristicWrite(String uuidStr, int status) {
-		Log.d(TAG, "onCharacteristicWrite: " + uuidStr);
-        boolean begin = mBtGatt.beginReliableWrite();
-        Log.i(TAG, "Begin successfull: " + begin);
-        if (begin) {
-            Log.i(TAG, "Execute successfull: " + mBtGatt.executeReliableWrite());
-        }
-	}
-
-	private void onCharacteristicChanged(String uuidStr, byte[] value) {
-
-        if ((value[1] & 0xFF) != mBatteryLevel) {
-            mBatteryLevel = (value[1] & 0xFF);
-            ActionBarFragment.updateBattery(mBatteryLevel);
-        }
-
+	private void onCharacteristicChanged(byte[] value) {
         double[] accelHigh = getAccelHigh(value);
         double[] accelLow = getAccelLow(value);
         double[] gyro = getGyro(value);
@@ -1373,7 +1127,7 @@ public class ShotStatsFragment extends BaseFragment {
                     }
                 }
                 try {
-                    writeBLE(send);
+                    HomeFragment.getInstance().writeBLE(send);
                     mSendOnce = true;
                 } catch (Exception e) {
 
@@ -1526,9 +1280,7 @@ public class ShotStatsFragment extends BaseFragment {
             boolean newSetRequired = true;
 
             mPuckSpeedXYZ = 0f;
-            Log.i(TAG, "ABC");
             for (int i = 0; i < mRecent[idData.get(id)].getMax(); i++) {
-                Log.i(TAG, "ABC: " +  mRecent[idData.get(id)].getAccelerations()[i]);
                 mTimeStep = mRecent[idData.get(id)].isDraft() ? (float) DRAFT_STAMP : (float) STAMP;
 
                 if (mRecent[idData.get(id)].isCooked()) {

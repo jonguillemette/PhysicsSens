@@ -27,8 +27,13 @@ public class ActionBarFragment extends BaseFragment {
     private TextView mCurrentUserTextView;
     private TextView mCurrentBleStatusTextView;
 
-    public static ActionBarFragment newInstance(){
-        return new ActionBarFragment();
+    private static ActionBarFragment mInstance = null;
+
+    public static ActionBarFragment getInstance(){
+        if (mInstance == null) {
+            mInstance = new ActionBarFragment();
+        }
+        return mInstance;
     }
 
     @Override
@@ -97,52 +102,56 @@ public class ActionBarFragment extends BaseFragment {
 
     /**
      * Update the battery images and value
-     * IMPORTANT: Call this function from a UI Tread
      * IMPORTANT: Call it each time it change, not each data receive
      * IMPORTANT: Conversion in 0-255 before sending
      * @param battery The new level of the battery
      */
-    public static void updateBattery(int battery) {
-        battery_value = battery;
-        if (battery_value > 128) {
-            int base = battery_value-128;
+    public void updateBattery(final int battery) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                battery_value = battery;
+                if (battery_value > 128) {
+                    int base = battery_value-128;
 
-            // Don't want to show 0 if a little more.
-            if (base < 15) {
-                mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_charge_anim15);
-            } else if(base < 28) {
-                mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_charge_anim28);
-            } else if (base < 43) {
-                mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_charge_anim43);
-            } else if (base < 57) {
-                mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_charge_anim57);
-            } else if (base < 71) {
-                mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_charge_anim71);
-            } else if (base < 85) {
-                mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_charge_anim85);
-            } else {
-                mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_charge_anim100);
+                    // Don't want to show 0 if a little more.
+                    if (base < 15) {
+                        mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_charge_anim15);
+                    } else if(base < 28) {
+                        mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_charge_anim28);
+                    } else if (base < 43) {
+                        mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_charge_anim43);
+                    } else if (base < 57) {
+                        mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_charge_anim57);
+                    } else if (base < 71) {
+                        mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_charge_anim71);
+                    } else if (base < 85) {
+                        mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_charge_anim85);
+                    } else {
+                        mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_charge_anim100);
+                    }
+                } else {
+                    // Don't want to show 0 if a little more.
+                    if (battery_value < 0) {
+                        mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_0);
+                    } else if (battery_value < 15) {
+                        mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_15);
+                    } else if(battery_value < 28) {
+                        mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_28);
+                    } else if (battery_value < 43) {
+                        mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_43);
+                    } else if (battery_value < 57) {
+                        mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_57);
+                    } else if (battery_value < 71) {
+                        mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_71);
+                    } else if (battery_value < 85) {
+                        mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_85);
+                    } else {
+                        mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_100);
+                    }
+                }
             }
-        } else {
-            // Don't want to show 0 if a little more.
-            if (battery_value < 0) {
-                mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_0);
-            } else if (battery_value < 15) {
-                mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_15);
-            } else if(battery_value < 28) {
-                mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_28);
-            } else if (battery_value < 43) {
-                mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_43);
-            } else if (battery_value < 57) {
-                mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_57);
-            } else if (battery_value < 71) {
-                mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_71);
-            } else if (battery_value < 85) {
-                mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_85);
-            } else {
-                mBatteryImageButton.setImageResource(R.drawable.stat_sys_battery_100);
-            }
-        }
+        });
     }
 
 	@Override
