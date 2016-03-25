@@ -24,8 +24,7 @@ import android.widget.TextView;
 import com.thirdbridge.pucksensor.R;
 import com.thirdbridge.pucksensor.ble.BLEDeviceInfo;
 import com.thirdbridge.pucksensor.utils.BaseFragment;
-import com.thirdbridge.pucksensor.utils.ble_utils.CustomTimer;
-import com.thirdbridge.pucksensor.utils.ble_utils.CustomTimerCallback;
+import com.thirdbridge.pucksensor.utils.Timer;
 
 import java.util.List;
 
@@ -43,10 +42,10 @@ public class ScanBleFragment extends BaseFragment {
     private ListView mDeviceListView = null;
     private ProgressBar mProgressBar;
 
-    private CustomTimer mScanTimer = null;
-    private CustomTimer mConnectTimer = null;
+    private Timer mScanTimer = null;
+    private Timer mConnectTimer = null;
     @SuppressWarnings("unused")
-    private CustomTimer mStatusTimer;
+    private Timer mStatusTimer;
     private Context mContext;
 
     public static ScanBleFragment newInstance(){
@@ -91,7 +90,7 @@ public class ScanBleFragment extends BaseFragment {
 
     public void setStatus(String txt, int duration) {
         setStatus(txt);
-        mStatusTimer = new CustomTimer(null, duration, mClearStatusCallback);
+        mStatusTimer = new Timer(duration, mClearStatusCallback);
     }
 
     public void setError(String txt) {
@@ -132,7 +131,7 @@ public class ScanBleFragment extends BaseFragment {
         setBusy(scanning);
 
         if (scanning) {
-            mScanTimer = new CustomTimer(mProgressBar, SCAN_TIMEOUT, mPgScanCallback);
+            mScanTimer = new Timer(SCAN_TIMEOUT, mPgScanCallback);
             mStatus.setTextAppearance(mContext, R.style.statusStyle_Busy);
             mBtnScan.setText("Stop");
             mStatus.setText("Scanning...");
@@ -169,34 +168,31 @@ public class ScanBleFragment extends BaseFragment {
     // Listener for device list
     private OnItemClickListener mDeviceClickListener = new OnItemClickListener() {
         public void onItemClick(AdapterView<?> parent, View view, int pos, long id) {
-            mConnectTimer = new CustomTimer(mProgressBar, CONNECT_TIMEOUT, mPgConnectCallback);
+            mConnectTimer = new Timer(CONNECT_TIMEOUT, mPgConnectCallback);
             getController().onDeviceClick(pos);
         }
     };
 
     // Listener for progress timer expiration
-    private CustomTimerCallback mPgScanCallback = new CustomTimerCallback() {
-        public void onTimeout() {
+    private Timer.TimerCallback mPgScanCallback = new Timer.TimerCallback() {
+        @Override
+        public void onTimeOut() {
             getController().onScanTimeout();
         }
-
-        public void onTick(int i) {
-        }
     };
 
     // Listener for connect/disconnect expiration
-    private CustomTimerCallback mPgConnectCallback = new CustomTimerCallback() {
-        public void onTimeout() {
+    private Timer.TimerCallback mPgConnectCallback = new Timer.TimerCallback() {
+        @Override
+        public void onTimeOut() {
             getController().onConnectTimeout();
         }
-
-        public void onTick(int i) {
-        }
     };
 
     // Listener for connect/disconnect expiration
-    private CustomTimerCallback mClearStatusCallback = new CustomTimerCallback() {
-        public void onTimeout() {
+    private Timer.TimerCallback mClearStatusCallback = new Timer.TimerCallback() {
+        @Override
+        public void onTimeOut() {
             getController().runOnUiThread(new Runnable() {
                 public void run() {
                     setStatus("");
@@ -204,18 +200,15 @@ public class ScanBleFragment extends BaseFragment {
             });
             mStatusTimer = null;
         }
-
-        public void onTick(int i) {
-        }
     };
 
     private void stopTimers() {
         if (mScanTimer != null) {
-            mScanTimer.stop();
+            mScanTimer.cancel();
             mScanTimer = null;
         }
         if (mConnectTimer != null) {
-            mConnectTimer.stop();
+            mConnectTimer.cancel();
             mConnectTimer = null;
         }
     }
