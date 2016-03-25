@@ -98,6 +98,11 @@
             <Button
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:text="(Dev) Calibrate centrifuge"
+                android:id="@+id/calibrate_centrifuge_button" />
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:text="Hack"
                 android:id="@+id/demo_start_button" />
 

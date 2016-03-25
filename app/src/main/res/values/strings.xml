@@ -78,7 +78,7 @@
     <!-- Sensortag strings -->
 
     <!-- Ble activity -->
-    <string name="ble_scan_title">BLE Device Discovery</string>
+    <string name="ble_scan_title">Scan</string>
     <string name="connect">Connect</string>
     <string name="button_scan">Scan</string>
     <string name="title_device_list">Device List</string>

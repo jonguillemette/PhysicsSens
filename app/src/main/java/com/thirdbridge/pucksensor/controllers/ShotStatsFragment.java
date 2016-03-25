@@ -1,19 +1,13 @@
 package com.thirdbridge.pucksensor.controllers;
 
-import android.bluetooth.BluetoothGatt;
-import android.bluetooth.BluetoothGattCharacteristic;
-import android.bluetooth.BluetoothGattService;
-import android.content.BroadcastReceiver;
-import android.content.Context;
+
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
-import android.preference.PreferenceManager;
 import android.support.v4.content.ContextCompat;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -40,12 +34,9 @@ import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.google.gson.Gson;
 import com.thirdbridge.pucksensor.R;
-import com.thirdbridge.pucksensor.ble.BluetoothLeService;
-import com.thirdbridge.pucksensor.ble.GattInfo;
-import com.thirdbridge.pucksensor.ble.Sensor;
-import com.thirdbridge.pucksensor.ble.SensorDetails;
 import com.thirdbridge.pucksensor.models.User;
 import com.thirdbridge.pucksensor.utils.BaseFragment;
+import com.thirdbridge.pucksensor.utils.Calibrate;
 import com.thirdbridge.pucksensor.utils.Constants;
 import com.thirdbridge.pucksensor.utils.IO;
 import com.thirdbridge.pucksensor.utils.MathHelper;
@@ -54,8 +45,6 @@ import com.thirdbridge.pucksensor.utils.Shot;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-import java.util.UUID;
 
 /**
  * Created by Christophe on 2015-10-14.
@@ -91,6 +80,11 @@ public class ShotStatsFragment extends BaseFragment {
     private static final byte VALIDITY_TOKEN = 0x3D;
     private static final int[] DEFAULT = {VALIDITY_TOKEN, 0x00, 0x00, 255, 0x00, 0x01, 0x01, 0x01}; //(2G)
 
+    // Calibration pattern
+    final static long[] CALIB_TIME= {5000, 1000}; // Position time, transition time.
+    final static double[] CALIB_VALUE = {0, 50, 400}; // Start, Step, Max
+
+
     // Saving local instance
     SharedPreferences mSettings;
 
@@ -120,6 +114,7 @@ public class ShotStatsFragment extends BaseFragment {
     private SeekBar mPeakAccSB;
     private ProgressBar mCalibratePB;
     private Button mCalibrateBtn;
+    private Button mCalibrateCenBtn;
 
     // Check management
     private CheckBox[] mRecentResult;
@@ -163,13 +158,10 @@ public class ShotStatsFragment extends BaseFragment {
     private int mRotationDataSetIndex;
 
 	//Calibration
-	private int mCalibrationTime = 1000;
 	private float mTimeStep = 0f;
 	private final double GRAVITY = 9.80665;
     private boolean mCalibrationDone = false;
     private boolean mSendOnce = false;
-
-
 
 	//Accel Chart
 	private int mAccelDataSetIndexXYZ;
@@ -181,6 +173,8 @@ public class ShotStatsFragment extends BaseFragment {
     private double[] mCalibrationValue = {0,0,0};
     private int mCalibrateNb = 0;
     boolean mStartCalibration = false;
+    boolean mStartCalibrationCen = false;
+    Calibrate mCalibrationRoutine;
 
     //Bluetooth
     private boolean mSensorReady = false;
@@ -230,6 +224,7 @@ public class ShotStatsFragment extends BaseFragment {
                         mActualSettings[3] = 0;
                         mActualSettings[4] = 0;
                     }
+                    Log.i(TAG, "Value: " + value);
                     String sendValue = send[0] + ", " + send[1] + ", ";
                     for (int i=0; i<18; i++) {
                         if (i < mActualSettings.length) {
@@ -296,6 +291,76 @@ public class ShotStatsFragment extends BaseFragment {
                 public void run() {
                     mCalibrateBtn.setVisibility(View.VISIBLE);
                     mCalibratePB.setVisibility(View.GONE);
+                    mCalibrateCenBtn.setEnabled(true);
+                }
+            });
+        }
+    };
+
+    Runnable mStartCalibrationCenRunnable = new Runnable() {
+        @Override
+        public void run() {
+            int[] saveValue = {mActualSettings[5], mActualSettings[6], mActualSettings[7]};
+            mActualSettings[5] = 0;
+            mActualSettings[6] = 0;
+            mActualSettings[7] = 0;
+
+            mProgressChange = true;
+
+            try {
+                // Sleep fo 1sec (setting thread delay) + 50 ms (IC max delay for settings)
+                Thread.sleep(2000);
+            } catch (Exception e) {}
+
+
+            // Initialise calibration cen
+            mCalibrationRoutine = new Calibrate();
+
+            for (int i=(int)CALIB_VALUE[0]; i<=CALIB_VALUE[2]; i+= (int)CALIB_VALUE[1]) {
+                mCalibrationValue[0] = (double) i;
+                mStartCalibrationCen = true;
+                try {
+                    Thread.sleep(CALIB_TIME[0]);
+                } catch (Exception e) {}
+                mStartCalibrationCen = false;
+                try {
+                    Thread.sleep(CALIB_TIME[1]);
+                } catch (Exception e) {}
+            }
+
+            // Gather result and save them
+            File rootsd = Environment.getExternalStorageDirectory();
+            File root = new File(rootsd.getAbsolutePath(), FOLDER_SAVE_SHOT);
+            if (!root.exists()) {
+                root.mkdirs();
+            }
+            Pair<String, String> saveData = mCalibrationRoutine.packageFormCSV();
+            final File file = new File(root, saveData.first);
+            IO.saveFile(saveData.second, file);
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(getContext(), "Save calibration in " + file.getName(), Toast.LENGTH_LONG).show();
+                }
+            });
+
+            Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+            intent.setData(Uri.fromFile(file));
+            getActivity().sendBroadcast(intent);
+
+            mActualSettings[5] = saveValue[0];
+            mActualSettings[6] = saveValue[1];
+            mActualSettings[7] = saveValue[2];
+
+            mProgressChange = true;
+
+
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mCalibrateBtn.setVisibility(View.VISIBLE);
+                    mCalibratePB.setVisibility(View.GONE);
+                    mCalibrateBtn.setEnabled(true);
                 }
             });
         }
@@ -369,6 +434,7 @@ public class ShotStatsFragment extends BaseFragment {
         mPeakAccSB = (SeekBar) v.findViewById(R.id.peak_acc_seekbar);
         mCalibrateBtn = (Button) v.findViewById(R.id.calibrate_button);
         mCalibratePB = (ProgressBar) v.findViewById(R.id.calibrate_progress);
+        mCalibrateCenBtn = (Button) v.findViewById(R.id.calibrate_centrifuge_button);
         mCalibratePB.setIndeterminate(true);
         mCalibratePB.setVisibility(View.GONE);
 
@@ -437,10 +503,21 @@ public class ShotStatsFragment extends BaseFragment {
             public void onClick(View v) {
                 mCalibratePB.setVisibility(View.VISIBLE);
                 mCalibrateBtn.setVisibility(View.GONE);
+                mCalibrateCenBtn.setEnabled(false);
 
                 Thread t = new Thread(mStartCalibrationRunnable);
                 t.start();
+            }
+        });
 
+        mCalibrateCenBtn.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                mCalibrateBtn.setEnabled(false);
+                mCalibratePB.setVisibility(View.VISIBLE);
+                mCalibrateCenBtn.setVisibility(View.GONE);
+                Thread t = new Thread(mStartCalibrationCenRunnable);
+                t.start();
             }
         });
 
@@ -1085,21 +1162,26 @@ public class ShotStatsFragment extends BaseFragment {
         double[] gyro = getGyro(value);
         if (value[0] != SETTINGS_READ) {
             if (value[0] == DATA_DRAFT && mStartCalibration) {
-                mCalibrationValue[0] += (double)(short)value[2];
-                mCalibrationValue[1] += (double)(short)value[4];
-                mCalibrationValue[2] += (double)(short)value[6];
-                mCalibrateNb ++;
+                mCalibrationValue[0] += (double) (short) value[2];
+                mCalibrationValue[1] += (double) (short) value[4];
+                mCalibrationValue[2] += (double) (short) value[6];
+                mCalibrateNb++;
 
-                mCalibrationValue[0] += (double)(short)value[8];
-                mCalibrationValue[1] += (double)(short)value[10];
-                mCalibrationValue[2] += (double)(short)value[12];
-                mCalibrateNb ++;
+                mCalibrationValue[0] += (double) (short) value[8];
+                mCalibrationValue[1] += (double) (short) value[10];
+                mCalibrationValue[2] += (double) (short) value[12];
+                mCalibrateNb++;
 
-                mCalibrationValue[0] += (double)(short)value[14];
-                mCalibrationValue[1] += (double)(short)value[16];
-                mCalibrationValue[2] += (double)(short)value[18];
-                mCalibrateNb ++;
-            } else {
+                mCalibrationValue[0] += (double) (short) value[14];
+                mCalibrationValue[1] += (double) (short) value[16];
+                mCalibrationValue[2] += (double) (short) value[18];
+                mCalibrateNb++;
+            } else if (mStartCalibrationCen) { // Take all data possible
+                for (int i = 0; i < accelHigh.length; i++) {
+                    mCalibrationRoutine.addEntry(accelHigh[i], mCalibrationValue[0]);
+                }
+
+            } else if (!mStartCalibrationCen) { // Delete DATA_START, ... when calibrating forces
                 double[] realAccel = new double[accelLow.length];
                 for (int i = 0; i < realAccel.length; i++) {
                     if (accelLow[i] >= 15) {
@@ -1143,7 +1225,7 @@ public class ShotStatsFragment extends BaseFragment {
         for (int i=0; i<value.length; i++) {
             val += value[i] + ", ";
         }
-        //Log.i(TAG, "Value: " + val);
+        Log.i(TAG, "Value: " + val);
 	}
 
     /**
