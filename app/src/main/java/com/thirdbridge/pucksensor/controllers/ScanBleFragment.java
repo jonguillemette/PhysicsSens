@@ -22,7 +22,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.thirdbridge.pucksensor.R;
-import com.thirdbridge.pucksensor.ble.BleDeviceInfo;
+import com.thirdbridge.pucksensor.ble.BLEDeviceInfo;
 import com.thirdbridge.pucksensor.utils.BaseFragment;
 import com.thirdbridge.pucksensor.utils.ble_utils.CustomTimer;
 import com.thirdbridge.pucksensor.utils.ble_utils.CustomTimerCallback;
@@ -102,7 +102,7 @@ public class ScanBleFragment extends BaseFragment {
     }
 
     public void notifyDataSetChanged() {
-        List<BleDeviceInfo> deviceList = getController().getDeviceInfoList();
+        List<BLEDeviceInfo> deviceList = getController().getDeviceInfoList();
         if (mDeviceAdapter == null) {
             mDeviceAdapter = new DeviceListAdapter(getController(),deviceList);
         }
@@ -224,11 +224,11 @@ public class ScanBleFragment extends BaseFragment {
     // CLASS DeviceAdapter: handle device list
     //
     class DeviceListAdapter extends BaseAdapter {
-        private List<BleDeviceInfo> mDevices;
+        private List<BLEDeviceInfo> mDevices;
         private LayoutInflater mInflater;
         private Button mConnectButton;
 
-        public DeviceListAdapter(Context context, List<BleDeviceInfo> devices) {
+        public DeviceListAdapter(Context context, List<BLEDeviceInfo> devices) {
             mInflater = LayoutInflater.from(context);
             mDevices = devices;
         }
@@ -256,8 +256,8 @@ public class ScanBleFragment extends BaseFragment {
                 vg.setTag(position);
             }
 
-            BleDeviceInfo deviceInfo = mDevices.get(position);
-            BluetoothDevice device = deviceInfo.getBluetoothDevice();
+            BLEDeviceInfo deviceInfo = mDevices.get(position);
+            BluetoothDevice device = deviceInfo.getDevice();
             int rssi = deviceInfo.getRssi();
             String descr = device.getName() + "\n" + device.getAddress() + "\nRssi: " + rssi + " dBm";
             ((TextView) vg.findViewById(R.id.descr)).setText(descr);

@@ -23,7 +23,7 @@ import android.widget.FrameLayout;
 import android.widget.Toast;
 
 import com.thirdbridge.pucksensor.R;
-import com.thirdbridge.pucksensor.ble.BleDeviceInfo;
+import com.thirdbridge.pucksensor.ble.BLEDeviceInfo;
 import com.thirdbridge.pucksensor.ble.BluetoothLeService;
 import com.thirdbridge.pucksensor.controllers.ActionBarFragment;
 import com.thirdbridge.pucksensor.controllers.HistoryFragment;
@@ -71,7 +71,7 @@ public class ContentActivity extends FragmentActivity {
 	private boolean mScanning = false;
 	private int mNumDevs = 0;
 	private int mConnIndex = NO_DEVICE;
-	private List<BleDeviceInfo> mDeviceInfoList;
+	private List<BLEDeviceInfo> mDeviceInfoList;
 	private static BluetoothManager mBluetoothManager;
 	private BluetoothAdapter mBtAdapter = null;
 	private BluetoothDevice mBluetoothDevice = null;
@@ -309,7 +309,7 @@ public class ContentActivity extends FragmentActivity {
 		}
 
 		// Initialize device list container and device filter
-		mDeviceInfoList = new ArrayList<BleDeviceInfo>();
+		mDeviceInfoList = new ArrayList<BLEDeviceInfo>();
 		Resources res = getResources();
 		mDeviceFilter = res.getStringArray(R.array.device_filter);
 
@@ -411,7 +411,7 @@ public class ContentActivity extends FragmentActivity {
 
 		setBusy(true);
 
-		mBluetoothDevice = mDeviceInfoList.get(pos).getBluetoothDevice();
+		mBluetoothDevice = mDeviceInfoList.get(pos).getDevice();
 
 		if (mConnIndex == NO_DEVICE) {
 			mScanFragment.setStatus("Connecting");
@@ -481,8 +481,8 @@ public class ContentActivity extends FragmentActivity {
 		mScanFragment.setError(txt);
 	}
 
-	private BleDeviceInfo createDeviceInfo(BluetoothDevice device, int rssi) {
-		BleDeviceInfo deviceInfo = new BleDeviceInfo(device, rssi);
+	private BLEDeviceInfo createDeviceInfo(BluetoothDevice device, int rssi) {
+		BLEDeviceInfo deviceInfo = new BLEDeviceInfo(device, rssi);
 
 		return deviceInfo;
 	}
@@ -502,7 +502,7 @@ public class ContentActivity extends FragmentActivity {
 		return true;
 	}
 
-	private void addDevice(BleDeviceInfo device) {
+	private void addDevice(BLEDeviceInfo device) {
 		mNumDevs++;
 		mDeviceInfoList.add(device);
 		mScanFragment.notifyDataSetChanged();
@@ -514,16 +514,16 @@ public class ContentActivity extends FragmentActivity {
 
 	private boolean deviceInfoExists(String address) {
 		for (int i = 0; i < mDeviceInfoList.size(); i++) {
-			if (mDeviceInfoList.get(i).getBluetoothDevice().getAddress().equals(address)) {
+			if (mDeviceInfoList.get(i).getDevice().getAddress().equals(address)) {
 				return true;
 			}
 		}
 		return false;
 	}
 
-	private BleDeviceInfo findDeviceInfo(BluetoothDevice device) {
+	private BLEDeviceInfo findDeviceInfo(BluetoothDevice device) {
 		for (int i = 0; i < mDeviceInfoList.size(); i++) {
-			if (mDeviceInfoList.get(i).getBluetoothDevice().getAddress().equals(device.getAddress())) {
+			if (mDeviceInfoList.get(i).getDevice().getAddress().equals(device.getAddress())) {
 				return mDeviceInfoList.get(i);
 			}
 		}
@@ -540,7 +540,7 @@ public class ContentActivity extends FragmentActivity {
 		return mScanning;
 	}
 
-	public List<BleDeviceInfo> getDeviceInfoList() {
+	public List<BLEDeviceInfo> getDeviceInfoList() {
 		return mDeviceInfoList;
 	}
 
@@ -660,12 +660,12 @@ public class ContentActivity extends FragmentActivity {
 					if (checkDeviceFilter(device)) {
 						if (!deviceInfoExists(device.getAddress())) {
 							// New device
-							BleDeviceInfo deviceInfo = createDeviceInfo(device, rssi);
+							BLEDeviceInfo deviceInfo = createDeviceInfo(device, rssi);
 							addDevice(deviceInfo);
 						} else {
 							// Already in list, update RSSI info
-							BleDeviceInfo deviceInfo = findDeviceInfo(device);
-							deviceInfo.updateRssi(rssi);
+							BLEDeviceInfo deviceInfo = findDeviceInfo(device);
+							deviceInfo.setRssi(rssi);
 							mScanFragment.notifyDataSetChanged();
 						}
 					}

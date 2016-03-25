@@ -3,7 +3,6 @@ package com.thirdbridge.pucksensor.utils;
 import android.util.Pair;
 
 import com.thirdbridge.pucksensor.models.User;
-import com.thirdbridge.pucksensor.utils.ble_utils.Point3D;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
