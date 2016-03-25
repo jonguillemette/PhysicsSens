@@ -305,6 +305,11 @@ public class ShotStatsFragment extends BaseFragment {
             mActualSettings[6] = 0;
             mActualSettings[7] = 0;
 
+            int actualProgress = mSettings.getInt(THRESHOLD_G, MINIMAL_G)+1;
+
+            SharedPreferences.Editor editor = mSettings.edit();
+            editor.putInt(THRESHOLD_G, 4000);
+            editor.commit();
             mProgressChange = true;
 
             try {
@@ -327,6 +332,8 @@ public class ShotStatsFragment extends BaseFragment {
                     Thread.sleep(CALIB_TIME[1]);
                 } catch (Exception e) {}
             }
+
+
 
             // Gather result and save them
             File rootsd = Environment.getExternalStorageDirectory();
@@ -351,6 +358,8 @@ public class ShotStatsFragment extends BaseFragment {
             mActualSettings[5] = saveValue[0];
             mActualSettings[6] = saveValue[1];
             mActualSettings[7] = saveValue[2];
+            editor.putInt(THRESHOLD_G, actualProgress);
+            editor.commit();
 
             mProgressChange = true;
 
@@ -358,7 +367,7 @@ public class ShotStatsFragment extends BaseFragment {
             getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    mCalibrateBtn.setVisibility(View.VISIBLE);
+                    mCalibrateCenBtn.setVisibility(View.VISIBLE);
                     mCalibratePB.setVisibility(View.GONE);
                     mCalibrateBtn.setEnabled(true);
                 }
