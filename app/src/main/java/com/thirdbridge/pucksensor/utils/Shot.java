@@ -14,6 +14,7 @@ import java.util.Calendar;
 public class Shot {
     private static final int MAX_DATA = 1360;
     private static final int MAX_DRAFT_DATA = 108;
+    private static final int DELTA = 2; // Data display before and after the peak.
 
     private Point3D[] mAccDatas;
     private double[] mRotDatas;
@@ -28,6 +29,7 @@ public class Shot {
     private boolean mDraft = false;
 
     private int mMax = 0;
+    private int mMin = 0;
 
     public Shot(Point3D[] acceleration, double[] rotation, User user) {
         mUser = user;
@@ -77,15 +79,27 @@ public class Shot {
     }
 
     public Point3D[] getAccelerationsXYZ() {
-        return mAccDatas;
+        Point3D[] retValue = new Point3D[mMax-mMin];
+        for(int i=0; i<mMax-mMin; i++) {
+            retValue[i] = mAccDatas[mMin+i];
+        }
+        return retValue;
     }
 
     public double[] getAccelerations() {
-        return mAccTotal;
+        double[] retValue = new double[mMax-mMin];
+        for(int i=0; i<mMax-mMin; i++) {
+            retValue[i] = mAccTotal[mMin+i];
+        }
+        return retValue;
     }
 
     public double[] getRotations() {
-        return mRotDatas;
+        double[] retValue = new double[mMax-mMin];
+        for(int i=0; i<mMax-mMin; i++) {
+            retValue[i] = mRotDatas[mMin+i];
+        }
+        return retValue;
     }
 
     public void setRotation(double data, int id) {
@@ -128,19 +142,25 @@ public class Shot {
     }
 
     /**
-     * Update the maximum value to get only the first peak.
+     * Update the maximum value and the minimal one to get only the first peak.
      * IMPORTANT: Call this function one all the entry are there.
      */
     public void analyze(int threshold) {
         boolean peak = false;
         boolean direction;
         double previousValue = 0;
-        int max = 0;
+        int max = mMax;
+        int min = mMin;
+        double noise = 0.2;
         boolean noreturn = false;
+        boolean minStart = false;
 
 
         for (int i=0; i<mAccTotal.length;i++) {
-
+            if (mAccTotal[i] >= (double) noise && !minStart) {
+                minStart = true;
+                min= Math.max(i-DELTA, 0);
+            }
             // Find threshold peak
             if (mAccTotal[i] >= (double) threshold && !peak) {
                 peak = true;
@@ -158,18 +178,19 @@ public class Shot {
                 noreturn = true;
             }
 
-            if (peak && direction && noreturn && mAccTotal[i]<=(double)threshold/4) {
-                max = i-1;
+            if (noreturn && mAccTotal[i]<=(double)threshold/4) {
+                max = Math.min(i+DELTA,mAccTotal.length);
                 break;
             }
 
             previousValue = mAccTotal[i];
         }
         mMax = max;
+        mMin = min;
     }
 
-    public int getMax() {
-        return mMax;
+    public int getLength() {
+        return mMax-mMin;
     }
 
     public static int getMaxData() {

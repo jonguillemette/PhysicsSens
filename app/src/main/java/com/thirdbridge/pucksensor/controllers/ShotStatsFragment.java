@@ -1371,7 +1371,7 @@ public class ShotStatsFragment extends BaseFragment {
             boolean newSetRequired = true;
 
             mPuckSpeedXYZ = 0f;
-            for (int i = 0; i < mRecent[idData.get(id)].getMax(); i++) {
+            for (int i = 0; i < mRecent[idData.get(id)].getLength(); i++) {
                 mTimeStep = mRecent[idData.get(id)].isDraft() ? (float) DRAFT_STAMP : (float) STAMP;
 
                 if (mRecent[idData.get(id)].isCooked()) {
