@@ -10,7 +10,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/shot_image"
+        android:id="@+id/shot_title"
         android:layout_gravity="left|center_vertical"
         android:text="Type of shot: "
         android:layout_weight="0"
@@ -32,7 +32,7 @@
     <Button
         android:layout_width="@dimen/connect_button_width"
         android:layout_height="@dimen/connect_button_height"
-        android:id="@+id/btnSelect"
+        android:id="@+id/btn_select"
         android:layout_gravity="center_vertical"
         android:layout_marginTop="@dimen/connect_button_vertical_margin"
         android:layout_marginBottom="@dimen/connect_button_vertical_margin"

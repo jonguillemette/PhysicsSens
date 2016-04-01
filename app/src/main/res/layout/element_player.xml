@@ -10,7 +10,7 @@
     <ImageView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/device_image"
+        android:id="@+id/player_image"
         android:layout_gravity="left|center_vertical"
         android:layout_weight="0"
         android:contentDescription="image"
