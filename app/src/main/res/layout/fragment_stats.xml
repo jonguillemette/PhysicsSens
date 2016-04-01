@@ -141,6 +141,17 @@
                     android:layout_height="wrap_content"
                     android:checked="false" />
 
+                <CheckBox
+                    android:id="@+id/recent_result5"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="false" />
+
+                <Button
+                    android:id="@+id/compare_btn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
             </LinearLayout>
 
             <LinearLayout

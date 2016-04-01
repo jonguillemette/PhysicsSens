@@ -65,7 +65,7 @@ public class ShotStatsFragment extends BaseFragment {
     private static final String CHECK_ROTATION = "CHECK_ROTATION";
 
     private static final int[] GRAPH_COLOR = {Color.BLUE, Color.RED};
-    private static final int[] RECENT_NAME = {R.string.recent_shot1, R.string.recent_shot2, R.string.recent_shot3, R.string.recent_shot4};
+    private static final int[] RECENT_NAME = {R.string.recent_shot1, R.string.recent_shot2, R.string.recent_shot3, R.string.recent_shot4, R.string.recent_shot5};
 
     // PROTOCOL CMD
     private static final int SETTINGS_READ = 2;
@@ -118,6 +118,7 @@ public class ShotStatsFragment extends BaseFragment {
 
     // Check management
     private CheckBox[] mRecentResult;
+    private Button mComparePlusBtn;
     private int mFirstCheck = 0;
     private int mSecondCheck = -1;
     private boolean mCanTouchThis = true;
@@ -126,7 +127,7 @@ public class ShotStatsFragment extends BaseFragment {
     private double[] mAccelCircularBuffer = new double[Shot.getMaxDraftData()];
     private double[] mRotCircularBuffer = new double[Shot.getMaxDraftData()];
     private int mCircularIndex = 0;
-    private Shot[] mRecent = new Shot[4];
+    private Shot[] mRecent = new Shot[5]; // Actual, previous shot, before preevious shot, before before previous shot, comparison
     private int mRealIndex;
     private Shot mReal;
     private long mTime = 0;
@@ -459,11 +460,16 @@ public class ShotStatsFragment extends BaseFragment {
         mSpeedLayout = (LinearLayout) v.findViewById(R.id.speed_layout);
         mAngularLayout = (LinearLayout) v.findViewById(R.id.angular_layout);
 
-        mRecentResult = new CheckBox[4];
+        mRecentResult = new CheckBox[5];
         mRecentResult[0] = (CheckBox) v.findViewById(R.id.recent_result1);
         mRecentResult[1] = (CheckBox) v.findViewById(R.id.recent_result2);
         mRecentResult[2] = (CheckBox) v.findViewById(R.id.recent_result3);
         mRecentResult[3] = (CheckBox) v.findViewById(R.id.recent_result4);
+        mRecentResult[4] = (CheckBox) v.findViewById(R.id.recent_result5);
+
+        mComparePlusBtn = (Button) v.findViewById(R.id.compare_btn);
+        mComparePlusBtn.setText(R.string.compare_title);
+        mComparePlusBtn.setVisibility(View.GONE);
 
         for (int i=0; i<mRecentResult.length; i++) {
             mRecentResult[i].setText(RECENT_NAME[i]);
@@ -498,6 +504,28 @@ public class ShotStatsFragment extends BaseFragment {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (mCanTouchThis)
                     checkRecent(3, isChecked);
+            }
+        });
+
+        mRecentResult[4].setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (mCanTouchThis) {
+                    checkRecent(4, isChecked);
+                    if (isChecked) {
+                        openComparisonMenu(true);
+                        mComparePlusBtn.setVisibility(View.VISIBLE);
+                    } else {
+                        mComparePlusBtn.setVisibility(View.GONE);
+                    }
+                }
+            }
+        });
+
+        mComparePlusBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                openComparisonMenu(true);
             }
         });
 
@@ -664,6 +692,9 @@ public class ShotStatsFragment extends BaseFragment {
                 }
 
                 for (int i=0; i<id.size(); i++) {
+                    if (mRecent[id.get(i)] == null) {
+                        continue;
+                    }
                     Pair<String, String> saveData = mRecent[id.get(i)].packageFormCSV();
                     File file = new File(root, saveData.first);
                     IO.saveFile(saveData.second, file);
@@ -742,6 +773,7 @@ public class ShotStatsFragment extends BaseFragment {
         mRecentResult[1].setChecked(false);
         mRecentResult[2].setChecked(false);
         mRecentResult[3].setChecked(false);
+        mRecentResult[4].setChecked(false);
 
         if (mFirstCheck != -1) {
             mRecentResult[mFirstCheck].setChecked(true);
@@ -1372,7 +1404,10 @@ public class ShotStatsFragment extends BaseFragment {
 
             mPuckSpeedXYZ = 0f;
             for (int i = 0; i < mRecent[idData.get(id)].getLength(); i++) {
-                mTimeStep = mRecent[idData.get(id)].isDraft() ? (float) DRAFT_STAMP : (float) STAMP;
+                if (mRecent[idData.get(id)] == null) {
+                    continue;
+                }
+                 mTimeStep = mRecent[idData.get(id)].isDraft() ? (float) DRAFT_STAMP : (float) STAMP;
 
                 if (mRecent[idData.get(id)].isCooked()) {
                     addAccelEntry(i * mTimeStep + "", i, (float) mRecent[idData.get(id)].getAccelerations()[i], newSetRequired, idData.get(id), id);
@@ -1405,6 +1440,9 @@ public class ShotStatsFragment extends BaseFragment {
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                if (mRecent[0] == null) {
+                    return;
+                }
                 if (mRecent[0].isDraft()) {
                     mAccelProgress.setVisibility(View.VISIBLE);
                     mSpeedProgress.setVisibility(View.VISIBLE);
@@ -1496,5 +1534,14 @@ public class ShotStatsFragment extends BaseFragment {
         value |= (values[19] & 0xFF) << 8;
         retValue[2] = ((double)value * 2000)/32767;
         return retValue;
+    }
+
+    private void openComparisonMenu(boolean open) {
+        if (open) {
+
+
+        } else {
+
+        }
     }
 }

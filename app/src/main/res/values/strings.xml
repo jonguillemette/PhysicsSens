@@ -3,6 +3,10 @@
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
 
+    <!-- Generic -->
+    <string name="cancel">Cancel</string>
+    <string name="back">Back</string>
+
     <!-- Home Screen -->
     <string name="home">Home</string>
     <string name="home_instruction_1">Start by selecting a user.</string>
@@ -20,7 +24,7 @@
     <string name="newUser">New User</string>
     <string name="firstNameHint">First Name</string>
     <string name="lastNameHint">Last Name</string>
-    <string name="cancel">Cancel</string>
+
 
     <!-- History Screen -->
     <string name="startTest">Start Test</string>
@@ -49,10 +53,21 @@
     <string name="show_speed">Show speed</string>
     <string name="show_angular">Show angular speed</string>
     <string name="peak_acc">(DEV) Peak acceleration threshold: </string>
-    <string name="recent_shot1">Last shot: </string>
-    <string name="recent_shot2">Previous shot 1: </string>
-    <string name="recent_shot3">Previous shot 2: </string>
-    <string name="recent_shot4">Previous shot 3: </string>
+    <string name="recent_shot1">Last shot </string>
+    <string name="recent_shot2">Previous shot 1 </string>
+    <string name="recent_shot3">Previous shot 2 </string>
+    <string name="recent_shot4">Previous shot 3 </string>
+    <string name="recent_shot5">Compare with: </string>
+    <!-- Last recent shot is actually another one from a database -->
+    <string name="compare_title">More comparison</string>
+
+
+    <!-- Comparison menu -->
+    <string name="compare_who">Compare with who?</string>
+    <string name="compare_shot">Compare which shot?</string>
+    <string name="compare_select">Compare!</string>
+
+
 
 
     <!-- Acceleration Chart -->
