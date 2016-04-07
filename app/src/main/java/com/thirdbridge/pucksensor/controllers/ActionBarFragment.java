@@ -67,8 +67,9 @@ public class ActionBarFragment extends BaseFragment {
         mListImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                updateGui();
-                getController().gotoHistory();
+                //TODO Update this
+                //updateGui();
+                //getController().gotoHistory();
             }
         });
 
