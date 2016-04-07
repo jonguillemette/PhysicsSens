@@ -1,7 +1,6 @@
 package com.thirdbridge.pucksensor.controllers;
 
 import android.content.Context;
-import android.support.v4.content.ContextCompat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -46,8 +45,8 @@ class ComparisonShotAdapter extends BaseAdapter {
             vg = (ViewGroup) convertView;
         } else {
             vg = (ViewGroup) mInflater.inflate(R.layout.element_shot, null);
-            ((TextView) vg.findViewById(R.id.shot_title)).setText("Type: " + mShotSpecs.get(position).getName() + "\n " + mShotSpecs.get(position).getDescription());
-            String info = "Data: ";
+            ((TextView) vg.findViewById(R.id.shot_title)).setText(mShotSpecs.get(position).getName() + "\n " + mShotSpecs.get(position).getDescription());
+            String info = "";
             for (int i=0; i<mShotSpecs.get(position).getNumbers().length; i++) {
                 info += mShotSpecs.get(position).getNumbers()[i] + " " + mShotSpecs.get(position).getUnits()[i];
                 if (i < mShotSpecs.get(position).getNumbers().length-1) {

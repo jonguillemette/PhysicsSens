@@ -10,11 +10,13 @@ public class Player {
     private Bitmap mFace;
     private String mName;
     private String mDescription;
+    private String mId;
 
-    public Player(Bitmap face, String name, String description) {
+    public Player(Bitmap face, String name, String description, String id) {
         mFace = face;
         mName = name;
         mDescription = description;
+        mId = id;
     }
 
 
@@ -30,7 +32,7 @@ public class Player {
         return mName;
     }
 
-    public void getName(String mName) {
+    public void setName(String mName) {
         this.mName = mName;
     }
 
@@ -38,7 +40,15 @@ public class Player {
         return mDescription;
     }
 
-    public void getDescription(String mDescription) {
+    public void setDescription(String mDescription) {
         this.mDescription = mDescription;
+    }
+
+    public void setId(String mId) {
+        this.mId = mId;
+    }
+
+    public String getId() {
+        return this.mId;
     }
 }

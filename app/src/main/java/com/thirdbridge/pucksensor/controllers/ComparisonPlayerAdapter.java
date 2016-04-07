@@ -1,7 +1,9 @@
 package com.thirdbridge.pucksensor.controllers;
 
 import android.content.Context;
+import android.graphics.Typeface;
 import android.support.v4.content.ContextCompat;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,40 +22,42 @@ import java.util.List;
 class ComparisonPlayerAdapter extends BaseAdapter {
     private List<Player> mPlayers;
     private LayoutInflater mInflater;
-    private Context mContext;
 
     public ComparisonPlayerAdapter(Context context, List<Player> players) {
         mInflater = LayoutInflater.from(context);
         mPlayers = players;
-        mContext = context;
     }
 
+    @Override
     public int getCount() {
         return mPlayers.size();
     }
 
+    @Override
     public Object getItem(int position) {
         return mPlayers.get(position);
     }
 
+    @Override
     public long getItemId(int position) {
         return position;
     }
 
+    @Override
     public View getView(int position, View convertView, ViewGroup parent) {
-        ViewGroup vg;
+        final ViewGroup vg;
 
         if (convertView != null) {
-            vg = (ViewGroup) convertView;
+            vg = (ViewGroup) convertView.getTag();
         } else {
             vg = (ViewGroup) mInflater.inflate(R.layout.element_player, null);
-            ((TextView) vg.findViewById(R.id.descr)).setText("Name: " + mPlayers.get(position).getName() + "\n " + mPlayers.get(position).getDescription());
-            ((ImageView) vg.findViewById(R.id.player_image)).setImageBitmap(mPlayers.get(position).getFace());
-
-            vg.setTag(position);
+            vg.setTag(vg);
         }
+        ((TextView) vg.findViewById(R.id.name)).setText(mPlayers.get(position).getName());
+        ((TextView) vg.findViewById(R.id.name)).setTypeface(Typeface.DEFAULT, Typeface.BOLD_ITALIC);
+        ((TextView) vg.findViewById(R.id.descr)).setText(" " + mPlayers.get(position).getDescription());
+        ((ImageView) vg.findViewById(R.id.player_image)).setImageBitmap(mPlayers.get(position).getFace());
 
         return vg;
     }
-
 }

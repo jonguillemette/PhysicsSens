@@ -7,43 +7,38 @@ package com.thirdbridge.pucksensor.models;
 public class User {
     public static final String SEP = ":SEP:";
 
-    private String mFirstName;
-    private String mLastName;
+    private String mName;
     private String mId;
 
     public User(String id, String firstName, String lastName){
         this.mId = id.trim();
-        this.mFirstName = firstName.trim();
-        this.mLastName = lastName.trim();
+        this.mName = firstName.trim() + " " + lastName.trim();
+    }
+
+    public User(String id, String fullName){
+        this.mId = id.trim();
+        this.mName = fullName.trim();
     }
 
     public String getId() {
         return mId;
     }
 
-    public String getFirstName() {
-        return mFirstName;
+    public String getName() {
+        return mName;
     }
 
-    public void setFirstName(String mFirstName) {
-        this.mFirstName = mFirstName;
-    }
-
-    public String getLastName() {
-        return mLastName;
-    }
-
-    public void setLastName(String mLastName) {
-        this.mLastName = mLastName;
+    public void setName(String name) {
+        this.mName = name;
     }
 
     public String packageForm() {
-        return mFirstName + SEP + mLastName + SEP + mId;
+        return mName + SEP + mId;
     }
 
     public static User depackageForm(String data) {
         String[] elements = data.split(SEP);
-        return new User(elements[2], elements[0], elements[1]);
+        return new User(elements[1], elements[0]);
     }
 
 }

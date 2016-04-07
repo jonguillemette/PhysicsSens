@@ -1,8 +1,10 @@
 package com.thirdbridge.pucksensor.controllers;
 
-
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
@@ -12,13 +14,20 @@ import android.support.v4.content.ContextCompat;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Pair;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.PopupWindow;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
@@ -34,6 +43,8 @@ import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.google.gson.Gson;
 import com.thirdbridge.pucksensor.R;
+import com.thirdbridge.pucksensor.models.Player;
+import com.thirdbridge.pucksensor.models.ShotSpecification;
 import com.thirdbridge.pucksensor.models.User;
 import com.thirdbridge.pucksensor.utils.BaseFragment;
 import com.thirdbridge.pucksensor.utils.Calibrate;
@@ -45,6 +56,7 @@ import com.thirdbridge.pucksensor.utils.Shot;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Created by Christophe on 2015-10-14.
@@ -105,6 +117,12 @@ public class ShotStatsFragment extends BaseFragment {
 
     private Thread mBackgroundThread;
     private boolean mPause = true;
+
+
+    // Player comparison management
+    private List<Player> mPlayers = new ArrayList<Player>();
+    private List<ShotSpecification> mShotSpecs = new ArrayList<ShotSpecification>();
+    private int mPlayerPosition;
 
     // Menu
     private CheckBox mAccCheckB;
@@ -186,6 +204,10 @@ public class ShotStatsFragment extends BaseFragment {
             onCharacteristicChanged(values);
         }
     };
+
+    // Popup for player and shot specification
+    private PopupWindow mPlayerPopup;
+    private PopupWindow mShotSpecPopup;
 
     // Thread running
     Runnable mRun = new Runnable() {
@@ -511,12 +533,13 @@ public class ShotStatsFragment extends BaseFragment {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (mCanTouchThis) {
-                    checkRecent(4, isChecked);
                     if (isChecked) {
-                        openComparisonMenu(true);
+                        openComparisonMenu(true, true, container, null);
                         mComparePlusBtn.setVisibility(View.VISIBLE);
                     } else {
                         mComparePlusBtn.setVisibility(View.GONE);
+                        checkRecent(4, isChecked);
+                        mRecentResult[4].setText(RECENT_NAME[4]);
                     }
                 }
             }
@@ -525,9 +548,13 @@ public class ShotStatsFragment extends BaseFragment {
         mComparePlusBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                openComparisonMenu(true);
+                openComparisonMenu(true, true, container, null);
             }
         });
+
+        // Pop-up management
+        mPlayerPopup = inflatePlayerPopup(container,  mRecentResult[4]);
+        mShotSpecPopup = inflateShotPopup(container,  mRecentResult[4]);
 
 		//Accel chart
 		mAccelChart = (LineChart) v.findViewById(R.id.accel_stats_chart);
@@ -756,8 +783,10 @@ public class ShotStatsFragment extends BaseFragment {
             } else if (mSecondCheck == -1) {
                 mSecondCheck = id;
             } else {
-                mFirstCheck = mSecondCheck;
-                mSecondCheck = id;
+                if (mSecondCheck != id) {
+                    mFirstCheck = mSecondCheck;
+                    mSecondCheck = id;
+                }
             }
         } else {
             if (mFirstCheck == id) {
@@ -1266,7 +1295,7 @@ public class ShotStatsFragment extends BaseFragment {
         for (int i=0; i<value.length; i++) {
             val += value[i] + ", ";
         }
-        Log.i(TAG, "Value: " + val);
+        //Log.i(TAG, "Value: " + val);
 	}
 
     /**
@@ -1536,12 +1565,170 @@ public class ShotStatsFragment extends BaseFragment {
         return retValue;
     }
 
-    private void openComparisonMenu(boolean open) {
+    private void openComparisonMenu(boolean open, boolean player, ViewGroup container, String id) {
         if (open) {
-
-
+            if (player) {
+                setupPlayer((ListView) mPlayerPopup.getContentView().findViewById(R.id.player_list), container);
+                mPlayerPopup.setFocusable(true);
+                mPlayerPopup.update();
+                mPlayerPopup.showAtLocation(container, Gravity.TOP, 0, 200);
+            } else {
+                setupShot((ListView) mShotSpecPopup.getContentView().findViewById(R.id.shot_list), id);
+                mShotSpecPopup.setFocusable(true);
+                mShotSpecPopup.update();
+                mShotSpecPopup.showAtLocation(container, Gravity.TOP, 0, 200);
+            }
         } else {
-
+            if (player) {
+                mPlayerPopup.dismiss();
+            } else {
+                mShotSpecPopup.dismiss();
+            }
         }
     }
+
+    private void setupShot(ListView listUI, String id) {
+        //TODO query on the internet the shot of the player ID
+        mShotSpecs.clear();
+        double[] datas = {20, 245.3, 200.3};
+        double[] datas2 = {13, 255.3, 210.3};
+        String[] units = {"IntellieSportRank", "g", "m/s"};
+
+        mShotSpecs.add(new ShotSpecification("Best rank", "Shot on 2016/04/07", datas, units, "WERTYU"));
+        mShotSpecs.add(new ShotSpecification("Best speed", "Shot on 2016/04/06", datas2, units, "WERTYUI"));
+
+
+        ComparisonShotAdapter adapter = new ComparisonShotAdapter(getContext(), mShotSpecs);
+        listUI.setAdapter(adapter);
+
+        listUI.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                openComparisonMenu(false, false, null, null);
+                //TODO Retrieve dot from DB
+                Log.i(TAG, mShotSpecs.get(position).getName());
+
+                User dataBaseUser = new User(mPlayers.get(mPlayerPosition).getId(), mPlayers.get(mPlayerPosition).getName());
+                Shot databaseShot = new Shot(Shot.getMaxData(), dataBaseUser, false);
+                for (int i=0; i<Shot.getMaxData(); i++) {
+                    if (i<Shot.getMaxData()/4) {
+                        databaseShot.setAccelerationXYZ(i, i);
+                    } else if (i<Shot.getMaxData()/2) {
+                        databaseShot.setAccelerationXYZ(Shot.getMaxData()/2-i, i);
+                    } else {
+                        databaseShot.setAccelerationXYZ(i, i);
+                    }
+                    databaseShot.setRotation(i%20, i);
+
+                }
+                databaseShot.analyze(10); // TODO Need to check validity over player
+                mRecent[4] = databaseShot;
+                mRecentResult[4].setText(RECENT_NAME[4]);
+                mRecentResult[4].setText(mRecentResult[4].getText() + mShotSpecs.get(position).getName() + " of " + mPlayers.get(mPlayerPosition).getName());
+
+                checkRecent(4, true);
+            }
+        });
+    }
+
+    private void setupPlayer(ListView listUI, final ViewGroup container) {
+        //TODO Query on the internet the list regarding to his mUser.
+        mPlayers.clear();
+        mPlayers.add(new Player(BitmapFactory.decodeResource(getResources(), R.drawable.pksubban), "P. K. Subban", "Montreal Canadiens Defenseman", "QWT"));
+        mPlayers.add(new Player(BitmapFactory.decodeResource(getResources(), R.drawable.brendangallagher), "Brendan Gallagher", "Montreal Canadiens Right wing", "QWT"));
+        mPlayers.add(new Player(BitmapFactory.decodeResource(getResources(), R.drawable.maxpacioretty), "Max Pacioretty", "Montreal Canadiens Left wing", "QWT"));
+        mPlayers.add(new Player(BitmapFactory.decodeResource(getResources(), R.drawable.alexgalchenyuk), "Alex Galchenyuk", "Montreal Canadiens Centerman", "QWT"));
+        mPlayers.add(new Player(BitmapFactory.decodeResource(getResources(), R.drawable.daniercarr), "Daniel Carr", "Montreal Canadiens Left wing", "QWT"));
+        mPlayers.add(new Player(BitmapFactory.decodeResource(getResources(), R.drawable.andreikov), "Andrei Markov", "Montreal Canadiens Defenseman", "QWT"));
+        mPlayers.add(new Player(BitmapFactory.decodeResource(getResources(), R.drawable.nathanbeaulieu), "Nathan Beaulieu", "Montreal Canadiens Defenseman", "QWT"));
+        mPlayers.add(new Player(BitmapFactory.decodeResource(getResources(), R.drawable.daviddesharnais), "David Desharnais", "Montreal Canadiens Centerman", "QWT"));
+        mPlayers.add(new Player(BitmapFactory.decodeResource(getResources(), R.drawable.tomasplekanec), "Tomáš Plekanec", "Montreal Canadiens Centerman", "QWT"));
+        ComparisonPlayerAdapter adapter = new ComparisonPlayerAdapter(getContext(), mPlayers);
+        listUI.setAdapter(adapter);
+
+        listUI.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                //TODO Query on this player:
+                Log.i(TAG, "Player: " + mPlayers.get(position).getName());
+                openComparisonMenu(false, true, null, null);
+                openComparisonMenu(true, false, container, mPlayers.get(position).getId());
+                mPlayerPosition = position;
+            }
+        });
+    }
+
+    /**
+     * Setup the player pop-up WITHOUT any listview
+     * @param container
+     * @return
+     */
+    private PopupWindow inflatePlayerPopup(ViewGroup container, final CheckBox checkBox){
+
+        LayoutInflater layoutInflater
+                = (LayoutInflater)getController().getBaseContext()
+                .getSystemService(getController().LAYOUT_INFLATER_SERVICE);
+
+        final View popupView = layoutInflater.inflate(R.layout.select_player_popup, container, false);
+
+        Button cancelBtn = (Button) popupView.findViewById(R.id.cancel_button);
+
+        final PopupWindow popupWindow = new PopupWindow(
+                popupView,
+                500,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+
+        cancelBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                popupWindow.dismiss();
+                checkBox.setChecked(false); //Uncheck
+            }
+        });
+
+        return popupWindow;
+    }
+
+    /**
+     * Setup the shot specification pop-up WITHOUT any listview
+     * @param container
+     * @return
+     */
+    private PopupWindow inflateShotPopup(final ViewGroup container, final CheckBox checkBox){
+
+        LayoutInflater layoutInflater
+                = (LayoutInflater)getController().getBaseContext()
+                .getSystemService(getController().LAYOUT_INFLATER_SERVICE);
+
+        final View popupView = layoutInflater.inflate(R.layout.select_shot_popup, container, false);
+
+        Button cancelBtn = (Button) popupView.findViewById(R.id.cancel_button);
+        Button backBtn = (Button) popupView.findViewById(R.id.back_button);
+
+        final PopupWindow popupWindow = new PopupWindow(
+                popupView,
+                500,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+
+        cancelBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                popupWindow.dismiss();
+                checkBox.setChecked(false);
+            }
+        });
+
+        backBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                popupWindow.dismiss();
+                openComparisonMenu(true, true, container, null);
+            }
+        });
+
+        return popupWindow;
+    }
+
+
+
 }

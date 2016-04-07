@@ -125,7 +125,7 @@ public class Shot {
 
     public Pair<String,String> packageFormCSV() {
         // Create a form that is easily parceable
-        String text = "Player, " + mUser.getFirstName() + "," + mUser.getLastName() + "," + mUser.getId() + "\n";
+        String text = "Player, " + mUser.getName() + "," + mUser.getId() + "\n";
         text += "Max,\n";
         text += "Acceleration, " + mMaxAccel + " g\n";
         text += "Speed, " + mMaxSpeed + " m/s\n";

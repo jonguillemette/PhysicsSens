@@ -167,7 +167,7 @@ public class HomeFragment extends BaseFragment {
             @Override
             public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
                 if (mUsers.get(position) != null) {
-                    getController().setCurrentUsername(mUsers.get(position).getFirstName() + " " + mUsers.get(position).getLastName());
+                    getController().setCurrentUsername(mUsers.get(position).getName());
                     SharedPreferences.Editor editor = mSettings.edit();
                     editor.putString(PREF_USER, mUsers.get(position).getId());
                     editor.commit();
@@ -319,7 +319,7 @@ public class HomeFragment extends BaseFragment {
 
             CheckedTextView checkedTextView = (CheckedTextView) spinnerView.findViewById(R.id.spinner_dropdown_item);
 
-            checkedTextView.setText(userList.get(position).getFirstName() + " " + userList.get(position).getLastName());
+            checkedTextView.setText(userList.get(position).getName());
 
             return spinnerView;
         }

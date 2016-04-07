@@ -11,6 +11,7 @@ public class ShotSpecification {
     private String mDescription;
     private double[] mNumbers;
     private String[] mUnits;
+    private String mId;
 
     /**
      * Build a shot specification.
@@ -19,12 +20,14 @@ public class ShotSpecification {
      * @param description
      * @param numbers
      * @param units
+     * @param id
      */
-    public ShotSpecification(String name, String description, double[] numbers, String[] units) {
+    public ShotSpecification(String name, String description, double[] numbers, String[] units, String id) {
         mName = name;
         mDescription = description;
         mNumbers = numbers;
         mUnits = units;
+        mId = id;
     }
 
 
