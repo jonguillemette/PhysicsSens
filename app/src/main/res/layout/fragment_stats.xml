@@ -288,7 +288,7 @@
                                 android:layout_height="14dp"
                                 android:layout_marginStart="10dp"
                                 android:layout_gravity="center_vertical"
-                                android:background="@color/primary_blue" />
+                                android:background="@color/primary_green" />
 
                         </LinearLayout>
 
@@ -306,7 +306,7 @@
                             android:layout_gravity="end"
                             android:layout_marginBottom="@dimen/stats_bottom_margin"
                             android:layout_marginEnd="@dimen/stats_right_margin"
-                            android:textColor="@color/primary_blue"
+                            android:textColor="@color/primary_green"
                             android:textSize="@dimen/stats_text_size" />
 
                     </LinearLayout>
@@ -407,7 +407,7 @@
                                 android:layout_height="14dp"
                                 android:layout_marginStart="10dp"
                                 android:layout_gravity="center_vertical"
-                                android:background="@color/primary_blue" />
+                                android:background="@color/primary_green" />
 
                         </LinearLayout>
 
@@ -425,7 +425,7 @@
                             android:layout_gravity="end"
                             android:layout_marginBottom="@dimen/stats_bottom_margin"
                             android:layout_marginEnd="@dimen/stats_right_margin"
-                            android:textColor="@color/primary_blue"
+                            android:textColor="@color/primary_green"
                             android:textSize="@dimen/stats_text_size" />
 
                     </LinearLayout>
@@ -524,7 +524,7 @@
                         android:layout_gravity="end"
                         android:layout_marginBottom="@dimen/stats_bottom_margin"
                         android:layout_marginEnd="@dimen/stats_right_margin"
-                        android:textColor="@color/primary_blue"
+                        android:textColor="@color/primary_green"
                         android:textSize="@dimen/stats_text_size" />
 
                 </LinearLayout>
