@@ -495,6 +495,7 @@ public class ShotStatsFragment extends BaseFragment {
 
         for (int i=0; i<mRecentResult.length; i++) {
             mRecentResult[i].setText(RECENT_NAME[i]);
+            mRecentResult[i].setVisibility(View.GONE);
         }
 
         mRecentResult[0].setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -544,6 +545,9 @@ public class ShotStatsFragment extends BaseFragment {
                 }
             }
         });
+
+        mStartStopButton.setVisibility(View.VISIBLE);
+        mSaveButton.setVisibility(View.GONE);
 
         mComparePlusBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -639,6 +643,11 @@ public class ShotStatsFragment extends BaseFragment {
             public void onClick(View view) {
 
                 if (DEBUG || mSensorReady) {
+                    mStartStopButton.setVisibility(View.GONE);
+                    mSaveButton.setVisibility(View.VISIBLE);
+                    for (int i=0; i<mRecentResult.length; i++) {
+                        mRecentResult[i].setVisibility(View.VISIBLE);
+                    }
                     mCalibrateBtn.setVisibility(View.VISIBLE);
                     mSaveButton.setBackground(ContextCompat.getDrawable(getContext(), R.drawable.small_button_shadow));
 
@@ -731,8 +740,6 @@ public class ShotStatsFragment extends BaseFragment {
                     intent.setData(Uri.fromFile(file));
                     getActivity().sendBroadcast(intent);
                 }
-
-
             }
         });
 
@@ -859,7 +866,7 @@ public class ShotStatsFragment extends BaseFragment {
             public void run() {
                 if (mStartStopButton != null && mSaveButton != null) {
                     mStartStopButton.setVisibility(View.VISIBLE);
-                    mSaveButton.setVisibility(View.VISIBLE);
+                    mSaveButton.setVisibility(View.GONE);
                 }
             }
         });
@@ -891,7 +898,6 @@ public class ShotStatsFragment extends BaseFragment {
 			mTopAccelXYZTextView.setText(MathHelper.round(mAccelMax[0], 2) + "g and " + MathHelper.round(mAccelMax[1], 2) + "g");
             mAccelChart.fitScreen();
             mAccelChart.notifyDataSetChanged();
-
 		}
 
 		if (mSpeedChart != null) {
