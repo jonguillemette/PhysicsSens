@@ -15,22 +15,13 @@
         android:padding="30dp"
         android:background="?attr/selectableItemBackground"/>
 
-    <ImageButton
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/action_bar_list_image_button"
-        android:src="@drawable/graph_icon_small"
-        android:layout_toEndOf="@id/action_bar_home_image_button"
-        android:layout_centerVertical="true"
-        android:padding="30dp"
-        android:background="?attr/selectableItemBackground"/>
 
     <ImageButton
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/action_bar_battery"
         android:src="@drawable/stat_sys_battery_0"
-        android:layout_toEndOf="@id/action_bar_list_image_button"
+        android:layout_toEndOf="@id/action_bar_home_image_button"
         android:layout_centerVertical="true"
         android:padding="30dp"
         android:background="?attr/selectableItemBackground"/>
