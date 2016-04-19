@@ -21,7 +21,6 @@ public class ActionBarFragment extends BaseFragment {
 
     private ImageButton mBleImageButton;
     private ImageButton mHomeImageButton;
-    private ImageButton mListImageButton;
     private static ImageButton mBatteryImageButton;
     private TextView mActionBarTextView;
     private TextView mCurrentUserTextView;
@@ -50,7 +49,6 @@ public class ActionBarFragment extends BaseFragment {
 
         mHomeImageButton = (ImageButton) v.findViewById(R.id.action_bar_home_image_button);
         mBleImageButton = (ImageButton) v.findViewById(R.id.action_bar_bte_image_button);
-        mListImageButton = (ImageButton) v.findViewById(R.id.action_bar_list_image_button);
         mActionBarTextView = (TextView) v.findViewById(R.id.action_bar_textview);
         mCurrentUserTextView = (TextView) v.findViewById(R.id.action_bar_current_username);
         mCurrentBleStatusTextView = (TextView) v.findViewById(R.id.action_bar_current_ble_status);
@@ -64,14 +62,6 @@ public class ActionBarFragment extends BaseFragment {
             }
         });
 
-        mListImageButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                //TODO Update this
-                //updateGui();
-                //getController().gotoHistory();
-            }
-        });
 
         mBleImageButton.setOnClickListener(new View.OnClickListener() {
             @Override

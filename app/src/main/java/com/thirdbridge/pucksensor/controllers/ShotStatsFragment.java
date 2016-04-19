@@ -101,6 +101,7 @@ public class ShotStatsFragment extends BaseFragment {
     SharedPreferences mSettings;
 
 	private boolean mTestRunning = false;
+    private boolean mAutoStart = false;
 	private User mUser;
 	private boolean mPreviewTest = false;
     private boolean mProgressChange = true;
@@ -214,6 +215,14 @@ public class ShotStatsFragment extends BaseFragment {
         @Override
         public void run() {
             while(true) {
+                if (!mTestRunning && mAutoStart) {
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            start();
+                        }
+                    });
+                }
                 if (mSensorReady != mSensorReadyChange) {
                     if (HomeFragment.getInstance().IsBluetoothReady()) {
                         mSensorReady = true;
@@ -641,71 +650,8 @@ public class ShotStatsFragment extends BaseFragment {
 		mStartStopButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                start();
 
-                if (DEBUG || mSensorReady) {
-                    mStartStopButton.setVisibility(View.GONE);
-                    mSaveButton.setVisibility(View.VISIBLE);
-                    for (int i=0; i<mRecentResult.length; i++) {
-                        mRecentResult[i].setVisibility(View.VISIBLE);
-                    }
-                    mCalibrateBtn.setVisibility(View.VISIBLE);
-                    mSaveButton.setBackground(ContextCompat.getDrawable(getContext(), R.drawable.small_button_shadow));
-
-                    if (mTestRunning) {
-                        mTestRunning = false;
-                        mStartStopButton.setText(getString(R.string.reset));
-                        mStartStopButton.setCompoundDrawablesWithIntrinsicBounds(R.drawable.reset, 0, 0, 0);
-                        populateStatisticsFields();
-                    } else if (mTestWasRun) {
-                        mTestWasRun = false;
-                        getController().reloadShotStatsFragment();
-                        if (!getController().isBleDeviceConnected())
-                            mStartStopButton.setEnabled(false);
-                    } else {
-                        mTestWasRun = true;
-
-                        if (mAccelChart.getLineData() != null) {
-                            mAccelChart.getLineData().clearValues();
-                            mAccelChart.getData().getDataSets().clear();
-                            mAccelChart.getData().getXVals().clear();
-                        }
-                        if (mSpeedChart.getLineData() != null) {
-                            mSpeedChart.getLineData().clearValues();
-                            mSpeedChart.getData().getDataSets().clear();
-                            mSpeedChart.getData().getXVals().clear();
-                        }
-                        if (mRotationChart.getLineData() != null) {
-                            mRotationChart.getLineData().clearValues();
-                            mRotationChart.getData().getDataSets().clear();
-                            mRotationChart.getData().getXVals().clear();
-                        }
-
-                        mAccelChart.clear();
-                        mSpeedChart.clear();
-                        mRotationChart.clear();
-
-
-
-                        setupAccelChart();
-                        setupSpeedChart();
-                        setupRotationChart();
-
-                        mTopAccelXYZTextView.setText("");
-
-                        mTopSpeedXYZTextView.setText("");
-
-                        mTopRotationTextView.setText("");
-
-                        mStartStopButton.setText(getString(R.string.stopTest));
-                        mStartStopButton.setCompoundDrawablesWithIntrinsicBounds(android.R.drawable.ic_delete, 0, 0, 0);
-
-                        mTestRunning = true;
-                        byte[] send = {DATA_READY, 0x00};
-                        try {
-                            HomeFragment.getInstance().writeBLE(send);
-                        } catch (Exception e) {}
-                    }
-                }
             }
         });
 
@@ -1237,6 +1183,7 @@ public class ShotStatsFragment extends BaseFragment {
         double[] accelLow = getAccelLow(value);
         double[] gyro = getGyro(value);
         if (value[0] != SETTINGS_READ) {
+            mAutoStart = true;
             if (value[0] == DATA_DRAFT && mStartCalibration) {
                 mCalibrationValue[0] += (double) (short) value[2];
                 mCalibrationValue[1] += (double) (short) value[4];
@@ -1735,6 +1682,76 @@ public class ShotStatsFragment extends BaseFragment {
         return popupWindow;
     }
 
+    /**
+     * Start the process and initialize graphics.
+     * WARNING: Must be called from a UI thread.
+     */
+    private void start() {
+        if (DEBUG || mSensorReady) {
+            mStartStopButton.setVisibility(View.GONE);
+            mSaveButton.setVisibility(View.VISIBLE);
+            for (int i=0; i<mRecentResult.length; i++) {
+                mRecentResult[i].setVisibility(View.VISIBLE);
+            }
+            mCalibrateBtn.setVisibility(View.VISIBLE);
+            mSaveButton.setBackground(ContextCompat.getDrawable(getContext(), R.drawable.small_button_shadow));
+
+            if (mTestRunning) {
+                mTestRunning = false;
+                mStartStopButton.setText(getString(R.string.reset));
+                mStartStopButton.setCompoundDrawablesWithIntrinsicBounds(R.drawable.reset, 0, 0, 0);
+                populateStatisticsFields();
+            } else if (mTestWasRun) {
+                mTestWasRun = false;
+                getController().reloadShotStatsFragment();
+                if (!getController().isBleDeviceConnected())
+                    mStartStopButton.setEnabled(false);
+            } else {
+                mTestWasRun = true;
+
+                if (mAccelChart.getLineData() != null) {
+                    mAccelChart.getLineData().clearValues();
+                    mAccelChart.getData().getDataSets().clear();
+                    mAccelChart.getData().getXVals().clear();
+                }
+                if (mSpeedChart.getLineData() != null) {
+                    mSpeedChart.getLineData().clearValues();
+                    mSpeedChart.getData().getDataSets().clear();
+                    mSpeedChart.getData().getXVals().clear();
+                }
+                if (mRotationChart.getLineData() != null) {
+                    mRotationChart.getLineData().clearValues();
+                    mRotationChart.getData().getDataSets().clear();
+                    mRotationChart.getData().getXVals().clear();
+                }
+
+                mAccelChart.clear();
+                mSpeedChart.clear();
+                mRotationChart.clear();
+
+
+
+                setupAccelChart();
+                setupSpeedChart();
+                setupRotationChart();
+
+                mTopAccelXYZTextView.setText("");
+
+                mTopSpeedXYZTextView.setText("");
+
+                mTopRotationTextView.setText("");
+
+                mStartStopButton.setText(getString(R.string.stopTest));
+                mStartStopButton.setCompoundDrawablesWithIntrinsicBounds(android.R.drawable.ic_delete, 0, 0, 0);
+
+                mTestRunning = true;
+                byte[] send = {DATA_READY, 0x00};
+                try {
+                    HomeFragment.getInstance().writeBLE(send);
+                } catch (Exception e) {}
+            }
+        }
+    }
 
 
 }

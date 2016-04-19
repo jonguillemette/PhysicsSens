@@ -52,6 +52,7 @@ public class HomeFragment extends BaseFragment {
     SharedPreferences mSettings;
 
     private Button mShotTextButton;
+    private Button mStickHandlingButton;
     private ImageButton mNewUserImageButton;
     private Spinner mUserSpinner;
     private Button mSaveUserButton;
@@ -157,6 +158,7 @@ public class HomeFragment extends BaseFragment {
         View v = inflater.inflate(R.layout.fragment_home, container, false);
 
         mShotTextButton = (Button) v.findViewById(R.id.shot_test_button);
+        mStickHandlingButton = (Button) v.findViewById(R.id.handling_test_button);
         mNewUserImageButton = (ImageButton) v.findViewById(R.id.new_user_image_button);
         mUserSpinner = (Spinner) v.findViewById(R.id.user_spinner);
 
@@ -197,11 +199,28 @@ public class HomeFragment extends BaseFragment {
         mShotTextButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                // Reenable link
                 if (mCommunicationDone) {
                     if (mUserSpinner.getSelectedItemPosition() != -1) {
                         if (getController().isBleDeviceConnected()) {
                             getController().gotoShotStats((User) mUserSpinner.getSelectedItem());
+                        }
+                    }
+                } else {
+                    if (getController().isBleDeviceConnected())
+                        Toast.makeText(getActivity(), "Device is connecting...", Toast.LENGTH_LONG).show();
+                    else
+                        Toast.makeText(getActivity(), "No device connected", Toast.LENGTH_LONG).show();
+               }
+            }
+        });
+
+        mStickHandlingButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (true || mCommunicationDone) {
+                    if (mUserSpinner.getSelectedItemPosition() != -1) {
+                        if (true || getController().isBleDeviceConnected()) {
+                            getController().gotoStickHand((User) mUserSpinner.getSelectedItem());
                         }
                     }
                 } else {

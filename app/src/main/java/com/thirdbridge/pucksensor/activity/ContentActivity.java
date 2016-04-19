@@ -30,6 +30,7 @@ import com.thirdbridge.pucksensor.controllers.HistoryFragment;
 import com.thirdbridge.pucksensor.controllers.HomeFragment;
 import com.thirdbridge.pucksensor.controllers.ScanBleFragment;
 import com.thirdbridge.pucksensor.controllers.ShotStatsFragment;
+import com.thirdbridge.pucksensor.controllers.StickHandlingFragment;
 import com.thirdbridge.pucksensor.models.User;
 import com.thirdbridge.pucksensor.utils.Constants;
 
@@ -43,7 +44,7 @@ public class ContentActivity extends FragmentActivity {
 
 	private static String TAG = ContentActivity.class.getSimpleName();
 
-	private enum VisibleFragment {BLE, HOME, HISTORY, STATS}
+	private enum VisibleFragment {BLE, HOME, HISTORY, STATS, STICK_HAND}
 
 	private VisibleFragment mVisibleFragment;
 	private Constants.SelectedTest mSelectedTest;
@@ -62,6 +63,9 @@ public class ContentActivity extends FragmentActivity {
 
 	private FrameLayout mStatsFragmentContainer;
 	private ShotStatsFragment mShotStatsFragment;
+
+	private FrameLayout mStickHandFragmentContainer;
+	private StickHandlingFragment mStickHandFragment;
 
 	private User mSelectedUser;
 
@@ -184,10 +188,27 @@ public class ContentActivity extends FragmentActivity {
 		ft.commit();
 	}
 
+	private void initializeStickHandFragment(User user) {
+		mStickHandFragmentContainer = (FrameLayout) findViewById(R.id.stick_hand_fragment_container);
+		mStickHandFragment = StickHandlingFragment.newInstance(user);
+
+		FragmentManager fm = getSupportFragmentManager();
+		FragmentTransaction ft = fm.beginTransaction();
+		ft.replace(R.id.stick_hand_fragment_container, mStickHandFragment);
+		ft.commit();
+	}
+
 	public void reloadShotStatsFragment(){
 		final FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
 		ft.detach(mShotStatsFragment);
 		ft.attach(mShotStatsFragment);
+		ft.commit();
+	}
+
+	public void reloadStickHandFragment(){
+		final FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+		ft.detach(mStickHandFragment);
+		ft.attach(mStickHandFragment);
 		ft.commit();
 	}
 
@@ -221,6 +242,9 @@ public class ContentActivity extends FragmentActivity {
 		if (mStatsFragmentContainer != null)
 			mStatsFragmentContainer.setVisibility(View.GONE);
 
+		if (mStickHandFragmentContainer != null)
+			mStickHandFragmentContainer.setVisibility(View.GONE);
+
 		mActionBarFragment.setActionBarTitle("Home");
 
 		setVisibleFragment(VisibleFragment.HOME);
@@ -249,6 +273,16 @@ public class ContentActivity extends FragmentActivity {
 		mActionBarFragment.setActionBarTitle("Shot Test Statistics");
 	}
 
+	public void gotoStickHand(User user) {
+		initializeStickHandFragment(user);
+		mHomeFragmentContainer.setVisibility(View.GONE);
+		if(mHistoryFragmentContainer != null)
+			mHistoryFragmentContainer.setVisibility(View.GONE);
+		mStickHandFragmentContainer.setVisibility(View.VISIBLE);
+		setVisibleFragment(VisibleFragment.STICK_HAND);
+		mActionBarFragment.setActionBarTitle("Stick Handling");
+	}
+
 
 	public void setVisibleFragment(VisibleFragment visibleFragment) {
 		this.mVisibleFragment = visibleFragment;
@@ -275,6 +309,9 @@ public class ContentActivity extends FragmentActivity {
 				gotoHome();
 				break;
 			case STATS:
+				gotoHome();
+				break;
+			case STICK_HAND:
 				gotoHome();
 				break;
 			default:

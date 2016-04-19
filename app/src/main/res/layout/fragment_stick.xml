@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_grey">
+
+    <RelativeLayout
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:id="@+id/test_control_linear_layout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="@dimen/stats_box_margin"
+            android:layout_marginTop="@dimen/start_test_top_margin"
+            android:orientation="horizontal">
+
+
+            <Button
+                android:id="@+id/start_button"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/stats_test_button_height"
+                android:layout_gravity="center_horizontal"
+                android:background="@drawable/small_button_shadow"
+                android:drawablePadding="@dimen/button_drawable_padding"
+                android:drawableStart="@drawable/btn_check_buttonless_on"
+                android:text="@string/start"
+                android:textAllCaps="false"
+                android:textColor="@color/instruction_grey"
+                android:textSize="@dimen/stat_button_text_size"
+                android:visibility="visible" />
+
+            <Button
+                android:id="@+id/save_button"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/stats_test_button_height"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginStart="@dimen/save_button_left_margin"
+                android:background="@drawable/disabled_small_button_shadow"
+                android:drawablePadding="@dimen/button_drawable_padding"
+                android:drawableStart="@drawable/save"
+                android:text="@string/save"
+                android:textAllCaps="false"
+                android:textColor="@color/instruction_grey"
+                android:textSize="@dimen/stat_button_text_size"
+                android:visibility="visible" />
+
+            <TextView
+                android:id="@+id/stats_description_textview"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginEnd="@dimen/stats_box_margin"
+                android:layout_marginStart="@dimen/stats_box_margin"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_below="@+id/test_control_linear_layout"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Hack"
+                android:id="@+id/demo_start_button" />
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Generate"
+                android:id="@+id/generate_button" />
+
+            <LinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <CheckBox
+                    android:id="@+id/recent_result1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true" />
+
+                <CheckBox
+                    android:id="@+id/recent_result2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="false" />
+
+                <CheckBox
+                    android:id="@+id/recent_result3"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="false" />
+
+                <CheckBox
+                    android:id="@+id/recent_result4"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="false" />
+
+                <CheckBox
+                    android:id="@+id/recent_result5"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="false" />
+
+                <Button
+                    android:id="@+id/compare_btn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
+
+
+        </LinearLayout>
+
+
+        <RelativeLayout
+            android:id="@+id/loading_screen_relative_layout"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:background="@color/transparent_grey"
+            android:layout_alignParentTop="true"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/loadingTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:text="@string/loading"
+                android:textColor="@color/white"
+                android:textSize="22sp"/>
+
+        </RelativeLayout>
+
+    </RelativeLayout>
+
+</ScrollView>
+

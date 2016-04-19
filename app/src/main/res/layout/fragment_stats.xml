@@ -283,13 +283,6 @@
                                 android:textColor="@color/dark_grey"
                                 android:textSize="@dimen/stats_text_size" />
 
-                            <View
-                                android:layout_width="14dp"
-                                android:layout_height="14dp"
-                                android:layout_marginStart="10dp"
-                                android:layout_gravity="center_vertical"
-                                android:background="@color/primary_green" />
-
                         </LinearLayout>
 
                         <View
@@ -400,14 +393,6 @@
                                 android:text="@string/topSpeedXYZ"
                                 android:textColor="@color/dark_grey"
                                 android:textSize="@dimen/stats_text_size" />
-
-                            <View
-
-                                android:layout_width="14dp"
-                                android:layout_height="14dp"
-                                android:layout_marginStart="10dp"
-                                android:layout_gravity="center_vertical"
-                                android:background="@color/primary_green" />
 
                         </LinearLayout>
 
