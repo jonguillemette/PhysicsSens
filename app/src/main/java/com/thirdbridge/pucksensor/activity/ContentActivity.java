@@ -225,6 +225,9 @@ public class ContentActivity extends FragmentActivity {
 		if (mStatsFragmentContainer != null)
 			mStatsFragmentContainer.setVisibility(View.GONE);
 
+		if (mStickHandFragmentContainer != null)
+			mStickHandFragmentContainer.setVisibility(View.GONE);
+
 		mActionBarFragment.setActionBarTitle("BLE Device Discovery");
 
 		setVisibleFragment(VisibleFragment.BLE);
