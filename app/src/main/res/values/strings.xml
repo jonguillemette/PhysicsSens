@@ -37,6 +37,11 @@
     <string name="saveTest">Save Test</string>
     <string name="saveTestHint">Enter test description</string>
 
+    <!-- Stick Handling -->
+    <string name="load_exercice">Load Exercise</string>
+    <string name="start_exercice">Start Exercise</string>
+
+
     <!-- Shot Statistics Screen -->
     <string name="loading">Loading simulation data, please wait...</string>
     <string name="startingSensors">Starting acceleration sensors, please wait..</string>
