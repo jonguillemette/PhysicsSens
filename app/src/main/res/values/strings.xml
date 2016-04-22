@@ -41,6 +41,10 @@
     <string name="load_exercice">Load Exercise</string>
     <string name="start_exercice">Start Exercise</string>
 
+    <!-- Loading exercise pop-up -->
+    <string name="choose_exercise">Which exercise you want to try: </string>
+
+
 
     <!-- Shot Statistics Screen -->
     <string name="loading">Loading simulation data, please wait...</string>

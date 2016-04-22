@@ -1,0 +1,40 @@
+{
+ "key_points" :[
+ {
+	"delta_time":10,
+	"acceleration_mean":20,
+	"rotation_delta": [
+		1,
+		2,
+		3
+	]
+ },
+ {
+	"delta_time":11,
+	"acceleration_mean":21,
+	"rotation_delta": [
+		4,
+		5,
+		6
+	]
+ },
+ {
+	"delta_time":12,
+	"acceleration_mean":22,
+	"rotation_delta": [
+		7,
+		8,
+		9
+	]
+ },
+ {
+	"delta_time":13,
+	"acceleration_mean":23,
+	"rotation_delta": [
+		10,
+		11,
+		12
+	]
+ }
+ ] 
+}

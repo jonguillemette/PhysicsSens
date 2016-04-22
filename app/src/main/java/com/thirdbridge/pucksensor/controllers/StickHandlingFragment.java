@@ -20,12 +20,15 @@ import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
+import android.widget.TableLayout;
+import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -38,11 +41,13 @@ import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.google.gson.Gson;
 import com.thirdbridge.pucksensor.R;
+import com.thirdbridge.pucksensor.models.Exercise;
 import com.thirdbridge.pucksensor.models.Player;
 import com.thirdbridge.pucksensor.models.ShotSpecification;
 import com.thirdbridge.pucksensor.models.User;
 import com.thirdbridge.pucksensor.utils.BaseFragment;
 import com.thirdbridge.pucksensor.utils.Calibrate;
+import com.thirdbridge.pucksensor.utils.CellOrganizer;
 import com.thirdbridge.pucksensor.utils.Constants;
 import com.thirdbridge.pucksensor.utils.IO;
 import com.thirdbridge.pucksensor.utils.MathHelper;
@@ -91,6 +96,8 @@ public class StickHandlingFragment extends BaseFragment {
 	private Button mStartStopButton;
 	private Button mSaveButton;
 	private TextView mDescriptionTextView;
+    private ImageButton mVideobutton;
+    private int mExerciseIndex = 0;
 
 	//Loading screen
 	private RelativeLayout mLoadingScreenRelativeLayout;
@@ -100,14 +107,20 @@ public class StickHandlingFragment extends BaseFragment {
     private Thread mBackgroundThread;
     private boolean mPause = true;
 
-    //Ui Core
+    //UI
     Button mGenerateButton;
     Button mHackButton;
+    Button mLoadExercise;
+    Button mStartExercise;
+    TableLayout mTable;
+    CellOrganizer mCell;
 
     // Player comparison management
     private List<Player> mPlayers = new ArrayList<Player>();
     private List<ShotSpecification> mShotSpecs = new ArrayList<ShotSpecification>();
     private int mPlayerPosition;
+    private List<Exercise> mExercises = new ArrayList<Exercise>();
+    private String mJSONExercise;
 
 
     // Check management
@@ -116,6 +129,10 @@ public class StickHandlingFragment extends BaseFragment {
     private int mFirstCheck = 0;
     private int mSecondCheck = -1;
     private boolean mCanTouchThis = true;
+
+    // Popup windows
+    PopupWindow mExercisePopup;
+    PopupWindow mVideoPopup;
 
 
     //Bluetooth
@@ -229,6 +246,11 @@ public class StickHandlingFragment extends BaseFragment {
 		mDescriptionTextView = (TextView) v.findViewById(R.id.stats_description_textview);
 		mGenerateButton = (Button) v.findViewById(R.id.generate_button);
         mHackButton = (Button) v.findViewById(R.id.demo_start_button);
+        mLoadExercise = (Button) v.findViewById(R.id.load_exercice_button);
+        mStartExercise = (Button) v.findViewById(R.id.start_exercice_button);
+        mTable = (TableLayout) v.findViewById(R.id.table_layout);
+        mVideobutton = (ImageButton) v.findViewById(R.id.video_button);
+
 
 		mLoadingScreenRelativeLayout = (RelativeLayout) v.findViewById(R.id.loading_screen_relative_layout);
 
@@ -301,6 +323,28 @@ public class StickHandlingFragment extends BaseFragment {
             }
         });
 
+        mVideobutton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+            }
+        });
+
+        mLoadExercise.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                openExerciseMenu(true, container);
+            }
+        });
+
+        mStartExercise.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.i(TAG, mJSONExercise);
+                //mExercises.get(mExerciseIndex).loadInformation(mJSONExercise);
+            }
+        });
+
         mStartStopButton.setVisibility(View.VISIBLE);
         mSaveButton.setVisibility(View.GONE);
 
@@ -310,17 +354,31 @@ public class StickHandlingFragment extends BaseFragment {
                 //openComparisonMenu(true, true, container, null);
             }
         });
+
         // TODO Pop-up management
-        /*mPlayerPopup = inflatePlayerPopup(container,  mRecentResult[4]);
-        mShotSpecPopup = inflateShotPopup(container,  mRecentResult[4]);*/
+        mExercisePopup = inflateExercisePopup(container);
 
 
         if (DEBUG) {
-
-
             mGenerateButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
+                    String titles[] = {"Test", "Karabomga", "Pizza"};
+                    if (mCell == null) {
+                        mCell = new CellOrganizer(mTable, titles, "Key Points", true, 10);
+                        mCell.allActualize();
+                    } else {
+                        mCell.clear();
+                        mCell.reload(titles, "Banana", false, 75);
+                        mCell.allActualize();
+                    }
+                }
+            });
+
+            mHackButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    mCell.put(1, 11, 10, true);
                 }
             });
         } else {
@@ -340,7 +398,7 @@ public class StickHandlingFragment extends BaseFragment {
 		mSaveButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //TODO Save otehr format
+                //TODO Save other format
                 /*
                 // Save on a known place every shot shown
                 File rootsd = Environment.getExternalStorageDirectory();
@@ -434,10 +492,10 @@ public class StickHandlingFragment extends BaseFragment {
 			mDescriptionTextView.setVisibility(View.VISIBLE);
 			Handler handler = new Handler();
 			handler.postDelayed(new Runnable() {
-				public void run() {
+                public void run() {
                     // TODO Some setup
-				}
-			}, 1000);
+                }
+            }, 1000);
 		}
 
 		if (mSensorReady) {
@@ -542,6 +600,66 @@ public class StickHandlingFragment extends BaseFragment {
                 } catch (Exception e) {}
             }
         }
+    }
+
+    private PopupWindow inflateExercisePopup(ViewGroup container){
+
+        LayoutInflater layoutInflater
+                = (LayoutInflater)getController().getBaseContext()
+                .getSystemService(getController().LAYOUT_INFLATER_SERVICE);
+
+        final View popupView = layoutInflater.inflate(R.layout.select_exercise_popup, container, false);
+
+        Button cancelBtn = (Button) popupView.findViewById(R.id.cancel_button);
+
+        final PopupWindow popupWindow = new PopupWindow(
+                popupView,
+                500,
+                500);
+
+        cancelBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                popupWindow.dismiss();
+            }
+        });
+
+        return popupWindow;
+    }
+
+    private void openExerciseMenu(boolean open, ViewGroup container) {
+        if (open) {
+            setupExercise((ListView) mExercisePopup.getContentView().findViewById(R.id.exercise_list), container);
+            mExercisePopup.setFocusable(true);
+            mExercisePopup.update();
+            mExercisePopup.showAtLocation(container, Gravity.TOP, 0, 200);
+        } else {
+            mExercisePopup.dismiss();
+        }
+    }
+
+    private void setupExercise(ListView listUI, final ViewGroup container) {
+        //TODO Query on the internet
+        mExercises.clear();
+        mExercises.add(new Exercise("QWERTY", "Cones exercise", "Pass the puck between cones."));
+        mExercises.add(new Exercise("QWERTY", "Glove & Infinite symbol", "Place gloves on ice and create a infinite symbole over the two gloves."));
+
+        LoadExerciseAdapter adapter = new LoadExerciseAdapter(getContext(), mExercises);
+        listUI.setAdapter(adapter);
+
+        listUI.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                //TODO Query on this player:
+                Log.i(TAG, "Exercise: " + mExercises.get(position).getTitle());
+
+                mJSONExercise = IO.loadAssetTextAsString(getContext(), "dummy.json");
+                openExerciseMenu(false, null);
+                mStartExercise.setText(R.string.start_exercice);
+                mStartExercise.setText(mStartExercise.getText() + ": " + mExercises.get(position).getTitle());
+                mExerciseIndex = position;
+            }
+        });
     }
 
 
