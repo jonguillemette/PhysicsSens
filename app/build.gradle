@@ -1,9 +1,16 @@
 apply plugin: 'com.android.application'
 
 android {
+    signingConfigs {
+        config {
+            keyAlias 'intelliApp'
+            keyPassword 'Statpuck'
+            storeFile file('C:/Users/Jay/Desktop/IntellieSport/intellikey.jks')
+            storePassword 'Statpuck'
+        }
+    }
     compileSdkVersion 23
     buildToolsVersion "23.0.1"
-
     defaultConfig {
         applicationId "com.thirdbridge.pucksensor"
         minSdkVersion 19
@@ -15,6 +22,7 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.config
         }
     }
 }
@@ -24,10 +32,11 @@ repositories {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile fileTree(include: ['*.jar'], dir: 'libs')
     compile 'org.apache.commons:commons-math3:3.0'
     compile 'com.github.PhilJay:MPAndroidChart:v2.1.6'
     compile 'com.android.support:appcompat-v7:23.0.1'
     compile 'com.google.code.gson:gson:2.3'
     compile 'com.android.support:recyclerview-v7:23.0.0'
+    compile files('src/libs/YouTubeAndroidPlayerApi.jar')
 }
