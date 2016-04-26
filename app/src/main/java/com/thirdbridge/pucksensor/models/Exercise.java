@@ -15,6 +15,7 @@ public class Exercise {
     private String mTitle;
     private String mDescription;
     private String mId;
+    private String mVideo;
     private KeyPoint[] mKeypoints;
     private double mTotalTime;
     private double mAccelerationMax;
@@ -22,10 +23,11 @@ public class Exercise {
     private double mTotalTouchTime;
     private double mTotalFlightTime;
 
-    public Exercise(String id, String title, String description) {
+    public Exercise(String id, String title, String description, String video) {
         mId = id;
         mTitle = title;
         mDescription = description;
+        mVideo = video;
     }
 
     public void loadInformation(String jsonData) {
@@ -48,5 +50,17 @@ public class Exercise {
 
     public String getDescription() {
         return mDescription;
+    }
+
+    public String getVideo() {
+        return mVideo;
+    }
+
+    public KeyPoint[] getKeyPoints() {
+        return mKeypoints;
+    }
+
+    public KeyPoint getKeyPoint(int index) {
+        return mKeypoints[index];
     }
 }

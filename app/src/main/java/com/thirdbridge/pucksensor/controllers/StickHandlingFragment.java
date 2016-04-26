@@ -326,7 +326,7 @@ public class StickHandlingFragment extends BaseFragment {
         mVideobutton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                getController().gotoYoutube(mExercises.get(mExerciseIndex).getVideo());
             }
         });
 
@@ -340,8 +340,8 @@ public class StickHandlingFragment extends BaseFragment {
         mStartExercise.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.i(TAG, mJSONExercise);
-                //mExercises.get(mExerciseIndex).loadInformation(mJSONExercise);
+                mExercises.get(mExerciseIndex).loadInformation(mJSONExercise);
+                Log.i(TAG, "Acceleration: " + mExercises.get(mExerciseIndex).getKeyPoint(0).getAccelerationMean());
             }
         });
 
@@ -641,8 +641,8 @@ public class StickHandlingFragment extends BaseFragment {
     private void setupExercise(ListView listUI, final ViewGroup container) {
         //TODO Query on the internet
         mExercises.clear();
-        mExercises.add(new Exercise("QWERTY", "Cones exercise", "Pass the puck between cones."));
-        mExercises.add(new Exercise("QWERTY", "Glove & Infinite symbol", "Place gloves on ice and create a infinite symbole over the two gloves."));
+        mExercises.add(new Exercise("QWERTY", "Cones exercise", "Pass the puck between cones.", "btPJPFnesV4"));
+        mExercises.add(new Exercise("QWERTY", "Glove & Infinite symbol", "Place gloves on ice and create a infinite symbole over the two gloves.","NJMkSD1PUQA"));
 
         LoadExerciseAdapter adapter = new LoadExerciseAdapter(getContext(), mExercises);
         listUI.setAdapter(adapter);

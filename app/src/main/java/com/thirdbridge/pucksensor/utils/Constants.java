@@ -9,6 +9,7 @@ public class Constants {
     public static String CURRENT_USER = "currentUser";
     public static String TEST_DATA = "testData";
     public static String BLE_CONNECTION_TERMINATED = "bleConnectionTerminated";
+    public static String YOUTUBE_URL = "youtubeUrl";
 
     //Acceleration constants
     public static String TOP_ACCEL_X = "topAccelX";

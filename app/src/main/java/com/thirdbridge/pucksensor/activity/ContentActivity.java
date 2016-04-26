@@ -19,9 +19,13 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
+import com.google.android.youtube.player.YouTubeInitializationResult;
+import com.google.android.youtube.player.YouTubePlayer;
+import com.google.android.youtube.player.YouTubePlayerFragment;
 import com.thirdbridge.pucksensor.R;
 import com.thirdbridge.pucksensor.ble.BLEDeviceInfo;
 import com.thirdbridge.pucksensor.ble.BluetoothLeService;
@@ -39,12 +43,17 @@ import java.util.List;
 
 /**
  * Created by Christophe on 2015-10-14.
+ * Modified by Jayson Dalpé since 2016-02-01.
  */
-public class ContentActivity extends FragmentActivity {
+public class ContentActivity extends FragmentActivity implements YouTubePlayer.OnInitializedListener{
+
+	private static final String DEVELOPER_KEY = "AIzaSyCcshqZXdH-AJu3EePHMOv4QfwkInXIpVQ";
 
 	private static String TAG = ContentActivity.class.getSimpleName();
 
-	private enum VisibleFragment {BLE, HOME, HISTORY, STATS, STICK_HAND}
+
+
+	private enum VisibleFragment {BLE, HOME, HISTORY, STATS, STICK_HAND, YOUTUBE}
 
 	private VisibleFragment mVisibleFragment;
 	private Constants.SelectedTest mSelectedTest;
@@ -66,6 +75,25 @@ public class ContentActivity extends FragmentActivity {
 
 	private FrameLayout mStickHandFragmentContainer;
 	private StickHandlingFragment mStickHandFragment;
+
+	private FrameLayout mYoutubeFragmentContainer;
+	private YouTubePlayerFragment mYoutubeFragment;
+    private YouTubePlayer mPlayer;
+	private String mVideo;
+    private boolean mOnce = false;
+
+    @Override
+    public void onInitializationSuccess(YouTubePlayer.Provider provider, YouTubePlayer youTubePlayer, boolean b) {
+        Log.i(TAG, "SUCCEED!");
+        mPlayer = youTubePlayer;
+        mPlayer.loadVideo(mVideo);
+
+    }
+
+    @Override
+    public void onInitializationFailure(YouTubePlayer.Provider provider, YouTubeInitializationResult youTubeInitializationResult) {
+        Log.wtf(TAG, "FAILLLLED!!!!");
+    }
 
 	private User mSelectedUser;
 
@@ -198,6 +226,32 @@ public class ContentActivity extends FragmentActivity {
 		ft.commit();
 	}
 
+	private void initializeYoutubeFragment(String video) {
+		mYoutubeFragmentContainer = (FrameLayout) findViewById(R.id.youtube_fragment_container);
+		mYoutubeFragment = (YouTubePlayerFragment) getFragmentManager().findFragmentById(R.id.youtube_fragment);
+
+
+
+        mVideo = video;
+        if (!mOnce) {
+            mYoutubeFragment.initialize(DEVELOPER_KEY, this);
+            Button btn = (Button) findViewById(R.id.youtube_cancel);
+            btn.setText(R.string.back);
+            btn.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    backfromYoutube();
+                }
+            });
+
+            mOnce = true;
+        } else {
+            mPlayer.loadVideo(mVideo);
+        }
+	}
+
+
+
 	public void reloadShotStatsFragment(){
 		final FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
 		ft.detach(mShotStatsFragment);
@@ -214,6 +268,7 @@ public class ContentActivity extends FragmentActivity {
 
 
 	public void gotoBleScan() {
+
 		mScanFragmentContainer.setVisibility(View.VISIBLE);
 
 		if (mHomeFragmentContainer != null)
@@ -228,7 +283,14 @@ public class ContentActivity extends FragmentActivity {
 		if (mStickHandFragmentContainer != null)
 			mStickHandFragmentContainer.setVisibility(View.GONE);
 
+		if (mYoutubeFragmentContainer != null)
+			mYoutubeFragmentContainer.setVisibility(View.GONE);
+        if (mVisibleFragment == VisibleFragment.YOUTUBE) {
+            backfromYoutube();
+        }
+
 		mActionBarFragment.setActionBarTitle("BLE Device Discovery");
+
 
 		setVisibleFragment(VisibleFragment.BLE);
 	}
@@ -247,6 +309,12 @@ public class ContentActivity extends FragmentActivity {
 
 		if (mStickHandFragmentContainer != null)
 			mStickHandFragmentContainer.setVisibility(View.GONE);
+
+        if (mYoutubeFragmentContainer != null)
+            mYoutubeFragmentContainer.setVisibility(View.GONE);
+        if (mVisibleFragment == VisibleFragment.YOUTUBE) {
+            backfromYoutube();
+        }
 
 		mActionBarFragment.setActionBarTitle("Home");
 
@@ -286,6 +354,16 @@ public class ContentActivity extends FragmentActivity {
 		mActionBarFragment.setActionBarTitle("Stick Handling");
 	}
 
+	public void backfromYoutube() {
+		mYoutubeFragmentContainer.setVisibility(View.GONE);
+        mPlayer.pause();
+	}
+
+	public void gotoYoutube(String video) {
+		initializeYoutubeFragment(video);
+		mYoutubeFragmentContainer.setVisibility(View.VISIBLE);
+	}
+
 
 	public void setVisibleFragment(VisibleFragment visibleFragment) {
 		this.mVisibleFragment = visibleFragment;
@@ -317,6 +395,8 @@ public class ContentActivity extends FragmentActivity {
 			case STICK_HAND:
 				gotoHome();
 				break;
+            case YOUTUBE:
+                backfromYoutube();
 			default:
 				break;
 		}
