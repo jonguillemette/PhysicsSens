@@ -51,6 +51,7 @@ import com.thirdbridge.pucksensor.utils.Calibrate;
 import com.thirdbridge.pucksensor.utils.Constants;
 import com.thirdbridge.pucksensor.utils.IO;
 import com.thirdbridge.pucksensor.utils.MathHelper;
+import com.thirdbridge.pucksensor.utils.Protocol;
 import com.thirdbridge.pucksensor.utils.Shot;
 
 import java.io.File;
@@ -65,12 +66,12 @@ import java.util.UUID;
 public class ShotStatsFragment extends BaseFragment {
 
 	private static String TAG = ShotStatsFragment.class.getSimpleName();
-    private static String FOLDER_SAVE_SHOT = "Shots";
+    private static String FOLDER_SAVE_SHOT = "Statpuck";
 
     private static final double STAMP = 1.25;
     private static final double DRAFT_STAMP = 50/3;
-    private static final int MINIMAL_G = 0; // Actually +1
     private static final boolean DEBUG = false;
+    private static final int MINIMAL_G = 0; // Actually +1
     private static final String THRESHOLD_G = "THRESHOLD_G";
     private static final String CHECK_ACCEL = "CHECK_ACCEL";
     private static final String CHECK_SPEED = "CHECK_SPEED";
@@ -78,23 +79,6 @@ public class ShotStatsFragment extends BaseFragment {
 
     private static final int[] GRAPH_COLOR = {Color.BLUE, Color.RED};
     private static final int[] RECENT_NAME = {R.string.recent_shot1, R.string.recent_shot2, R.string.recent_shot3, R.string.recent_shot4, R.string.recent_shot5};
-
-    // PROTOCOL CMD
-    private static final int SETTINGS_READ = 2;
-    private static final int SETTINGS_NEW  = 3;
-    private static final int DATA          = 4;
-    private static final int DATA_READY    = 5;
-    private static final int DATA_END      = 6;
-    private static final int DATA_START    = 8;
-    private static final int DATA_DRAFT    = 10;
-
-    // PROTOCOL DEFAULT SETTINGS
-    private static final byte VALIDITY_TOKEN = 0x3D;
-    private static final int[] DEFAULT = {VALIDITY_TOKEN, 0x00, 0x00, 255, 0x00, 0x01, 0x01, 0x01}; //(2G)
-
-    // Calibration pattern
-    final static long[] CALIB_TIME= {5000, 1000}; // Position time, transition time.
-    final static double[] CALIB_VALUE = {0, 50, 400}; // Start, Step, Max
 
 
     // Saving local instance
@@ -104,8 +88,7 @@ public class ShotStatsFragment extends BaseFragment {
     private boolean mAutoStart = false;
 	private User mUser;
 	private boolean mPreviewTest = false;
-    private boolean mProgressChange = true;
-    private int[] mActualSettings = DEFAULT.clone();
+    private int[] mActualSettings = Protocol.DEFAULT.clone();
 
 	private Button mStartStopButton;
 	private Button mSaveButton;
@@ -129,11 +112,6 @@ public class ShotStatsFragment extends BaseFragment {
     private CheckBox mAccCheckB;
     private CheckBox mSpeedCheckB;
     private CheckBox mAngularCheckB;
-    private TextView mPeakAccTV;
-    private SeekBar mPeakAccSB;
-    private ProgressBar mCalibratePB;
-    private Button mCalibrateBtn;
-    private Button mCalibrateCenBtn;
 
     // Check management
     private CheckBox[] mRecentResult;
@@ -189,12 +167,6 @@ public class ShotStatsFragment extends BaseFragment {
 	//Speed Chart
 	private int mSpeedDataSetIndexXYZ;
 
-    // Calibration
-    private double[] mCalibrationValue = {0,0,0};
-    private int mCalibrateNb = 0;
-    boolean mStartCalibration = false;
-    boolean mStartCalibrationCen = false;
-    Calibrate mCalibrationRoutine;
 
     //Bluetooth
     private boolean mSensorReady = false;
@@ -234,44 +206,6 @@ public class ShotStatsFragment extends BaseFragment {
                     mSensorReadyChange = mSensorReady;
                 }
 
-                if (mProgressChange && mSettings != null) {
-                    long value = mSettings.getInt(THRESHOLD_G, MINIMAL_G)+1;
-
-                    byte[] send = new byte[20];
-                    send[0] = SETTINGS_NEW;
-                    send[1] = 0; //Battery, don't care
-
-                    if (value < 15) {
-                        value = value * 2048 / 16;
-                        mActualSettings[1] = 0;
-                        mActualSettings[2] = 0;
-                        mActualSettings[3] = (int) (value & 255);
-                        mActualSettings[4] = (int) (value/256 & 255);
-                    }
-                    else
-                    {
-                        value = value * 2048 / 400;
-                        mActualSettings[1] = (int) (value & 255);
-                        mActualSettings[2] = (int) (value/256 & 255);
-                        mActualSettings[3] = 0;
-                        mActualSettings[4] = 0;
-                    }
-                    Log.i(TAG, "Value: " + value);
-                    String sendValue = send[0] + ", " + send[1] + ", ";
-                    for (int i=0; i<18; i++) {
-                        if (i < mActualSettings.length) {
-                            send[2+i] = (byte)mActualSettings[i];
-                        } else {
-                            send[2+i] = 0;
-                        }
-                        sendValue+= send[2+i] + ", ";
-                    };
-                    Log.i(TAG, "New settings: " + sendValue);
-                    try {
-                        HomeFragment.getInstance().writeBLE(send);
-                        mProgressChange = false;
-                    } catch(Exception e) {}
-                }
 
                 try {
                     Thread.sleep(1000);
@@ -284,129 +218,6 @@ public class ShotStatsFragment extends BaseFragment {
             }
         }
     };
-
-    Runnable mStartCalibrationRunnable = new Runnable() {
-        @Override
-        public void run() {
-            mActualSettings[5] = 0;
-            mActualSettings[6] = 0;
-            mActualSettings[7] = 0;
-
-            mProgressChange = true;
-
-            try {
-                // Sleep fo 1sec (setting thread delay) + 50 ms (IC max delay for settings)
-                Thread.sleep(1050);
-            } catch (Exception e) {}
-
-            mCalibrationValue[0] = 0;
-            mCalibrationValue[1] = 0;
-            mCalibrationValue[2] = 0;
-            mCalibrateNb = 0;
-            mStartCalibration = true;
-
-            while (mCalibrateNb< 100) {}
-
-            mStartCalibration = false;
-            mCalibrationValue[0] = (mCalibrationValue[0] / mCalibrateNb) % 256;
-            mCalibrationValue[1] = (mCalibrationValue[1] / mCalibrateNb) % 256;
-            mCalibrationValue[2] = (mCalibrationValue[2] / mCalibrateNb) % 256;
-
-            mActualSettings[5] = (int)mCalibrationValue[0];
-            mActualSettings[6] = (int)mCalibrationValue[1];
-            mActualSettings[7] = (int)mCalibrationValue[2];
-
-            mProgressChange = true;
-
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    mCalibrateBtn.setVisibility(View.VISIBLE);
-                    mCalibratePB.setVisibility(View.GONE);
-                    mCalibrateCenBtn.setEnabled(true);
-                }
-            });
-        }
-    };
-
-    Runnable mStartCalibrationCenRunnable = new Runnable() {
-        @Override
-        public void run() {
-            int[] saveValue = {mActualSettings[5], mActualSettings[6], mActualSettings[7]};
-            mActualSettings[5] = 0;
-            mActualSettings[6] = 0;
-            mActualSettings[7] = 0;
-
-            int actualProgress = mSettings.getInt(THRESHOLD_G, MINIMAL_G)+1;
-
-            SharedPreferences.Editor editor = mSettings.edit();
-            editor.putInt(THRESHOLD_G, 4000);
-            editor.commit();
-            mProgressChange = true;
-
-            try {
-                // Sleep fo 1sec (setting thread delay) + 50 ms (IC max delay for settings)
-                Thread.sleep(2000);
-            } catch (Exception e) {}
-
-
-            // Initialise calibration cen
-            mCalibrationRoutine = new Calibrate();
-
-            for (int i=(int)CALIB_VALUE[0]; i<=CALIB_VALUE[2]; i+= (int)CALIB_VALUE[1]) {
-                mCalibrationValue[0] = (double) i;
-                mStartCalibrationCen = true;
-                try {
-                    Thread.sleep(CALIB_TIME[0]);
-                } catch (Exception e) {}
-                mStartCalibrationCen = false;
-                try {
-                    Thread.sleep(CALIB_TIME[1]);
-                } catch (Exception e) {}
-            }
-
-
-
-            // Gather result and save them
-            File rootsd = Environment.getExternalStorageDirectory();
-            File root = new File(rootsd.getAbsolutePath(), FOLDER_SAVE_SHOT);
-            if (!root.exists()) {
-                root.mkdirs();
-            }
-            Pair<String, String> saveData = mCalibrationRoutine.packageFormCSV();
-            final File file = new File(root, saveData.first);
-            IO.saveFile(saveData.second, file);
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(getContext(), "Save calibration in " + file.getName(), Toast.LENGTH_LONG).show();
-                }
-            });
-
-            Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-            intent.setData(Uri.fromFile(file));
-            getActivity().sendBroadcast(intent);
-
-            mActualSettings[5] = saveValue[0];
-            mActualSettings[6] = saveValue[1];
-            mActualSettings[7] = saveValue[2];
-            editor.putInt(THRESHOLD_G, actualProgress);
-            editor.commit();
-
-            mProgressChange = true;
-
-
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    mCalibrateCenBtn.setVisibility(View.VISIBLE);
-                    mCalibratePB.setVisibility(View.GONE);
-                    mCalibrateBtn.setEnabled(true);
-                }
-            });
-        }
-    };
-
 
     public static ShotStatsFragment newInstance(User user) {
 		Bundle args = new Bundle();
@@ -471,20 +282,8 @@ public class ShotStatsFragment extends BaseFragment {
         mAccCheckB = (CheckBox) v.findViewById(R.id.show_acceleration_check);
         mSpeedCheckB = (CheckBox) v.findViewById(R.id.show_speed_check);
         mAngularCheckB = (CheckBox) v.findViewById(R.id.show_angular_check);
-        mPeakAccTV = (TextView) v.findViewById(R.id.peak_acc_number);
-        mPeakAccSB = (SeekBar) v.findViewById(R.id.peak_acc_seekbar);
-        mCalibrateBtn = (Button) v.findViewById(R.id.calibrate_button);
-        mCalibratePB = (ProgressBar) v.findViewById(R.id.calibrate_progress);
-        mCalibrateCenBtn = (Button) v.findViewById(R.id.calibrate_centrifuge_button);
-        mCalibratePB.setIndeterminate(true);
-        mCalibratePB.setVisibility(View.GONE);
 
         mSettings = getActivity().getSharedPreferences("StatPuck", 0);
-
-        String value = "" + (mSettings.getInt(THRESHOLD_G, MINIMAL_G)+1);
-        mPeakAccTV.setText(value);
-        mPeakAccSB.setProgress(Integer.parseInt(mPeakAccTV.getText().toString())-1);
-
 
         // Main structure
         mAccelLayout = (LinearLayout) v.findViewById(R.id.accel_layout);
@@ -575,32 +374,8 @@ public class ShotStatsFragment extends BaseFragment {
         mAccelProgress.setVisibility(View.GONE);
 		mTopAccelXYZTextView = (TextView) v.findViewById(R.id.top_accel_xyz_textview);
 
-        mCalibrateBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mCalibratePB.setVisibility(View.VISIBLE);
-                mCalibrateBtn.setVisibility(View.GONE);
-                mCalibrateCenBtn.setEnabled(false);
-
-                Thread t = new Thread(mStartCalibrationRunnable);
-                t.start();
-            }
-        });
-
-        mCalibrateCenBtn.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v) {
-                mCalibrateBtn.setEnabled(false);
-                mCalibratePB.setVisibility(View.VISIBLE);
-                mCalibrateCenBtn.setVisibility(View.GONE);
-                Thread t = new Thread(mStartCalibrationCenRunnable);
-                t.start();
-            }
-        });
 
         if (DEBUG) {
-
-
             mGenerateButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -610,28 +385,6 @@ public class ShotStatsFragment extends BaseFragment {
             mHackButton.setVisibility(View.GONE);
             mGenerateButton.setVisibility(View.GONE);
         }
-
-
-        mPeakAccSB.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                mPeakAccTV.setText("" + (progress+1));
-                SharedPreferences.Editor editor = mSettings.edit();
-                editor.putInt(THRESHOLD_G, progress);
-                editor.commit();
-                mProgressChange = true;
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-
-            }
-        });
 
 		//Speed Chart
 		mSpeedChart = (LineChart) v.findViewById(R.id.speed_stats_chart);
@@ -644,8 +397,6 @@ public class ShotStatsFragment extends BaseFragment {
         mRotationProgress = (ProgressBar) v.findViewById(R.id.rotation_stats_progress);
         mRotationProgress.setVisibility(View.GONE);
 		mTopRotationTextView = (TextView) v.findViewById(R.id.top_rotation_textview);
-
-
 
 		mStartStopButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -1179,64 +930,28 @@ public class ShotStatsFragment extends BaseFragment {
 	}
 
 	private void onCharacteristicChanged(byte[] value) {
+        mAutoStart = true;
         double[] accelHigh = getAccelHigh(value);
         double[] accelLow = getAccelLow(value);
         double[] gyro = getGyro(value);
-        if (value[0] != SETTINGS_READ) {
-            mAutoStart = true;
-            if (value[0] == DATA_DRAFT && mStartCalibration) {
-                mCalibrationValue[0] += (double) (short) value[2];
-                mCalibrationValue[1] += (double) (short) value[4];
-                mCalibrationValue[2] += (double) (short) value[6];
-                mCalibrateNb++;
-
-                mCalibrationValue[0] += (double) (short) value[8];
-                mCalibrationValue[1] += (double) (short) value[10];
-                mCalibrationValue[2] += (double) (short) value[12];
-                mCalibrateNb++;
-
-                mCalibrationValue[0] += (double) (short) value[14];
-                mCalibrationValue[1] += (double) (short) value[16];
-                mCalibrationValue[2] += (double) (short) value[18];
-                mCalibrateNb++;
-            } else if (mStartCalibrationCen) { // Take all data possible
-                for (int i = 0; i < accelHigh.length; i++) {
-                    mCalibrationRoutine.addEntry(accelHigh[i], mCalibrationValue[0]);
-                }
-
-            } else if (!mStartCalibrationCen) { // Delete DATA_START, ... when calibrating forces
-                double[] realAccel = new double[accelLow.length];
-                for (int i = 0; i < realAccel.length; i++) {
-                    if (accelLow[i] >= 15) {
-                        realAccel[i] = accelHigh[i];
-                    } else {
-                        realAccel[i] = accelLow[i];
-                    }
-                }
-                if (mTestRunning) {
-                    calculationMethod(realAccel, gyro, value[0]);
+        if (Protocol.isSameMode(Protocol.SHOT_MODE, value[0])) {
+            double[] realAccel = new double[accelLow.length];
+            for (int i = 0; i < realAccel.length; i++) {
+                if (accelLow[i] >= 15) {
+                    realAccel[i] = accelHigh[i];
+                } else {
+                    realAccel[i] = accelLow[i];
                 }
             }
+            if (mTestRunning) {
+                calculationMethod(realAccel, gyro, value[0]);
+            }
             //Log.i(TAG, "Check first: AH: " + accelHigh[0] + " AL: " + accelLow[0] + " Gyro: " + gyro[0]);
-        } else {
-            if (value[2] != VALIDITY_TOKEN && !mSendOnce) {
+        } else if (Protocol.isSameMode(Protocol.SETTINGS_MODE, value[0])) {
+            if (value[2] != Protocol.VALIDITY_TOKEN && !mSendOnce) {
                 // Settings don't care, send default ones
-                byte[] send = new byte[20];
-                send[0] = SETTINGS_NEW;
-                send[1] = 0; //Battery, don't care
-                for (int i=0; i<18; i++) {
-                    if (i < DEFAULT.length) {
-                        send[2+i] = (byte)mActualSettings[i];
-                    } else {
-                        send[2+i] = 0;
-                    }
-                }
-                try {
-                    HomeFragment.getInstance().writeBLE(send);
-                    mSendOnce = true;
-                } catch (Exception e) {
-
-                }
+                Protocol.setDefault();
+                mSendOnce = true;
             }
 
             for (int i=0; i<mActualSettings.length; i++) {
@@ -1276,7 +991,7 @@ public class ShotStatsFragment extends BaseFragment {
             }
             mTime++;
 
-            if (mode == DATA_DRAFT) {
+            if (mode == Protocol.DATA_DRAFT) {
                 for (int i=0; i<acceleration.length; i++) {
                     // Use circular buffer
                     mAccelCircularBuffer[mCircularIndex] = acceleration[i];
@@ -1286,7 +1001,7 @@ public class ShotStatsFragment extends BaseFragment {
                         mCircularIndex = 0;
                     }
                 }
-            } else if (mode == DATA_START) {
+            } else if (mode == Protocol.DATA_START) {
                 Log.i(TAG, "START!");
                 //Draw data
                 double[] sendAcc = new double[mAccelCircularBuffer.length];
@@ -1323,14 +1038,14 @@ public class ShotStatsFragment extends BaseFragment {
                 populateCharts();
                 populateStatisticsFields();
                 mCircularIndex = 0;
-            } else if (mode == DATA) {
+            } else if (mode == Protocol.DATA) {
                 for (int i=0; i<acceleration.length; i++) {
                     // Use circular buffer
                     mReal.setAccelerationXYZ(acceleration[i], mRealIndex+i);
                     mReal.setRotation(rotation[i], mRealIndex+i);
                     mRealIndex ++;
                 }
-            } else if (mode == DATA_END){
+            } else if (mode == Protocol.DATA_END){
                 for (int i=0; i<acceleration.length; i++) {
                     // Use circular buffer
                     mReal.setAccelerationXYZ(acceleration[i], mRealIndex+i);
@@ -1339,7 +1054,8 @@ public class ShotStatsFragment extends BaseFragment {
                 }
 
                 mRecent[0] = mReal;
-                mRecent[0].analyze(mPeakAccSB.getProgress()+1);
+                mRecent[0].analyze(mSettings.getInt(THRESHOLD_G, MINIMAL_G)+1);
+
                 populateCharts();
                 populateStatisticsFields();
                 mCircularIndex = 0;
@@ -1693,7 +1409,6 @@ public class ShotStatsFragment extends BaseFragment {
             for (int i=0; i<mRecentResult.length; i++) {
                 mRecentResult[i].setVisibility(View.VISIBLE);
             }
-            mCalibrateBtn.setVisibility(View.VISIBLE);
             mSaveButton.setBackground(ContextCompat.getDrawable(getContext(), R.drawable.small_button_shadow));
 
             if (mTestRunning) {
@@ -1745,7 +1460,7 @@ public class ShotStatsFragment extends BaseFragment {
                 mStartStopButton.setCompoundDrawablesWithIntrinsicBounds(android.R.drawable.ic_delete, 0, 0, 0);
 
                 mTestRunning = true;
-                byte[] send = {DATA_READY, 0x00};
+                byte[] send = {Protocol.SHOT_MODE, 0x00};
                 try {
                     HomeFragment.getInstance().writeBLE(send);
                 } catch (Exception e) {}

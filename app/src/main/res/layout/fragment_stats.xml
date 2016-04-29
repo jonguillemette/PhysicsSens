@@ -85,21 +85,7 @@
                 android:layout_height="wrap_content"
                 android:checked="false"
                 android:text="@string/show_angular" />
-            <Button
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Calibrate"
-                android:id="@+id/calibrate_button" />
-            <ProgressBar
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Calibrate"
-                android:id="@+id/calibrate_progress" />
-            <Button
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="(Dev) Calibrate centrifuge"
-                android:id="@+id/calibrate_centrifuge_button" />
+
             <Button
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -151,49 +137,6 @@
                     android:id="@+id/compare_btn"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"/>
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_below="@+id/test_control_linear_layout"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <TextView
-                android:id="@+id/peak_acc_label"
-                android:layout_width="wrap_content"
-                android:layout_height="@dimen/stats_test_button_height"
-                android:checked="false"
-                android:text="@string/peak_acc"
-                android:layout_gravity="center_horizontal"
-                android:textAllCaps="false"
-                android:textColor="@color/instruction_grey"
-                android:textSize="@dimen/stat_button_text_size"
-                android:layout_marginEnd="@dimen/stats_box_margin"
-                android:layout_marginStart="@dimen/stats_box_margin"
-                />
-
-                <TextView
-                    android:id="@+id/peak_acc_number"
-                    android:layout_width="wrap_content"
-                    android:layout_height="@dimen/stats_test_button_height"
-                    android:checked="false"
-                    android:text="0"
-                    android:layout_gravity="center_horizontal"
-                    android:textAllCaps="false"
-                    android:textColor="@color/instruction_grey"
-                    android:textSize="@dimen/stat_button_text_size"
-                    android:layout_marginEnd="@dimen/stats_box_margin"
-                    android:layout_marginStart="@dimen/stats_box_margin"
-                    />
-
-                <SeekBar
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:id="@+id/peak_acc_seekbar"
-                    android:layout_weight="1"
-                    android:max="20" />
 
             </LinearLayout>
 

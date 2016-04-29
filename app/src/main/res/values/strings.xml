@@ -15,6 +15,8 @@
     <string name="evaluation">Evaluation</string>
     <string name="stickHandling">Stick Handling</string>
     <string name="freeRoaming">Free Roaming</string>
+    <string name="calibration">Calibration and Settings</string>
+
 
     <!-- Action Bar -->
     <string name="noBleDeviceConnected">No BLE device connected</string>
@@ -45,6 +47,9 @@
     <string name="choose_exercise">Which exercise you want to try: </string>
 
 
+    <!-- Calibration Screen -->
+    <string name="peak_acc">Shot peak threshold: </string>
+    <string name="stick_acc">Stick handling threshold: </string>
 
     <!-- Shot Statistics Screen -->
     <string name="loading">Loading simulation data, please wait...</string>
@@ -61,7 +66,6 @@
     <string name="show_acceleration">Show acceleration</string>
     <string name="show_speed">Show speed</string>
     <string name="show_angular">Show angular speed</string>
-    <string name="peak_acc">(DEV) Peak acceleration threshold: </string>
     <string name="recent_shot1">Last shot </string>
     <string name="recent_shot2">Previous shot 1 </string>
     <string name="recent_shot3">Previous shot 2 </string>

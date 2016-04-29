@@ -102,7 +102,7 @@ public class ActionBarFragment extends BaseFragment {
             @Override
             public void run() {
                 battery_value = battery;
-                if (battery_value > 128) {
+                if (battery_value >= 128) {
                     int base = battery_value-128;
 
                     // Don't want to show 0 if a little more.

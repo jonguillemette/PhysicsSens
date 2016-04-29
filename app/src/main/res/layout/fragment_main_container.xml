@@ -76,7 +76,13 @@
         </LinearLayout>
     </FrameLayout>
 
-
+    <FrameLayout
+        android:id="@+id/calibration_fragment_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/action_bar_fragment_container"
+        android:visibility="gone"
+        />
 
 
 </RelativeLayout>

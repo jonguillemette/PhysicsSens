@@ -53,6 +53,7 @@ public class HomeFragment extends BaseFragment {
 
     private Button mShotTextButton;
     private Button mStickHandlingButton;
+    private Button mCalibrationButton;
     private ImageButton mNewUserImageButton;
     private Spinner mUserSpinner;
     private Button mSaveUserButton;
@@ -159,6 +160,7 @@ public class HomeFragment extends BaseFragment {
 
         mShotTextButton = (Button) v.findViewById(R.id.shot_test_button);
         mStickHandlingButton = (Button) v.findViewById(R.id.handling_test_button);
+        mCalibrationButton = (Button) v.findViewById(R.id.calibration_button);
         mNewUserImageButton = (ImageButton) v.findViewById(R.id.new_user_image_button);
         mUserSpinner = (Spinner) v.findViewById(R.id.user_spinner);
 
@@ -217,10 +219,30 @@ public class HomeFragment extends BaseFragment {
         mStickHandlingButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                //TODO Delete the "true" statement
                 if (true || mCommunicationDone) {
                     if (mUserSpinner.getSelectedItemPosition() != -1) {
                         if (true || getController().isBleDeviceConnected()) {
                             getController().gotoStickHand((User) mUserSpinner.getSelectedItem());
+                        }
+                    }
+                } else {
+                    if (getController().isBleDeviceConnected())
+                        Toast.makeText(getActivity(), "Device is connecting...", Toast.LENGTH_LONG).show();
+                    else
+                        Toast.makeText(getActivity(), "No device connected", Toast.LENGTH_LONG).show();
+                }
+            }
+        });
+
+        mCalibrationButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //TODO Delete the "true" statement
+                if (true || mCommunicationDone) {
+                    if (mUserSpinner.getSelectedItemPosition() != -1) {
+                        if (true || getController().isBleDeviceConnected()) {
+                            getController().gotoCalibration();
                         }
                     }
                 } else {

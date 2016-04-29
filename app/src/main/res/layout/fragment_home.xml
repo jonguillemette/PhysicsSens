@@ -99,8 +99,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:layout_gravity="center_horizontal"
-            android:layout_marginTop="@dimen/test_vertical_margin"
-            android:layout_marginBottom="200dp">
+            android:layout_marginTop="@dimen/test_vertical_margin">
 
             <Button
                 android:layout_width="@dimen/test_box_width"
@@ -130,6 +129,20 @@
                 />
 
         </LinearLayout>
+
+        <Button
+            android:layout_width="@dimen/test_box_width"
+            android:layout_height="wrap_content"
+            android:id="@+id/calibration_button"
+            android:background="@drawable/test_button_shadow"
+            android:text="@string/calibration"
+            android:textAllCaps="false"
+            android:textColor="@color/dark_grey"
+            android:textSize="@dimen/test_text_size"
+            android:layout_marginTop="@dimen/test_horizontal_margin"
+            android:layout_gravity="center"
+            android:clickable="true"
+            />
 
     </LinearLayout>
 

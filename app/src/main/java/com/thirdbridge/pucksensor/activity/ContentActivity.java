@@ -30,6 +30,7 @@ import com.thirdbridge.pucksensor.R;
 import com.thirdbridge.pucksensor.ble.BLEDeviceInfo;
 import com.thirdbridge.pucksensor.ble.BluetoothLeService;
 import com.thirdbridge.pucksensor.controllers.ActionBarFragment;
+import com.thirdbridge.pucksensor.controllers.CalibrationFragment;
 import com.thirdbridge.pucksensor.controllers.HistoryFragment;
 import com.thirdbridge.pucksensor.controllers.HomeFragment;
 import com.thirdbridge.pucksensor.controllers.ScanBleFragment;
@@ -53,7 +54,7 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 
 
 
-	private enum VisibleFragment {BLE, HOME, HISTORY, STATS, STICK_HAND, YOUTUBE}
+	private enum VisibleFragment {BLE, HOME, HISTORY, STATS, STICK_HAND, YOUTUBE, CALIBRATION}
 
 	private VisibleFragment mVisibleFragment;
 	private Constants.SelectedTest mSelectedTest;
@@ -81,6 +82,9 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
     private YouTubePlayer mPlayer;
 	private String mVideo;
     private boolean mOnce = false;
+
+	private FrameLayout mCalibrationFragmentContainer;
+	private CalibrationFragment mCalibrationFragment;
 
     @Override
     public void onInitializationSuccess(YouTubePlayer.Provider provider, YouTubePlayer youTubePlayer, boolean b) {
@@ -226,6 +230,16 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 		ft.commit();
 	}
 
+	private void initializeCalibrationFragment() {
+		mCalibrationFragmentContainer = (FrameLayout) findViewById(R.id.calibration_fragment_container);
+		mCalibrationFragment = CalibrationFragment.newInstance();
+
+		FragmentManager fm = getSupportFragmentManager();
+		FragmentTransaction ft = fm.beginTransaction();
+		ft.replace(R.id.calibration_fragment_container, mCalibrationFragment);
+		ft.commit();
+	}
+
 	private void initializeYoutubeFragment(String video) {
 		mYoutubeFragmentContainer = (FrameLayout) findViewById(R.id.youtube_fragment_container);
 		mYoutubeFragment = (YouTubePlayerFragment) getFragmentManager().findFragmentById(R.id.youtube_fragment);
@@ -289,6 +303,9 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
             backfromYoutube();
         }
 
+		if (mCalibrationFragmentContainer != null)
+			mCalibrationFragmentContainer.setVisibility(View.GONE);
+
 		mActionBarFragment.setActionBarTitle("BLE Device Discovery");
 
 
@@ -315,6 +332,9 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
         if (mVisibleFragment == VisibleFragment.YOUTUBE) {
             backfromYoutube();
         }
+
+		if (mCalibrationFragmentContainer != null)
+			mCalibrationFragmentContainer.setVisibility(View.GONE);
 
 		mActionBarFragment.setActionBarTitle("Home");
 
@@ -352,6 +372,16 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 		mStickHandFragmentContainer.setVisibility(View.VISIBLE);
 		setVisibleFragment(VisibleFragment.STICK_HAND);
 		mActionBarFragment.setActionBarTitle("Stick Handling");
+	}
+
+	public void gotoCalibration() {
+		initializeCalibrationFragment();
+		mHomeFragmentContainer.setVisibility(View.GONE);
+		if(mHistoryFragmentContainer != null)
+			mHistoryFragmentContainer.setVisibility(View.GONE);
+		mCalibrationFragmentContainer.setVisibility(View.VISIBLE);
+		setVisibleFragment(VisibleFragment.CALIBRATION);
+		mActionBarFragment.setActionBarTitle("Calibration & Settings");
 	}
 
 	public void backfromYoutube() {
@@ -393,6 +423,9 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 				gotoHome();
 				break;
 			case STICK_HAND:
+				gotoHome();
+				break;
+			case CALIBRATION:
 				gotoHome();
 				break;
             case YOUTUBE:

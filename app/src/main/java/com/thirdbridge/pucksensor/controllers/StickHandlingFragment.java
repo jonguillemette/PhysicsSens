@@ -2,8 +2,10 @@ package com.thirdbridge.pucksensor.controllers;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -51,9 +53,14 @@ import com.thirdbridge.pucksensor.utils.CellOrganizer;
 import com.thirdbridge.pucksensor.utils.Constants;
 import com.thirdbridge.pucksensor.utils.IO;
 import com.thirdbridge.pucksensor.utils.MathHelper;
+import com.thirdbridge.pucksensor.utils.Protocol;
 import com.thirdbridge.pucksensor.utils.Shot;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -64,22 +71,9 @@ import java.util.List;
 public class StickHandlingFragment extends BaseFragment {
 
 	private static String TAG = StickHandlingFragment.class.getSimpleName();
-    private static String FOLDER_SAVE_SHOT = "Shots";
+    private static String FOLDER_SAVE_SHOT = "Statpuck";
     private static final boolean DEBUG = true;
 
-
-    // PROTOCOL CMD
-    private static final int SETTINGS_READ = 2;
-    private static final int SETTINGS_NEW  = 3;
-    private static final int DATA          = 4;
-    private static final int DATA_READY    = 5;
-    private static final int DATA_END      = 6;
-    private static final int DATA_START    = 8;
-    private static final int DATA_DRAFT    = 10;
-
-    // PROTOCOL DEFAULT SETTINGS
-    private static final byte VALIDITY_TOKEN = 0x3D;
-    private static final int[] DEFAULT = {VALIDITY_TOKEN, 0x00, 0x00, 255, 0x00, 0x01, 0x01, 0x01}; //(2G)
     private static final int[] RECENT_NAME = {R.string.recent_shot1, R.string.recent_shot2, R.string.recent_shot3, R.string.recent_shot4, R.string.recent_shot5};
 
 
@@ -90,14 +84,14 @@ public class StickHandlingFragment extends BaseFragment {
     private boolean mAutoStart = false;
 	private User mUser;
 	private boolean mPreviewTest = false;
-    private boolean mProgressChange = true;
-    private int[] mActualSettings = DEFAULT.clone();
+    private int[] mActualSettings = Protocol.DEFAULT.clone();
 
 	private Button mStartStopButton;
 	private Button mSaveButton;
 	private TextView mDescriptionTextView;
     private ImageButton mVideobutton;
     private int mExerciseIndex = 0;
+    private TextView mKeyExerciseTV;
 
 	//Loading screen
 	private RelativeLayout mLoadingScreenRelativeLayout;
@@ -155,14 +149,12 @@ public class StickHandlingFragment extends BaseFragment {
         @Override
         public void run() {
             while(true) {
-                if (!mTestRunning && mAutoStart) {
-                    getActivity().runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            start();
-                        }
-                    });
+                try {
+                    Thread.sleep(1000);
+                } catch (Exception e) {
+
                 }
+
                 if (mSensorReady != mSensorReadyChange) {
                     if (HomeFragment.getInstance().IsBluetoothReady()) {
                         mSensorReady = true;
@@ -174,13 +166,17 @@ public class StickHandlingFragment extends BaseFragment {
                     mSensorReadyChange = mSensorReady;
                 }
 
-
-
-                try {
-                    Thread.sleep(1000);
-                } catch (Exception e) {
-
+                if (!mTestRunning && mAutoStart) {
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            start();
+                        }
+                    });
                 }
+
+
+
                 if (mPause) {
                     break;
                 }
@@ -250,12 +246,12 @@ public class StickHandlingFragment extends BaseFragment {
         mStartExercise = (Button) v.findViewById(R.id.start_exercice_button);
         mTable = (TableLayout) v.findViewById(R.id.table_layout);
         mVideobutton = (ImageButton) v.findViewById(R.id.video_button);
+        mKeyExerciseTV = (TextView) v.findViewById(R.id.key_exercise);
 
-
+        mVideobutton.setVisibility(View.GONE);
 		mLoadingScreenRelativeLayout = (RelativeLayout) v.findViewById(R.id.loading_screen_relative_layout);
 
         // Menu
-
         mSettings = getActivity().getSharedPreferences("StatPuck", 0);
 
 
@@ -340,7 +336,6 @@ public class StickHandlingFragment extends BaseFragment {
         mStartExercise.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mExercises.get(mExerciseIndex).loadInformation(mJSONExercise);
                 Log.i(TAG, "Acceleration: " + mExercises.get(mExerciseIndex).getKeyPoint(0).getAccelerationMean());
             }
         });
@@ -527,28 +522,13 @@ public class StickHandlingFragment extends BaseFragment {
 
 
 	private void onCharacteristicChanged(byte[] value) {
-        if (value[0] != SETTINGS_READ) {
-
-            //Log.i(TAG, "Check first: AH: " + accelHigh[0] + " AL: " + accelLow[0] + " Gyro: " + gyro[0]);
-        } else {
-            if (value[2] != VALIDITY_TOKEN && !mSendOnce) {
-                // Settings don't care, send default ones
-                byte[] send = new byte[20];
-                send[0] = SETTINGS_NEW;
-                send[1] = 0; //Battery, don't care
-                for (int i=0; i<18; i++) {
-                    if (i < DEFAULT.length) {
-                        send[2+i] = (byte)mActualSettings[i];
-                    } else {
-                        send[2+i] = 0;
-                    }
-                }
-                try {
-                    HomeFragment.getInstance().writeBLE(send);
-                    mSendOnce = true;
-                } catch (Exception e) {
-
-                }
+        mAutoStart = true;
+        if (Protocol.isSameMode(Protocol.STICK_MODE, value[0])) {
+            // TODO OnChanged
+        } else if (Protocol.isSameMode(Protocol.SETTINGS_MODE, value[0])) {
+            if (value[2] != Protocol.VALIDITY_TOKEN && !mSendOnce) {
+                Protocol.setDefault();
+                mSendOnce = true;
             }
 
             for (int i=0; i<mActualSettings.length; i++) {
@@ -560,7 +540,7 @@ public class StickHandlingFragment extends BaseFragment {
         for (int i=0; i<value.length; i++) {
             val += value[i] + ", ";
         }
-        //Log.i(TAG, "Value: " + val);
+        Log.i(TAG, "Value: " + val);
 	}
 
 
@@ -588,13 +568,12 @@ public class StickHandlingFragment extends BaseFragment {
                     mStartStopButton.setEnabled(false);
             } else {
                 mTestWasRun = true;
-                //TODO Start BLE code
 
-                mStartStopButton.setText(getString(R.string.stopTest));
-                mStartStopButton.setCompoundDrawablesWithIntrinsicBounds(android.R.drawable.ic_delete, 0, 0, 0);
+                mStartStopButton.setVisibility(View.GONE);
+                mSaveButton.setVisibility(View.VISIBLE);
 
                 mTestRunning = true;
-                byte[] send = {DATA_READY, 0x00};
+                byte[] send = {Protocol.STICK_START, 0x00};
                 try {
                     HomeFragment.getInstance().writeBLE(send);
                 } catch (Exception e) {}
@@ -641,6 +620,7 @@ public class StickHandlingFragment extends BaseFragment {
     private void setupExercise(ListView listUI, final ViewGroup container) {
         //TODO Query on the internet
         mExercises.clear();
+
         mExercises.add(new Exercise("QWERTY", "Cones exercise", "Pass the puck between cones.", "btPJPFnesV4"));
         mExercises.add(new Exercise("QWERTY", "Glove & Infinite symbol", "Place gloves on ice and create a infinite symbole over the two gloves.","NJMkSD1PUQA"));
 
@@ -658,8 +638,50 @@ public class StickHandlingFragment extends BaseFragment {
                 mStartExercise.setText(R.string.start_exercice);
                 mStartExercise.setText(mStartExercise.getText() + ": " + mExercises.get(position).getTitle());
                 mExerciseIndex = position;
+
+                mExercises.get(mExerciseIndex).loadInformation(mJSONExercise);
+                String text = "";
+                if (mExercises.get(mExerciseIndex).getKeyNotes() != null) {
+                    for (int i = 0; i < mExercises.get(mExerciseIndex).getKeyNotes().length; i++) {
+                        text += mExercises.get(mExerciseIndex).getKeyNotes()[i];
+                        if (i < mExercises.get(mExerciseIndex).getKeyNotes().length - 1) {
+                            text += "\n";
+                        }
+                    }
+                }
+                mKeyExerciseTV.setText(text);
+
+                // Update images:
+                loadImageFromYoutube(mExercises.get(position).getVideo(), mVideobutton);
             }
         });
+    }
+
+    public void loadImageFromYoutube(final String video, final ImageButton img) {
+        Thread t = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    URL url = null;
+                    url = new URL("http://img.youtube.com/vi/" + video + "/mqdefault.jpg");
+                    final Bitmap bmp = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            img.setImageBitmap(bmp);
+                            img.setVisibility(View.VISIBLE);
+                        }
+                    });
+
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        t.start();
+
     }
 
 
