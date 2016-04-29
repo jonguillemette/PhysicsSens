@@ -1,5 +1,7 @@
 package com.thirdbridge.pucksensor.models;
 
+import android.util.Pair;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -27,6 +29,41 @@ public class KeyPoint {
         DIRECTION,
         QUALITY_DIRECTION,
     }
+
+    public static String getUnits(Data data, Data data2) {
+        switch (data) {
+            case DELTA_TIME:
+                return "ms";
+            case ACCELERATION_MEAN:
+                return "m/s²";
+            case ACCELERATION_MAX:
+                return "m/s²";
+            case DIRECTON_RAW:
+                if (data2 == Data.IS_RADIAN) {
+                    return "rad";
+                } else {
+                    return "degree";
+                }
+            case ROTATION_DELTA:
+                if (data2 == Data.IS_RADIAN) {
+                    return "rad/s";
+                } else {
+                    return "degree/s";
+                }
+            case ACCEL_Z:
+                return "m/s²";
+            case DIRECTION:
+                if (data2 == Data.IS_RADIAN) {
+                    return "rad";
+                } else {
+                    return "degree";
+                }
+            case QUALITY_DIRECTION:
+                return "";
+        }
+        return "";
+    }
+
 
     // Primary data
     private double mDeltaTime;

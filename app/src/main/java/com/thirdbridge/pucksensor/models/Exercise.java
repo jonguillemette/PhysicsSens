@@ -11,11 +11,13 @@ import org.json.JSONObject;
  */
 public class Exercise {
     private static final String JSON_KEYPOINTS = "key_points";
+    private static final String JSON_KEYNOTES = "key_notes";
 
     private String mTitle;
     private String mDescription;
     private String mId;
     private String mVideo;
+    private String[] mKeyNotes;
     private KeyPoint[] mKeypoints;
     private double mTotalTime;
     private double mAccelerationMax;
@@ -42,6 +44,21 @@ public class Exercise {
         } catch (JSONException e) {
             e.printStackTrace();
         }
+
+        try {
+            jsonRootObject = new JSONObject(jsonData);
+            JSONArray jsonArray = jsonRootObject.optJSONArray(JSON_KEYNOTES);
+            mKeyNotes = new String[jsonArray.length()];
+            for (int i=0; i<jsonArray.length(); i++) {
+                mKeyNotes[i] = jsonArray.getString(i);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public String[] getKeyNotes() {
+        return mKeyNotes;
     }
 
     public String getTitle() {

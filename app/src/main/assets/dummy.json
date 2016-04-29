@@ -1,4 +1,9 @@
 {
+  "key_notes" : [
+	"Hold the stick with hands, not head.",
+	"Follow the path.",
+	"No need to scream of the Puck, it doesn't hear you."
+  ],
  "key_points" :[
  {
 	"delta_time":10,
