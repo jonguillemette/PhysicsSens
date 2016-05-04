@@ -4,6 +4,7 @@ import android.util.Pair;
 
 import com.thirdbridge.pucksensor.models.User;
 
+import java.io.File;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -52,6 +53,11 @@ public class Shot {
         mTime = df.format(Calendar.getInstance().getTime());
         mCooked = false;
         mMax = rotation.length;
+    }
+
+    public Shot(File filename, String date) {
+        depackageFormCSV(filename);
+        mTime = date;
     }
 
 
@@ -123,6 +129,15 @@ public class Shot {
         mMaxRotation = angular;
     }
 
+    public double[] getMax() {
+        double[] values = {mMaxAccel, mMaxSpeed, mMaxRotation};
+        return values;
+    }
+
+    public User getUser() {
+        return mUser;
+    }
+
     public Pair<String,String> packageFormCSV() {
         // Create a form that is easily parceable
         String text = "Player, " + mUser.getName() + "," + mUser.getId() + "\n";
@@ -139,6 +154,37 @@ public class Shot {
 
         String fileName = mUser.getId() + "_" + mTime + ".csv";
         return new Pair<>(fileName, text);
+    }
+
+    public void depackageFormCSV(File filename) {
+        String data = IO.loadFile(filename);
+
+        String[] datas = data.split("\n");
+
+        String[] user = datas[0].replace("Player, ", "").split(",");
+        mUser = new User(user[1], user[0]);
+
+        mMaxAccel = Double.parseDouble(datas[2].replace("Acceleration, ", "").replace(" g", ""));
+        mMaxSpeed = Double.parseDouble(datas[3].replace("Speed, ", "").replace(" m/s", ""));
+        mMaxRotation = Double.parseDouble(datas[4].replace("Rotation, ", "").replace(" degrees/s", ""));
+
+        int length = datas.length - 7;
+
+        mAccTotal = new double[length];
+        mSpeedTotal = new double[length];
+        mRotDatas = new double[length];
+
+        int index = 0;
+        for (int i = 7; i<datas.length; i++) {
+            mAccTotal[index] = Double.parseDouble(datas[i].split(",")[0]);
+            mSpeedTotal[index] = Double.parseDouble(datas[i].split(",")[1]);
+            mRotDatas[index] = Double.parseDouble(datas[i].split(",")[2]);
+            index++;
+        }
+
+        mCooked = true;
+
+        mDraft = false;
     }
 
     /**

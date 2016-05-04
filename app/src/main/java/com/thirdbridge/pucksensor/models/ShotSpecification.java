@@ -2,6 +2,8 @@ package com.thirdbridge.pucksensor.models;
 
 import android.graphics.Bitmap;
 
+import com.thirdbridge.pucksensor.utils.Shot;
+
 /**
  * Created by Jayson Dalpé on 2016-04-01.
  * Specification for a type of shot.
@@ -12,6 +14,7 @@ public class ShotSpecification {
     private double[] mNumbers;
     private String[] mUnits;
     private String mId;
+    private Shot mShot;
 
     /**
      * Build a shot specification.
@@ -30,6 +33,22 @@ public class ShotSpecification {
         mId = id;
     }
 
+    public ShotSpecification(String name, String description, double[] numbers, String[] units, String id, Shot shot) {
+        mName = name;
+        mDescription = description;
+        mNumbers = numbers;
+        mUnits = units;
+        mId = id;
+        mShot = shot;
+    }
+
+    public void setShot(Shot shot) {
+        mShot = shot;
+    }
+
+    public Shot getShot() {
+        return mShot;
+    }
 
     public String getName() {
         return mName;

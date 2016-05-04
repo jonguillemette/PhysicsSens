@@ -10,6 +10,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.provider.MediaStore;
 import android.support.v4.content.ContextCompat;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -67,6 +68,7 @@ public class ShotStatsFragment extends BaseFragment {
 
 	private static String TAG = ShotStatsFragment.class.getSimpleName();
     private static String FOLDER_SAVE_SHOT = "Statpuck";
+    private static final String LOCAL_SHOTS = "LOCAL_SHOTS";
 
     private static final double STAMP = 1.25;
     private static final double DRAFT_STAMP = 50/3;
@@ -187,13 +189,10 @@ public class ShotStatsFragment extends BaseFragment {
         @Override
         public void run() {
             while(true) {
-                if (!mTestRunning && mAutoStart) {
-                    getActivity().runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            start();
-                        }
-                    });
+                try {
+                    Thread.sleep(1000);
+                } catch (Exception e) {
+
                 }
                 if (mSensorReady != mSensorReadyChange) {
                     if (HomeFragment.getInstance().IsBluetoothReady()) {
@@ -205,13 +204,16 @@ public class ShotStatsFragment extends BaseFragment {
                     }
                     mSensorReadyChange = mSensorReady;
                 }
-
-
-                try {
-                    Thread.sleep(1000);
-                } catch (Exception e) {
-
+                if (!mTestRunning && mAutoStart) {
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            start();
+                        }
+                    });
                 }
+
+
                 if (mPause) {
                     break;
                 }
@@ -1259,50 +1261,94 @@ public class ShotStatsFragment extends BaseFragment {
     private void setupShot(ListView listUI, String id) {
         //TODO query on the internet the shot of the player ID
         mShotSpecs.clear();
-        double[] datas = {20, 245.3, 200.3};
-        double[] datas2 = {13, 255.3, 210.3};
-        String[] units = {"IntellieSportRank", "g", "m/s"};
 
-        mShotSpecs.add(new ShotSpecification("Best rank", "Shot on 2016/04/07", datas, units, "WERTYU"));
-        mShotSpecs.add(new ShotSpecification("Best speed", "Shot on 2016/04/06", datas2, units, "WERTYUI"));
+        if (id.equals(LOCAL_SHOTS)) {
+            // Step 1: Check every file inside
+            File rootsd = Environment.getExternalStorageDirectory();
+            File root = new File(rootsd.getAbsolutePath(), FOLDER_SAVE_SHOT);
 
-
-        ComparisonShotAdapter adapter = new ComparisonShotAdapter(getContext(), mShotSpecs);
-        listUI.setAdapter(adapter);
-
-        listUI.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                openComparisonMenu(false, false, null, null);
-                //TODO Retrieve dot from DB
-                Log.i(TAG, mShotSpecs.get(position).getName());
-
-                User dataBaseUser = new User(mPlayers.get(mPlayerPosition).getId(), mPlayers.get(mPlayerPosition).getName());
-                Shot databaseShot = new Shot(Shot.getMaxData(), dataBaseUser, false);
-                for (int i=0; i<Shot.getMaxData(); i++) {
-                    if (i<Shot.getMaxData()/4) {
-                        databaseShot.setAccelerationXYZ(i, i);
-                    } else if (i<Shot.getMaxData()/2) {
-                        databaseShot.setAccelerationXYZ(Shot.getMaxData()/2-i, i);
-                    } else {
-                        databaseShot.setAccelerationXYZ(i, i);
-                    }
-                    databaseShot.setRotation(i%20, i);
-
-                }
-                databaseShot.analyze(10); // TODO Need to check validity over player
-                mRecent[4] = databaseShot;
-                mRecentResult[4].setText(RECENT_NAME[4]);
-                mRecentResult[4].setText(mRecentResult[4].getText() + mShotSpecs.get(position).getName() + " of " + mPlayers.get(mPlayerPosition).getName());
-
-                checkRecent(4, true);
+            File[] files = root.listFiles();
+            if (files == null) {
+                return;
             }
-        });
+            for (int i=0; i<files.length; i++) {
+                String date = files[i].getName().split("_", 2)[1].replace(".csv", "");
+                Shot shot = new Shot(files[i], date);
+
+
+                String[] units = {"g", "m/s", "degrees/s"};
+                mShotSpecs.add(new ShotSpecification(shot.getUser().getName(), "Shot on " + date, shot.getMax(), units, LOCAL_SHOTS, shot));
+
+            }
+
+            ComparisonShotAdapter adapter = new ComparisonShotAdapter(getContext(), mShotSpecs);
+            listUI.setAdapter(adapter);
+            listUI.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                    openComparisonMenu(false, false, null, null);
+
+
+                    Shot shot = mShotSpecs.get(position).getShot();
+
+                    shot.analyze(mSettings.getInt(THRESHOLD_G, MINIMAL_G)+1);
+                    mRecent[4] = shot;
+                    mRecentResult[4].setText(RECENT_NAME[4]);
+                    mRecentResult[4].setText(mRecentResult[4].getText() + mPlayers.get(mPlayerPosition).getName() + " of " + mShotSpecs.get(position).getDescription());
+
+                    checkRecent(4, true);
+                }
+            });
+
+        } else {
+            double[] datas = {20, 245.3, 200.3};
+            double[] datas2 = {13, 255.3, 210.3};
+            String[] units = {"IntellieSportRank", "g", "m/s"};
+
+            mShotSpecs.add(new ShotSpecification("Best rank", "Shot on 2016/04/07", datas, units, "WERTYU"));
+            mShotSpecs.add(new ShotSpecification("Best speed", "Shot on 2016/04/06", datas2, units, "WERTYUI"));
+
+
+            ComparisonShotAdapter adapter = new ComparisonShotAdapter(getContext(), mShotSpecs);
+            listUI.setAdapter(adapter);
+            listUI.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                    openComparisonMenu(false, false, null, null);
+                    //TODO Retrieve dot from DB
+                    Log.i(TAG, mShotSpecs.get(position).getName());
+
+                    User dataBaseUser = new User(mPlayers.get(mPlayerPosition).getId(), mPlayers.get(mPlayerPosition).getName());
+                    Shot databaseShot = new Shot(Shot.getMaxData(), dataBaseUser, false);
+                    for (int i = 0; i < Shot.getMaxData(); i++) {
+                        if (i < Shot.getMaxData() / 4) {
+                            databaseShot.setAccelerationXYZ(i, i);
+                        } else if (i < Shot.getMaxData() / 2) {
+                            databaseShot.setAccelerationXYZ(Shot.getMaxData() / 2 - i, i);
+                        } else {
+                            databaseShot.setAccelerationXYZ(i, i);
+                        }
+                        databaseShot.setRotation(i % 20, i);
+
+                    }
+                    databaseShot.analyze(10); // TODO Need to check validity over player
+                    mRecent[4] = databaseShot;
+                    mRecentResult[4].setText(RECENT_NAME[4]);
+                    mRecentResult[4].setText(mRecentResult[4].getText() + mShotSpecs.get(position).getName() + " of " + mPlayers.get(mPlayerPosition).getName());
+
+                    checkRecent(4, true);
+                }
+            });
+        }
+
+
+
     }
 
     private void setupPlayer(ListView listUI, final ViewGroup container) {
         //TODO Query on the internet the list regarding to his mUser.
         mPlayers.clear();
+        mPlayers.add(new Player(BitmapFactory.decodeResource(getResources(), R.drawable.save), "Local", "The shot save in this devices", LOCAL_SHOTS));
         mPlayers.add(new Player(BitmapFactory.decodeResource(getResources(), R.drawable.pksubban), "P. K. Subban", "Montreal Canadiens Defenseman", "QWT"));
         mPlayers.add(new Player(BitmapFactory.decodeResource(getResources(), R.drawable.brendangallagher), "Brendan Gallagher", "Montreal Canadiens Right wing", "QWT"));
         mPlayers.add(new Player(BitmapFactory.decodeResource(getResources(), R.drawable.maxpacioretty), "Max Pacioretty", "Montreal Canadiens Left wing", "QWT"));
