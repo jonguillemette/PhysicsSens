@@ -50,6 +50,8 @@
     <!-- Calibration Screen -->
     <string name="peak_acc">Shot peak threshold: </string>
     <string name="stick_acc">Stick handling threshold: </string>
+    <string name="release_acc">Release threshold: </string>
+    <string name="points_board">Nb of points on each side: </string>
 
     <!-- Shot Statistics Screen -->
     <string name="loading">Loading simulation data, please wait...</string>
@@ -73,13 +75,14 @@
     <string name="recent_shot5">Compare with: </string>
     <!-- Last recent shot is actually another one from a database -->
     <string name="compare_title">More comparison</string>
+    <string name="autosave">Autosave</string>
+
 
 
     <!-- Comparison menu -->
     <string name="compare_who">Compare with who?</string>
     <string name="compare_shot">Compare which shot?</string>
     <string name="compare_select">Compare!</string>
-
 
 
 
@@ -92,7 +95,7 @@
     <string name="topAccelZ">Top Acceleration Z Axis</string>
 
     <!-- Speed Chart -->
-    <string name="speedChartTitle">Puck speed over time (m/s)</string>
+    <string name="speedChartTitle">Puck speed over time (km/h)</string>
     <string name="topSpeed">Top Speed</string>
     <string name="topSpeedXYZ">Top Speed XYZ Axis</string>
     <string name="topSpeedX">Top Speed X Axis</string>

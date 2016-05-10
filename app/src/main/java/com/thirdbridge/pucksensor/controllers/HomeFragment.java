@@ -238,10 +238,9 @@ public class HomeFragment extends BaseFragment {
         mCalibrationButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //TODO Delete the "true" statement
-                if (true || mCommunicationDone) {
+                if (mCommunicationDone) {
                     if (mUserSpinner.getSelectedItemPosition() != -1) {
-                        if (true || getController().isBleDeviceConnected()) {
+                        if (getController().isBleDeviceConnected()) {
                             getController().gotoCalibration();
                         }
                     }

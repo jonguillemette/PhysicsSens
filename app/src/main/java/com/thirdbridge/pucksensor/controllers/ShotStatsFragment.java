@@ -73,11 +73,16 @@ public class ShotStatsFragment extends BaseFragment {
     private static final double STAMP = 1.25;
     private static final double DRAFT_STAMP = 50/3;
     private static final boolean DEBUG = false;
-    private static final int MINIMAL_G = 0; // Actually +1
+    private static final int MINIMAL_G = 1;
     private static final String THRESHOLD_G = "THRESHOLD_G";
+    private static final int MINIMAL_RELEASE_G = 2;
+    private static final String THRESHOLD_RELEASE_G = "THRESHOLD_RELEASE_G";
     private static final String CHECK_ACCEL = "CHECK_ACCEL";
     private static final String CHECK_SPEED = "CHECK_SPEED";
     private static final String CHECK_ROTATION = "CHECK_ROTATION";
+    private static final String CHECK_AUTOSAVE = "CHECK_AUTOSAVE";
+    private static final int MINIMAL_POINTS = 5;
+    private static final String POINTS_BOARD = "POINTS_BOARD";
 
     private static final int[] GRAPH_COLOR = {Color.BLUE, Color.RED};
     private static final int[] RECENT_NAME = {R.string.recent_shot1, R.string.recent_shot2, R.string.recent_shot3, R.string.recent_shot4, R.string.recent_shot5};
@@ -114,6 +119,7 @@ public class ShotStatsFragment extends BaseFragment {
     private CheckBox mAccCheckB;
     private CheckBox mSpeedCheckB;
     private CheckBox mAngularCheckB;
+    private CheckBox mAutosaveCheckB;
 
     // Check management
     private CheckBox[] mRecentResult;
@@ -284,6 +290,7 @@ public class ShotStatsFragment extends BaseFragment {
         mAccCheckB = (CheckBox) v.findViewById(R.id.show_acceleration_check);
         mSpeedCheckB = (CheckBox) v.findViewById(R.id.show_speed_check);
         mAngularCheckB = (CheckBox) v.findViewById(R.id.show_angular_check);
+        mAutosaveCheckB = (CheckBox) v.findViewById(R.id.autosave);
 
         mSettings = getActivity().getSharedPreferences("StatPuck", 0);
 
@@ -411,43 +418,27 @@ public class ShotStatsFragment extends BaseFragment {
 		mSaveButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                // Save on a known place every shot shown
-                File rootsd = Environment.getExternalStorageDirectory();
-                File root = new File(rootsd.getAbsolutePath(), FOLDER_SAVE_SHOT);
-                if (!root.exists()) {
-                    root.mkdirs();
-                }
-
-                List<Integer> id = new ArrayList<Integer>();
-                if (mFirstCheck != -1) {
-                    id.add(mFirstCheck);
-                }
-                if (mSecondCheck != -1) {
-                    id.add(mSecondCheck);
-                }
-
-                for (int i=0; i<id.size(); i++) {
-                    if (mRecent[id.get(i)] == null) {
-                        continue;
-                    }
-                    Pair<String, String> saveData = mRecent[id.get(i)].packageFormCSV();
-                    File file = new File(root, saveData.first);
-                    IO.saveFile(saveData.second, file);
-                    Toast.makeText(getContext(), "Save " + getString(RECENT_NAME[id.get(i)]) + " in " + file, Toast.LENGTH_LONG).show();
-
-                    Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-                    intent.setData(Uri.fromFile(file));
-                    getActivity().sendBroadcast(intent);
-                }
+                save();
             }
         });
 
         mAccCheckB.setChecked(mSettings.getBoolean(CHECK_ACCEL, mAccCheckB.isChecked()));
         mSpeedCheckB.setChecked(mSettings.getBoolean(CHECK_SPEED, mSpeedCheckB.isChecked()));
         mAngularCheckB.setChecked(mSettings.getBoolean(CHECK_ROTATION, mAngularCheckB.isChecked()));
+        mAutosaveCheckB.setChecked(mSettings.getBoolean(CHECK_AUTOSAVE, mAutosaveCheckB.isChecked()));
+
         showAcceleration(mAccCheckB.isChecked());
         showSpeed(mSpeedCheckB.isChecked());
         showAngularSpeed(mAngularCheckB.isChecked());
+
+        mAutosaveCheckB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                SharedPreferences.Editor editor = mSettings.edit();
+                editor.putBoolean(CHECK_AUTOSAVE, isChecked);
+                editor.commit();
+            }
+        });
 
         mAccCheckB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -593,8 +584,20 @@ public class ShotStatsFragment extends BaseFragment {
             YAxis leftAxis = mAccelChart.getAxisLeft();
             leftAxis.setAxisMaxValue(Math.abs(max));
             leftAxis.setAxisMinValue(0);
+
+            double releaseTime1 = 0;
+            if (mFirstCheck != -1 && mRecent[mFirstCheck] != null) {
+                releaseTime1 = mRecent[mFirstCheck].getReleaseTime() * mTimeStep;
+            }
+
+            double releaseTime2 = 0;
+            if (mSecondCheck != -1 && mRecent[mSecondCheck] != null) {
+                releaseTime2 = mRecent[mSecondCheck].getReleaseTime() * mTimeStep;
+            }
+
 			//accel
-			mTopAccelXYZTextView.setText(MathHelper.round(mAccelMax[0], 2) + "g and " + MathHelper.round(mAccelMax[1], 2) + "g");
+			mTopAccelXYZTextView.setText(MathHelper.round(mAccelMax[0], 2) + "g and " + MathHelper.round(mAccelMax[1], 2) + "g" + "\n" +
+                    releaseTime1 + "ms and " + releaseTime2 + "ms");
             mAccelChart.fitScreen();
             mAccelChart.notifyDataSetChanged();
 		}
@@ -610,7 +613,7 @@ public class ShotStatsFragment extends BaseFragment {
             leftAxis.setAxisMaxValue(Math.abs(max));
             leftAxis.setAxisMinValue(0);
 			//speed
-			mTopSpeedXYZTextView.setText(MathHelper.round(mSpeedMax[0], 2) + " m/s and " + MathHelper.round(mSpeedMax[1], 2) + "m/s");
+			mTopSpeedXYZTextView.setText(MathHelper.round(mSpeedMax[0], 2) + " km/h and " + MathHelper.round(mSpeedMax[1], 2) + "km/h");
             mSpeedChart.fitScreen();
             mSpeedChart.notifyDataSetChanged();
 
@@ -627,7 +630,7 @@ public class ShotStatsFragment extends BaseFragment {
             leftAxis.setAxisMaxValue(Math.abs(max));
             leftAxis.setAxisMinValue(0);
 			//rotation
-			mTopRotationTextView.setText(MathHelper.round(mRotationMax[0], 2) + " degrees/s and" + MathHelper.round(mRotationMax[1], 2) + "degrees/s");
+			mTopRotationTextView.setText(MathHelper.round(mRotationMax[0], 2) + " degrees/s and " + MathHelper.round(mRotationMax[1], 2) + " degrees/s");
             mRotationChart.fitScreen();
             mRotationChart.notifyDataSetChanged();
 		}
@@ -1056,11 +1059,18 @@ public class ShotStatsFragment extends BaseFragment {
                 }
 
                 mRecent[0] = mReal;
-                mRecent[0].analyze(mSettings.getInt(THRESHOLD_G, MINIMAL_G)+1);
+                boolean load = mRecent[0].analyze(mSettings.getInt(THRESHOLD_G, MINIMAL_G), mSettings.getInt(THRESHOLD_RELEASE_G, MINIMAL_RELEASE_G), mSettings.getInt(POINTS_BOARD, MINIMAL_POINTS));
+                if (!load) {
+                    Toast.makeText(getContext(), "Cannot parse graphic", Toast.LENGTH_LONG).show();
+                }
+
 
                 populateCharts();
                 populateStatisticsFields();
                 mCircularIndex = 0;
+                if (mAutosaveCheckB.isChecked()) {
+                    save();
+                }
             }
         }
     }
@@ -1117,15 +1127,11 @@ public class ShotStatsFragment extends BaseFragment {
                     double accelZ = mRecent[idData.get(id)].getAccelerationsXYZ()[i].z;
                     double accelXYZ = Math.sqrt(Math.pow(accelX, 2) + Math.pow(accelY, 2) + Math.pow(accelZ, 2));
 
-
-
-
                     //Complete recent data
                     mRecent[idData.get(id)].setAccelerationXYZ(accelXYZ, i);
                     addAccelEntry(i * mTimeStep + "", i, (float) accelXYZ, newSetRequired, idData.get(id), id);
                 }
-
-                mPuckSpeedXYZ = (float) (mRecent[idData.get(id)].getAccelerations()[i] * GRAVITY * mTimeStep / 1000f + mPuckSpeedXYZ);
+                mPuckSpeedXYZ = (float) (mRecent[idData.get(id)].getAccelerations()[i] * GRAVITY * mTimeStep / 1000f * 3.6 + mPuckSpeedXYZ);
 
                 mRecent[idData.get(id)].setSpeedXYZ(mPuckSpeedXYZ, i);
                 addSpeedEntry(i * mTimeStep + "", i, mPuckSpeedXYZ, newSetRequired, idData.get(id), id);
@@ -1205,15 +1211,15 @@ public class ShotStatsFragment extends BaseFragment {
 
         int value = (values[4] & 0xFF);
         value |= (values[5] & 0xFF) << 8;
-        retValue[0] = ((double)value * 16)/2048;
+        retValue[0] = (double)value * 0.012;
 
         value = (values[10] & 0xFF);
         value |= (values[11] & 0xFF) << 8;
-        retValue[1] = ((double)value * 16)/2048;
+        retValue[1] = (double)value * 0.012;
 
         value = (values[16] & 0xFF);
         value |= (values[17] & 0xFF) << 8;
-        retValue[2] = ((double)value * 16)/2048;
+        retValue[2] = (double)value * 0.012;
         return retValue;
     }
 
@@ -1224,15 +1230,15 @@ public class ShotStatsFragment extends BaseFragment {
 
         int value = (values[6] & 0xFF);
         value |= (values[7] & 0xFF) << 8;
-        retValue[0] = ((double)value * 2000)/32767;
+        retValue[0] = ((double)value * 0.07);
 
         value = (values[12] & 0xFF);
         value |= (values[13] & 0xFF) << 8;
-        retValue[1] = ((double)value * 2000)/32767;
+        retValue[1] = ((double)value * 0.07);
 
         value = (values[18] & 0xFF);
         value |= (values[19] & 0xFF) << 8;
-        retValue[2] = ((double)value * 2000)/32767;
+        retValue[2] = ((double)value * 0.07);
         return retValue;
     }
 
@@ -1272,11 +1278,12 @@ public class ShotStatsFragment extends BaseFragment {
                 return;
             }
             for (int i=0; i<files.length; i++) {
+                Log.i("ALLO", "Files: " + files[i].getName());
                 String date = files[i].getName().split("_", 2)[1].replace(".csv", "");
                 Shot shot = new Shot(files[i], date);
 
 
-                String[] units = {"g", "m/s", "degrees/s"};
+                String[] units = {"g", "km/h", "degrees/s"};
                 mShotSpecs.add(new ShotSpecification(shot.getUser().getName(), "Shot on " + date, shot.getMax(), units, LOCAL_SHOTS, shot));
 
             }
@@ -1291,7 +1298,11 @@ public class ShotStatsFragment extends BaseFragment {
 
                     Shot shot = mShotSpecs.get(position).getShot();
 
-                    shot.analyze(mSettings.getInt(THRESHOLD_G, MINIMAL_G)+1);
+                    boolean load = shot.analyze(mSettings.getInt(THRESHOLD_G, MINIMAL_G), mSettings.getInt(THRESHOLD_RELEASE_G, MINIMAL_RELEASE_G), mSettings.getInt(POINTS_BOARD, MINIMAL_POINTS));
+                    if (!load) {
+                        Toast.makeText(getContext(), "Cannot parse graphic", Toast.LENGTH_LONG).show();
+                    }
+
                     mRecent[4] = shot;
                     mRecentResult[4].setText(RECENT_NAME[4]);
                     mRecentResult[4].setText(mRecentResult[4].getText() + mPlayers.get(mPlayerPosition).getName() + " of " + mShotSpecs.get(position).getDescription());
@@ -1303,7 +1314,7 @@ public class ShotStatsFragment extends BaseFragment {
         } else {
             double[] datas = {20, 245.3, 200.3};
             double[] datas2 = {13, 255.3, 210.3};
-            String[] units = {"IntellieSportRank", "g", "m/s"};
+            String[] units = {"IntellieSportRank", "g", "km/h"};
 
             mShotSpecs.add(new ShotSpecification("Best rank", "Shot on 2016/04/07", datas, units, "WERTYU"));
             mShotSpecs.add(new ShotSpecification("Best speed", "Shot on 2016/04/06", datas2, units, "WERTYUI"));
@@ -1331,7 +1342,11 @@ public class ShotStatsFragment extends BaseFragment {
                         databaseShot.setRotation(i % 20, i);
 
                     }
-                    databaseShot.analyze(10); // TODO Need to check validity over player
+                    boolean load = databaseShot.analyze(mSettings.getInt(THRESHOLD_G, MINIMAL_G), mSettings.getInt(THRESHOLD_RELEASE_G, MINIMAL_RELEASE_G), mSettings.getInt(POINTS_BOARD, MINIMAL_POINTS));
+                    if (!load) {
+                        Toast.makeText(getContext(), "Cannot parse graphic", Toast.LENGTH_LONG).show();
+                    }
+
                     mRecent[4] = databaseShot;
                     mRecentResult[4].setText(RECENT_NAME[4]);
                     mRecentResult[4].setText(mRecentResult[4].getText() + mShotSpecs.get(position).getName() + " of " + mPlayers.get(mPlayerPosition).getName());
@@ -1511,6 +1526,37 @@ public class ShotStatsFragment extends BaseFragment {
                     HomeFragment.getInstance().writeBLE(send);
                 } catch (Exception e) {}
             }
+        }
+    }
+
+    private void save() {
+        // Save on a known place every shot shown
+        File rootsd = Environment.getExternalStorageDirectory();
+        File root = new File(rootsd.getAbsolutePath(), FOLDER_SAVE_SHOT);
+        if (!root.exists()) {
+            root.mkdirs();
+        }
+
+        List<Integer> id = new ArrayList<Integer>();
+        if (mFirstCheck != -1) {
+            id.add(mFirstCheck);
+        }
+        if (mSecondCheck != -1) {
+            id.add(mSecondCheck);
+        }
+
+        for (int i=0; i<id.size(); i++) {
+            if (mRecent[id.get(i)] == null) {
+                continue;
+            }
+            Pair<String, String> saveData = mRecent[id.get(i)].packageFormCSV();
+            File file = new File(root, saveData.first);
+            IO.saveFile(saveData.second, file);
+            Toast.makeText(getContext(), "Save " + getString(RECENT_NAME[id.get(i)]) + " in " + file, Toast.LENGTH_LONG).show();
+
+            Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+            intent.setData(Uri.fromFile(file));
+            getActivity().sendBroadcast(intent);
         }
     }
 

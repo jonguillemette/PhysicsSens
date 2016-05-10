@@ -144,6 +144,9 @@ public class StickHandlingFragment extends BaseFragment {
     private PopupWindow mPlayerPopup;
     private PopupWindow mShotSpecPopup;
 
+    // Beta tested autoincroment
+    int mIncrement = 0;
+
     // Thread running
     Runnable mRun = new Runnable() {
         @Override
@@ -358,24 +361,18 @@ public class StickHandlingFragment extends BaseFragment {
             mGenerateButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    String titles[] = {"Test", "Karabomga", "Pizza"};
+
                     if (mCell == null) {
-                        mCell = new CellOrganizer(mTable, titles, "Key Points", true, 10);
-                        mCell.allActualize();
-                    } else {
-                        mCell.clear();
-                        mCell.reload(titles, "Banana", false, 75);
+                        String titles[] = new String[20];
+                        for (int i=0; i<titles.length; i++) {
+                            titles[i] = "Data " + i;
+                        }
+                        mCell = new CellOrganizer(mTable, titles, "Key Points", true, 1);
                         mCell.allActualize();
                     }
                 }
             });
 
-            mHackButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    mCell.put(1, 11, 10, true);
-                }
-            });
         } else {
             mHackButton.setVisibility(View.GONE);
             mGenerateButton.setVisibility(View.GONE);
@@ -525,6 +522,20 @@ public class StickHandlingFragment extends BaseFragment {
         mAutoStart = true;
         if (Protocol.isSameMode(Protocol.STICK_MODE, value[0])) {
             // TODO OnChanged
+            if (value[2] == 1) {
+                for (int i=0; i<10; i++) {
+                    mCell.put(i, mIncrement, value[2+i], false);
+                }
+            } else {
+                for (int i=0; i<10; i++) {
+                    mCell.put(i+10, mIncrement, value[2+i], false);
+                }
+                mIncrement ++;
+                mCell.allActualize();
+            }
+
+
+
         } else if (Protocol.isSameMode(Protocol.SETTINGS_MODE, value[0])) {
             if (value[2] != Protocol.VALIDITY_TOKEN && !mSendOnce) {
                 Protocol.setDefault();
@@ -582,7 +593,6 @@ public class StickHandlingFragment extends BaseFragment {
     }
 
     private PopupWindow inflateExercisePopup(ViewGroup container){
-
         LayoutInflater layoutInflater
                 = (LayoutInflater)getController().getBaseContext()
                 .getSystemService(getController().LAYOUT_INFLATER_SERVICE);

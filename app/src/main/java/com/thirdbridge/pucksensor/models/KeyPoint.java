@@ -35,9 +35,9 @@ public class KeyPoint {
             case DELTA_TIME:
                 return "ms";
             case ACCELERATION_MEAN:
-                return "m/s²";
+                return "g";
             case ACCELERATION_MAX:
-                return "m/s²";
+                return "g";
             case DIRECTON_RAW:
                 if (data2 == Data.IS_RADIAN) {
                     return "rad";
@@ -51,7 +51,7 @@ public class KeyPoint {
                     return "degree/s";
                 }
             case ACCEL_Z:
-                return "m/s²";
+                return "g";
             case DIRECTION:
                 if (data2 == Data.IS_RADIAN) {
                     return "rad";

@@ -1,5 +1,6 @@
 package com.thirdbridge.pucksensor.utils;
 
+import android.util.Log;
 import android.util.Pair;
 
 import com.thirdbridge.pucksensor.models.User;
@@ -7,13 +8,15 @@ import com.thirdbridge.pucksensor.models.User;
 import java.io.File;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 
 /**
  * Created by Jayson Dalpé on 2016-01-26.
  */
 public class Shot {
-    private static final int MAX_DATA = 1360;
+    private static final int MAX_DATA = 1278;
     private static final int MAX_DRAFT_DATA = 108;
     private static final int DELTA = 2; // Data display before and after the peak.
 
@@ -31,6 +34,7 @@ public class Shot {
 
     private int mMax = 0;
     private int mMin = 0;
+    private int mReleaseTime = 0; //In number of steps
 
     public Shot(Point3D[] acceleration, double[] rotation, User user) {
         mUser = user;
@@ -143,7 +147,7 @@ public class Shot {
         String text = "Player, " + mUser.getName() + "," + mUser.getId() + "\n";
         text += "Max,\n";
         text += "Acceleration, " + mMaxAccel + " g\n";
-        text += "Speed, " + mMaxSpeed + " m/s\n";
+        text += "Speed, " + mMaxSpeed + " km/h\n";
         text += "Rotation, " + mMaxRotation + " degrees/s\n";
         text += "Data,\n";
         text += "Acceleration,Speed,Rotation\n";
@@ -152,7 +156,7 @@ public class Shot {
             text += mAccTotal[i] + "," + mSpeedTotal[i] + "," + mRotDatas[i] + "\n";
         }
 
-        String fileName = mUser.getId() + "_" + mTime + ".csv";
+        String fileName = mUser.getName().replace(" ", "_") + "_" + mTime + ".csv";
         return new Pair<>(fileName, text);
     }
 
@@ -165,7 +169,7 @@ public class Shot {
         mUser = new User(user[1], user[0]);
 
         mMaxAccel = Double.parseDouble(datas[2].replace("Acceleration, ", "").replace(" g", ""));
-        mMaxSpeed = Double.parseDouble(datas[3].replace("Speed, ", "").replace(" m/s", ""));
+        mMaxSpeed = Double.parseDouble(datas[3].replace("Speed, ", "").replace(" km/h", "").replace(" m/s", ""));
         mMaxRotation = Double.parseDouble(datas[4].replace("Rotation, ", "").replace(" degrees/s", ""));
 
         int length = datas.length - 7;
@@ -189,50 +193,134 @@ public class Shot {
 
     /**
      * Update the maximum value and the minimal one to get only the first peak.
-     * IMPORTANT: Call this function one all the entry are there.
+     * IMPORTANT: Call this function once all the entry are there.
      */
-    public void analyze(int threshold) {
-        boolean peak = false;
-        boolean direction;
-        double previousValue = 0;
-        int max = mMax;
-        int min = mMin;
-        double noise = 0.2;
-        boolean noreturn = false;
-        boolean minStart = false;
+    public boolean analyze(int threshold, int thresholdRelease, int pointBoard) {
+        mMin = 0;
+        mMax = mAccTotal.length;
+
+        mReleaseTime = 0;
 
 
-        for (int i=0; i<mAccTotal.length;i++) {
-            if (mAccTotal[i] >= (double) noise && !minStart) {
-                minStart = true;
-                min= Math.max(i-DELTA, 0);
+        //Find min, max valuable.
+        // Get release ticks
+
+        // Phase 1, get all max:
+        List<Integer> maxes = new ArrayList<>();
+        for (int i=2; i<mAccTotal.length -2;i++) {
+            if (mAccTotal[i] - mAccTotal[i-2] > 0  && mAccTotal[i] - mAccTotal[i+2] > 0 && mAccTotal[i] >= threshold) {
+                maxes.add(i);
+
             }
-            // Find threshold peak
-            if (mAccTotal[i] >= (double) threshold && !peak) {
-                peak = true;
-            }
+        }
 
-            if (previousValue<=mAccTotal[i]) {
-                // GALLIFREY RISES!
-                direction = true;
+        // Phase 2, keep max with good data
+        List<Integer> cleanMaxes = new ArrayList<>();
+
+        for (int i=0; i<maxes.size(); i++) {
+            int center = maxes.get(i);
+            double[] vals = {mAccTotal[center-2], mAccTotal[center-1], mAccTotal[center], mAccTotal[center+1], mAccTotal[center+2]};
+            if (vals[0] >= threshold && vals[1] >= threshold && vals[2] >= threshold && vals[3] >= threshold && vals[4] >= threshold) {
+                //Woohoo
+                Log.i("ALLO", "Value: " + center);
+                cleanMaxes.add(center);
+            }
+        }
+
+
+        if (cleanMaxes.size() == 0) {
+            mMin = 0;
+            mMax = mAccTotal.length;
+            return false;
+        }
+
+        int finalId;
+        if (cleanMaxes.size() == 1) {
+            finalId = cleanMaxes.get(0);
+        } else {
+            // Get the two biggest peak
+            int[] positions = {0, 0};
+            double[] biggest = {0, 0};
+            for (int i=0; i<cleanMaxes.size(); i++) {
+                double value = mAccTotal[cleanMaxes.get(i)];
+
+                if (positions[0]-value < 50) {
+                    if (value > biggest[0]) {
+                        biggest[0] = value;
+                        positions[0] = cleanMaxes.get(i);
+                    }
+                }
+
+                if (positions[1]-value < 50) {
+                    if (value > biggest[1]) {
+                        biggest[1] = value;
+                        positions[1] = cleanMaxes.get(i);
+                    }
+                }
+
+                if (value > biggest[0]) {
+                    biggest[0] = value;
+                    positions[0] = cleanMaxes.get(i);
+                } else if (value > biggest[1]) {
+                    biggest[1] = value;
+                    positions[1] = cleanMaxes.get(i);
+                }
+            }
+            Log.i("ALLO", "Value 2: " + positions[0] + ", " + positions[1]);
+
+            // Determine which is good
+            if (Math.abs(positions[0] - positions[1]) > getMaxData()/2) {
+                if (positions[0] < positions[1]) {
+                    finalId = positions[0];
+                } else {
+                    finalId = positions[1];
+                }
             } else {
-                // SKARO RISES
-                direction = false;
+                if (biggest[0] > biggest[1]) {
+                    finalId = positions[0];
+                } else {
+                    finalId = positions[1];
+                }
             }
-
-            if (peak && !direction && !noreturn) {
-                noreturn = true;
-            }
-
-            if (noreturn && mAccTotal[i]<=(double)threshold/4) {
-                max = Math.min(i+DELTA,mAccTotal.length);
+        }
+        // The peak is set. get the minimum:
+        mMin = 0;
+        for (int i=finalId-1; i>=0; i-=1) {
+            if ( (mAccTotal[i]-mAccTotal[i+1] > 0 && !isBetween(mAccTotal[i], mAccTotal[i+1], 10)) || mAccTotal[i] < mAccTotal[finalId]/4) {
+                mMin = i;
                 break;
             }
-
-            previousValue = mAccTotal[i];
         }
-        mMax = max;
-        mMin = min;
+        mMin = Math.max(0, mMin-pointBoard);
+
+        // And the maximum
+        mMax = 0;
+        for (int i=finalId+1; i<mAccTotal.length; i+= 1) {
+            if ((mAccTotal[i]-mAccTotal[i-1] > 0 && !isBetween(mAccTotal[i], mAccTotal[i+1], 10)) || mAccTotal[i] < mAccTotal[finalId]/4) {
+                mMax = i;
+                break;
+            }
+        }
+        mMax = Math.min(mAccTotal.length, mMax+pointBoard);
+
+        // Find the release time
+        for (int i=mMin; i<mMax;i++) {
+            if (mAccTotal[i] >= thresholdRelease) {
+                mReleaseTime ++;
+            }
+        }
+
+        if (mMax - mMin < 10) {
+            mMin = 0;
+            mMax = mAccTotal.length;
+            return false;
+        }
+
+        return true;
+    }
+
+    public double getReleaseTime() {
+        return mReleaseTime;
     }
 
     public int getLength() {
@@ -247,5 +335,8 @@ public class Shot {
         return MAX_DRAFT_DATA;
     }
 
+    private static boolean isBetween(double val1, double val2, double percent) {
+        return Math.min(val1, val2) / Math.max(val1, val2) >= ((100-percent))/100;
+    }
 
 }

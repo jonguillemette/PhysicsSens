@@ -86,6 +86,13 @@
                 android:checked="false"
                 android:text="@string/show_angular" />
 
+            <CheckBox
+                android:id="@+id/autosave"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="false"
+                android:text="@string/autosave" />
+
             <Button
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

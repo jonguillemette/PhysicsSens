@@ -10,7 +10,7 @@ android:orientation="vertical">
     <LinearLayout
         android:id="@+id/layout_right"
         android:layout_width="wrap_content"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:layout_marginBottom="@dimen/stats_box_margin"
         android:layout_marginTop="@dimen/start_test_top_margin"
         android:orientation="vertical"
@@ -26,32 +26,22 @@ android:orientation="vertical">
                 android:layout_marginTop="@dimen/start_test_top_margin"
                 android:layout_gravity="right"/>
 
-
-            <ScrollView
+            <ImageButton
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content">
-                <TableLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="@dimen/stats_box_margin"
-                    android:layout_marginRight="@dimen/start_test_top_margin"
-                    android:id="@+id/table_layout"></TableLayout>
-            </ScrollView>
-
+                android:layout_height="wrap_content"
+                android:text="@string/start_exercice"
+                android:src="@drawable/ic_media_video_poster"
+                android:id="@+id/video_button"
+                android:layout_marginTop="@dimen/start_test_top_margin"/>
     </LinearLayout>
 
-    <ImageButton
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/start_exercice"
-        android:src="@drawable/ic_media_video_poster"
-        android:id="@+id/video_button"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentLeft="true"/>
 
-<LinearLayout
+
+
+
+    <LinearLayout
     android:id="@+id/test_control_linear_layout"
-    android:layout_width="match_parent"
+    android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:layout_marginBottom="@dimen/stats_box_margin"
     android:layout_marginTop="@dimen/start_test_top_margin"
@@ -96,9 +86,11 @@ android:orientation="vertical">
 
 </LinearLayout>
 
+
 <LinearLayout
     android:layout_below="@+id/test_control_linear_layout"
-    android:layout_width="fill_parent"
+    android:id="@+id/vertical_linear"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical">
 
@@ -189,6 +181,19 @@ android:orientation="vertical">
 
 </LinearLayout>
 
+
+<ScrollView
+    android:layout_width="match_parent"
+    android:layout_below="@id/vertical_linear"
+    android:layout_alignParentBottom="true"
+    android:layout_height="match_parent">
+    <TableLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/stats_box_margin"
+        android:layout_marginRight="@dimen/start_test_top_margin"
+        android:id="@+id/table_layout"></TableLayout>
+</ScrollView>
 
 <RelativeLayout
     android:id="@+id/loading_screen_relative_layout"

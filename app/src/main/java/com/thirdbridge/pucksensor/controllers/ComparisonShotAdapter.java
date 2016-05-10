@@ -46,19 +46,19 @@ class ComparisonShotAdapter extends BaseAdapter {
             vg = (ViewGroup) convertView;
         } else {
             vg = (ViewGroup) mInflater.inflate(R.layout.element_shot, null);
-            ((TextView) vg.findViewById(R.id.shot_title)).setText(mShotSpecs.get(position).getName() + "\n " + mShotSpecs.get(position).getDescription());
-            String info = "";
-            DecimalFormat numberFormat = new DecimalFormat("#.00");
-            for (int i=0; i<mShotSpecs.get(position).getNumbers().length; i++) {
-                info +=numberFormat.format(mShotSpecs.get(position).getNumbers()[i]) + " " + mShotSpecs.get(position).getUnits()[i];
-                if (i < mShotSpecs.get(position).getNumbers().length-1) {
-                    info += "\n";
-                }
-            }
-            ((TextView) vg.findViewById(R.id.descr)).setText(info);
-
             vg.setTag(position);
         }
+
+        ((TextView) vg.findViewById(R.id.shot_title)).setText(mShotSpecs.get(position).getName() + "\n " + mShotSpecs.get(position).getDescription());
+        String info = "";
+        DecimalFormat numberFormat = new DecimalFormat("#.00");
+        for (int i=0; i<mShotSpecs.get(position).getNumbers().length; i++) {
+            info +=numberFormat.format(mShotSpecs.get(position).getNumbers()[i]) + " " + mShotSpecs.get(position).getUnits()[i];
+            if (i < mShotSpecs.get(position).getNumbers().length-1) {
+                info += "\n";
+            }
+        }
+        ((TextView) vg.findViewById(R.id.descr)).setText(info);
 
         return vg;
     }

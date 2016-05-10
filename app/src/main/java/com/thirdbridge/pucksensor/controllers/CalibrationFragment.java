@@ -62,11 +62,18 @@ public class CalibrationFragment extends BaseFragment {
 	private static String TAG = CalibrationFragment.class.getSimpleName();
     private static String FOLDER_SAVE_SHOT = "Statpuck";
 
-    private static final int MINIMAL_G = 0; // Actually +1
+    private static final int MINIMAL_G = 5;
     private static final String THRESHOLD_G = "THRESHOLD_G";
 
     private static final float MINIMAL_STICK_G = 0.25f;
     private static final String THRESHOLD_STICK_G = "STICK_THRESHOLD_G";
+
+    private static final int MINIMAL_RELEASE_G = 2;
+    private static final String THRESHOLD_RELEASE_G = "THRESHOLD_RELEASE_G";
+
+    private static final int MINIMAL_POINTS = 5;
+    private static final String POINTS_BOARD = "POINTS_BOARD";
+
 
     // Calibration pattern
     final static long[] CALIB_TIME= {5000, 1000}; // Position time, transition time.
@@ -101,6 +108,10 @@ public class CalibrationFragment extends BaseFragment {
     private Button mCalibrateCenBtn;
     private TextView mStickAccTV;
     private SeekBar mStickAccSB;
+    private TextView mReleaseAccTV;
+    private SeekBar mReleaseAccSB;
+    private TextView mPointsBoardTV;
+    private SeekBar mPointsBoardSB;
 
 
 	//Calibration
@@ -116,6 +127,7 @@ public class CalibrationFragment extends BaseFragment {
     boolean mStartCalibration = false;
     boolean mStartCalibrationCen = false;
     Calibrate mCalibrationRoutine;
+    boolean mAppIsBoss = false;
 
     //Bluetooth
     private boolean mSensorReady = false;
@@ -133,13 +145,10 @@ public class CalibrationFragment extends BaseFragment {
         @Override
         public void run() {
             while(true) {
-                if (!mTestRunning && mAutoStart) {
-                    getActivity().runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            start();
-                        }
-                    });
+                try {
+                    Thread.sleep(1000);
+                } catch (Exception e) {
+
                 }
                 if (mSensorReady != mSensorReadyChange) {
                     if (HomeFragment.getInstance().IsBluetoothReady()) {
@@ -152,8 +161,20 @@ public class CalibrationFragment extends BaseFragment {
                     mSensorReadyChange = mSensorReady;
                 }
 
+
+                if (!mTestRunning && mAutoStart) {
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            start();
+                        }
+                    });
+                }
+
+                Log.i("ALLO", "Value: " + mProgressChange);
                 if (mProgressChange && mSettings != null) {
-                    long value = mSettings.getInt(THRESHOLD_G, MINIMAL_G)+1;
+                    Log.i("ALLO", "Value: enter");
+                    long value = mSettings.getInt(THRESHOLD_G, MINIMAL_G);
 
                     float stick_value = mSettings.getFloat(THRESHOLD_STICK_G, MINIMAL_STICK_G);
 
@@ -196,14 +217,11 @@ public class CalibrationFragment extends BaseFragment {
                     try {
                         HomeFragment.getInstance().writeBLE(send);
                         mProgressChange = false;
+                        mAppIsBoss = false;
                     } catch(Exception e) {}
                 }
 
-                try {
-                    Thread.sleep(1000);
-                } catch (Exception e) {
 
-                }
                 if (mPause) {
                     break;
                 }
@@ -214,6 +232,7 @@ public class CalibrationFragment extends BaseFragment {
     Runnable mStartCalibrationRunnable = new Runnable() {
         @Override
         public void run() {
+
             mActualSettings[5] = 0;
             mActualSettings[6] = 0;
             mActualSettings[7] = 0;
@@ -244,9 +263,11 @@ public class CalibrationFragment extends BaseFragment {
             mCalibrationValue[1] = (mCalibrationValue[1] / mCalibrateNb) % 256;
             mCalibrationValue[2] = (mCalibrationValue[2] / mCalibrateNb) % 256;
 
+            mAppIsBoss = true;
             mActualSettings[5] = (int)mCalibrationValue[0];
             mActualSettings[6] = (int)mCalibrationValue[1];
             mActualSettings[7] = (int)mCalibrationValue[2];
+            Log.i("ALLO", "Settings: " + mActualSettings[5] + ", " + mActualSettings[6] + ", " + mActualSettings[7]);
 
 
             byte[] send2 = {Protocol.SETTINGS_MODE, 0x00};
@@ -271,12 +292,13 @@ public class CalibrationFragment extends BaseFragment {
     Runnable mStartCalibrationCenRunnable = new Runnable() {
         @Override
         public void run() {
+
             int[] saveValue = {mActualSettings[5], mActualSettings[6], mActualSettings[7]};
             mActualSettings[5] = 0;
             mActualSettings[6] = 0;
             mActualSettings[7] = 0;
 
-            int actualProgress = mSettings.getInt(THRESHOLD_G, MINIMAL_G)+1;
+            int actualProgress = mSettings.getInt(THRESHOLD_G, MINIMAL_G);
 
             SharedPreferences.Editor editor = mSettings.edit();
             editor.putInt(THRESHOLD_G, 4000);
@@ -331,6 +353,7 @@ public class CalibrationFragment extends BaseFragment {
             intent.setData(Uri.fromFile(file));
             getActivity().sendBroadcast(intent);
 
+            mAppIsBoss = true;
             mActualSettings[5] = saveValue[0];
             mActualSettings[6] = saveValue[1];
             mActualSettings[7] = saveValue[2];
@@ -410,7 +433,10 @@ public class CalibrationFragment extends BaseFragment {
         mCalibrateCenBtn = (Button) v.findViewById(R.id.calibrate_centrifuge_button);
         mStickAccTV = (TextView) v.findViewById(R.id.stick_acc_number);
         mStickAccSB = (SeekBar) v.findViewById(R.id.stick_acc_seekbar);
-
+        mReleaseAccTV = (TextView) v.findViewById(R.id.release_acc_number);
+        mReleaseAccSB = (SeekBar) v.findViewById(R.id.release_acc_seekbar);
+        mPointsBoardTV = (TextView) v.findViewById(R.id.points_board_number);
+        mPointsBoardSB = (SeekBar) v.findViewById(R.id.points_board_seekbar);
 
 		mLoadingScreenRelativeLayout = (RelativeLayout) v.findViewById(R.id.loading_screen_relative_layout);
 
@@ -418,13 +444,21 @@ public class CalibrationFragment extends BaseFragment {
 
         mSettings = getActivity().getSharedPreferences("StatPuck", 0);
 
-        String value = "" + (mSettings.getInt(THRESHOLD_G, MINIMAL_G)+1);
+        String value = "" + (mSettings.getInt(THRESHOLD_G, MINIMAL_G));
         mPeakAccTV.setText(value);
-        mPeakAccSB.setProgress(Integer.parseInt(mPeakAccTV.getText().toString()) - 1);
+        mPeakAccSB.setProgress(Integer.parseInt(mPeakAccTV.getText().toString()) - MINIMAL_G);
 
         value = "" + (mSettings.getFloat(THRESHOLD_STICK_G, MINIMAL_STICK_G));
         mStickAccTV.setText(value);
-        mStickAccSB.setProgress((int)((mSettings.getFloat(THRESHOLD_STICK_G, MINIMAL_STICK_G)-0.25f)*4f));
+        mStickAccSB.setProgress((int) ((mSettings.getFloat(THRESHOLD_STICK_G, MINIMAL_STICK_G) - 0.25f) * 4f));
+
+        value = "" + (mSettings.getInt(THRESHOLD_RELEASE_G, MINIMAL_RELEASE_G));
+        mReleaseAccTV.setText(value);
+        mReleaseAccSB.setProgress((int) ((mSettings.getInt(THRESHOLD_RELEASE_G, MINIMAL_RELEASE_G) - MINIMAL_RELEASE_G) * 0.5f));
+
+        value = "" + (mSettings.getInt(POINTS_BOARD, MINIMAL_POINTS));
+        mPointsBoardTV.setText(value);
+        mPointsBoardSB.setProgress((int) ((mSettings.getInt(POINTS_BOARD, MINIMAL_POINTS) - MINIMAL_POINTS) * 0.5f));
 
 
         mStartStopButton.setVisibility(View.VISIBLE);
@@ -462,9 +496,9 @@ public class CalibrationFragment extends BaseFragment {
         mPeakAccSB.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                mPeakAccTV.setText("" + (progress + 1));
+                mPeakAccTV.setText("" + (progress + MINIMAL_G));
                 SharedPreferences.Editor editor = mSettings.edit();
-                editor.putInt(THRESHOLD_G, progress);
+                editor.putInt(THRESHOLD_G, progress + MINIMAL_G);
                 editor.commit();
                 mProgressChange = true;
             }
@@ -502,6 +536,48 @@ public class CalibrationFragment extends BaseFragment {
             }
         });
 
+        mReleaseAccSB.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                int value = progress*2 + MINIMAL_RELEASE_G;
+                mReleaseAccTV.setText("" + value);
+                SharedPreferences.Editor editor = mSettings.edit();
+                editor.putInt(THRESHOLD_RELEASE_G, value);
+                editor.commit();
+                mProgressChange = true;
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+
+        mPointsBoardSB.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                int value = (int)((double)progress*2) + MINIMAL_POINTS;
+                mPointsBoardTV.setText("" + value);
+                SharedPreferences.Editor editor = mSettings.edit();
+                editor.putInt(POINTS_BOARD, value);
+                editor.commit();
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
 
 
 		return v;
@@ -608,8 +684,10 @@ public class CalibrationFragment extends BaseFragment {
                 }
             }
 
-            for (int i=0; i<mActualSettings.length; i++) {
-                mActualSettings[i] = value[2+i];
+            if (!mAppIsBoss) {
+                for (int i = 0; i < mActualSettings.length; i++) {
+                    mActualSettings[i] = value[2 + i];
+                }
             }
         }
 
@@ -705,11 +783,12 @@ public class CalibrationFragment extends BaseFragment {
                 mStartStopButton.setCompoundDrawablesWithIntrinsicBounds(android.R.drawable.ic_delete, 0, 0, 0);
 
                 mTestRunning = true;
-                byte[] send = {Protocol.SETTINGS_MODE, 0x00};
-                try {
-                    HomeFragment.getInstance().writeBLE(send);
-                } catch (Exception e) {}
+
             }
+            byte[] send = {Protocol.SETTINGS_MODE, 0x00};
+            try {
+                HomeFragment.getInstance().writeBLE(send);
+            } catch (Exception e) {}
         }
     }
 
