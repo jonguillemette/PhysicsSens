@@ -28,6 +28,7 @@ import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
+import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.TableLayout;
 import android.widget.TableRow;
@@ -44,6 +45,7 @@ import com.github.mikephil.charting.data.LineDataSet;
 import com.google.gson.Gson;
 import com.thirdbridge.pucksensor.R;
 import com.thirdbridge.pucksensor.models.Exercise;
+import com.thirdbridge.pucksensor.models.KeyPoint;
 import com.thirdbridge.pucksensor.models.Player;
 import com.thirdbridge.pucksensor.models.ShotSpecification;
 import com.thirdbridge.pucksensor.models.User;
@@ -73,6 +75,9 @@ public class StickHandlingFragment extends BaseFragment {
 	private static String TAG = StickHandlingFragment.class.getSimpleName();
     private static String FOLDER_SAVE_SHOT = "Statpuck";
     private static final boolean DEBUG = true;
+    private static final double STAMP = 1.25;
+    private static final int PARAMETER = 12;
+
 
     private static final int[] RECENT_NAME = {R.string.recent_shot1, R.string.recent_shot2, R.string.recent_shot3, R.string.recent_shot4, R.string.recent_shot5};
 
@@ -108,6 +113,7 @@ public class StickHandlingFragment extends BaseFragment {
     Button mStartExercise;
     TableLayout mTable;
     CellOrganizer mCell;
+    ScrollView mScroll;
 
     // Player comparison management
     private List<Player> mPlayers = new ArrayList<Player>();
@@ -146,6 +152,8 @@ public class StickHandlingFragment extends BaseFragment {
 
     // Beta tested autoincroment
     int mIncrement = 0;
+    double[] mTableData = new double[PARAMETER];
+    Exercise mExercice = null;
 
     // Thread running
     Runnable mRun = new Runnable() {
@@ -250,12 +258,14 @@ public class StickHandlingFragment extends BaseFragment {
         mTable = (TableLayout) v.findViewById(R.id.table_layout);
         mVideobutton = (ImageButton) v.findViewById(R.id.video_button);
         mKeyExerciseTV = (TextView) v.findViewById(R.id.key_exercise);
+        mScroll = (ScrollView) v.findViewById(R.id.scroll_layout);
 
         mVideobutton.setVisibility(View.GONE);
 		mLoadingScreenRelativeLayout = (RelativeLayout) v.findViewById(R.id.loading_screen_relative_layout);
 
         // Menu
         mSettings = getActivity().getSharedPreferences("StatPuck", 0);
+
 
 
         mRecentResult = new CheckBox[5];
@@ -339,7 +349,6 @@ public class StickHandlingFragment extends BaseFragment {
         mStartExercise.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.i(TAG, "Acceleration: " + mExercises.get(mExerciseIndex).getKeyPoint(0).getAccelerationMean());
             }
         });
 
@@ -361,15 +370,18 @@ public class StickHandlingFragment extends BaseFragment {
             mGenerateButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-
+                    String titles[] = {"Accel Init X", "Accel Init Y", "Accel End X", "Accel End Y", "Direction Init", "Direction End",
+                            "Accel Mean", "Accel Max", "Accel Z", "Rotation", "Delta", "Flying time"};
                     if (mCell == null) {
-                        String titles[] = new String[20];
-                        for (int i=0; i<titles.length; i++) {
-                            titles[i] = "Data " + i;
-                        }
                         mCell = new CellOrganizer(mTable, titles, "Key Points", true, 1);
                         mCell.allActualize();
+                    } else {
+                        mIncrement = 0;
+                        mCell.clear();
+                        mCell.reload(titles, "Key Points", true, 1);
+                        mCell.allActualize();
                     }
+                    mExercice = new Exercise(mUser.getId(), mUser.getName(), "Live", "QWERTY");
                 }
             });
 
@@ -522,20 +534,87 @@ public class StickHandlingFragment extends BaseFragment {
         mAutoStart = true;
         if (Protocol.isSameMode(Protocol.STICK_MODE, value[0])) {
             // TODO OnChanged
-            if (value[2] == 1) {
-                for (int i=0; i<10; i++) {
-                    mCell.put(i, mIncrement, value[2+i], false);
+            if (mCell != null) {
+                if (value[2] == 1) {
+                    double accelInitX = getAccel(value[3], value[4]);
+                    double accelInitY = getAccel(value[5], value[6]);
+                    double accelEndX = getAccel(value[7], value[8]);
+                    double accelEndY = getAccel(value[9], value[10]);
+
+                    double directionStart = getDirection(value[11]);
+                    double directionEnd = getDirection(value[12]);
+
+                    mTableData[0] = accelInitX;
+                    mTableData[1] = accelInitY;
+                    mTableData[2] = accelEndX;
+                    mTableData[3] = accelEndY;
+                    mTableData[4] = directionStart;
+                    mTableData[5] = directionEnd;
+                } else {
+                    double accelMean = getAccel(value[3], value[4]);
+                    double accelMax = getAccel(value[5], value[6]);
+                    double accelZ = getAccel(value[7], value[8]);
+                    double rotation = getRotation(value[9], value[10]);
+                    double deltaTick = getTick(value[11], value[12], STAMP);
+                    double deltaTickFlying = getTick(value[13], value[14], STAMP);
+
+                    mTableData[6] = accelMean;
+                    mTableData[7] = accelMax;
+                    mTableData[8] = accelZ;
+                    mTableData[9] = rotation;
+                    mTableData[10] = deltaTick;
+                    mTableData[11] = deltaTickFlying;
+
+                    KeyPoint.Data[] types = {
+                            KeyPoint.Data.ACCELERATION_INIT_X,
+                            KeyPoint.Data.ACCELERATION_INIT_Y,
+                            KeyPoint.Data.ACCELERATION_END_X,
+                            KeyPoint.Data.ACCELERATION_END_Y,
+                            KeyPoint.Data.DIRECTION_RAW_START,
+                            KeyPoint.Data.DIRECTION_RAW_END,
+                            KeyPoint.Data.ACCELERATION_MEAN,
+                            KeyPoint.Data.ACCELERATION_MAX,
+                            KeyPoint.Data.ACCEL_Z,
+                            KeyPoint.Data.ROTATION_DELTA,
+                            KeyPoint.Data.DELTA_TIME,
+                            KeyPoint.Data.DELTA_FLYING_TIME,
+                            KeyPoint.Data.IS_RADIAN,
+                    };
+
+                    Object[] datas = {
+                            mTableData[0],
+                            mTableData[1],
+                            mTableData[2],
+                            mTableData[3],
+                            mTableData[4],
+                            mTableData[5],
+                            mTableData[6],
+                            mTableData[7],
+                            mTableData[8],
+                            mTableData[9],
+                            mTableData[10],
+                            mTableData[11],
+                            false
+                    };
+
+                    if (true) { // Find a way to handle small peak
+
+                        KeyPoint kp = new KeyPoint(datas, types);
+                        mExercice.addKeypoints(kp);
+
+                        for (int i = 0; i < mTableData.length; i++) {
+                            mCell.put(i, mIncrement, mTableData[i], false);
+                        }
+
+                        mIncrement++;
+                        mCell.put(0, mIncrement, Double.NaN, false);
+                        mCell.allActualize();
+                        mScroll.fullScroll(View.FOCUS_DOWN);
+
+                    }
+
                 }
-            } else {
-                for (int i=0; i<10; i++) {
-                    mCell.put(i+10, mIncrement, value[2+i], false);
-                }
-                mIncrement ++;
-                mCell.allActualize();
             }
-
-
-
         } else if (Protocol.isSameMode(Protocol.SETTINGS_MODE, value[0])) {
             if (value[2] != Protocol.VALIDITY_TOKEN && !mSendOnce) {
                 Protocol.setDefault();
@@ -692,6 +771,51 @@ public class StickHandlingFragment extends BaseFragment {
         });
         t.start();
 
+    }
+
+    private static double getAccel(byte low, byte high) {
+        double retValue;
+        int value = (low & 0xFF);
+        value |= (high & 0xFF) << 8;
+        boolean negative = false;
+        boolean lowAccel = false;
+        if ((value & (1<<14)) > 1) {
+            value -= (1<<14);
+            negative = true;
+        }
+        if ((value & (1<<15)) > 1) {
+            value -= (1<<15);
+            lowAccel = true;
+        }
+
+        if (lowAccel) {
+            retValue = (double)value * 0.012;
+        } else {
+            retValue = ((double)value * 400)/2048;
+        }
+
+        if (negative) {
+            retValue *= -1;
+        }
+
+        return retValue;
+    }
+
+    private static double getDirection(byte angle) {
+        return (double) angle;
+    }
+
+    private static double getRotation(byte low, byte high) {
+        int value = (low & 0xFF);
+        value |= (high & 0xFF) << 8;
+        return  ((double)value * 0.07);
+    }
+
+    private static double getTick(byte low, byte high, double step) {
+        int value = (low & 0xFF);
+        value |= (high & 0xFF) << 8;
+
+        return (double) value * STAMP;
     }
 
 

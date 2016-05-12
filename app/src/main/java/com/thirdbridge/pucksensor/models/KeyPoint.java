@@ -1,8 +1,5 @@
 package com.thirdbridge.pucksensor.models;
 
-import android.util.Pair;
-
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
@@ -18,27 +15,50 @@ public class KeyPoint {
         COMPUTED,
     };
 
-    enum Data {
+    public enum Data {
+        ACCELERATION_INIT_X,
+        ACCELERATION_INIT_Y,
+        ACCELERATION_END_X,
+        ACCELERATION_END_Y,
         DELTA_TIME,
+        DELTA_FLYING_TIME,
         ACCELERATION_MEAN,
         ACCELERATION_MAX,
-        DIRECTON_RAW,
+        DIRECTION_RAW_START,
+        DIRECTION_RAW_END,
         IS_RADIAN,
         ROTATION_DELTA,
         ACCEL_Z,
-        DIRECTION,
+        DIRECTION_START,
+        DIRECTION_END,
         QUALITY_DIRECTION,
     }
 
     public static String getUnits(Data data, Data data2) {
         switch (data) {
+            case ACCELERATION_INIT_X:
+                return "g";
+            case ACCELERATION_INIT_Y:
+                return "g";
+            case ACCELERATION_END_X:
+                return "g";
+            case ACCELERATION_END_Y:
+                return "g";
             case DELTA_TIME:
+                return "ms";
+            case DELTA_FLYING_TIME:
                 return "ms";
             case ACCELERATION_MEAN:
                 return "g";
             case ACCELERATION_MAX:
                 return "g";
-            case DIRECTON_RAW:
+            case DIRECTION_RAW_START:
+                if (data2 == Data.IS_RADIAN) {
+                    return "rad";
+                } else {
+                    return "degree";
+                }
+            case DIRECTION_RAW_END:
                 if (data2 == Data.IS_RADIAN) {
                     return "rad";
                 } else {
@@ -52,7 +72,13 @@ public class KeyPoint {
                 }
             case ACCEL_Z:
                 return "g";
-            case DIRECTION:
+            case DIRECTION_START:
+                if (data2 == Data.IS_RADIAN) {
+                    return "rad";
+                } else {
+                    return "degree";
+                }
+            case DIRECTION_END:
                 if (data2 == Data.IS_RADIAN) {
                     return "rad";
                 } else {
@@ -66,27 +92,41 @@ public class KeyPoint {
 
 
     // Primary data
-    private double mDeltaTime;
-    private double mAccelerationMean;
-    private double mAccelerationMax;
-    private double mDirectionRaw;
-    private boolean mIsRadian = false;
-    private double[] mRotationDelta;
-    private double mAccelZ;
+    public double accelerationInitX;
+    public double accelerationInitY;
+    public double accelerationEndX;
+    public double accelerationEndY;
+    public double deltaTime;
+    public double deltaFlyingTime;
+    public double accelerationMean;
+    public double accelerationMax;
+    public double directionRawStart;
+    public double directionRawEnd;
+    public boolean isRadian = false;
+    public double rotationDelta;
+    public double accelZ;
 
     // Computed data
-    private double mDirection;
-    private double mQualityDirection;
+    public double directionStart;
+    public double directionEnd;
+    public double qualityDirection;
 
     // Which data is used
-    private boolean mGotDeltaTime = false;
-    private boolean mGotAccelerationMean = false;
-    private boolean mGotAccelerationMax = false;
-    private boolean mGotDirectionRaw = false;
-    private boolean mGotRotationDelta = false;
-    private boolean mGotAccelZ = false;
-    private boolean mGotDirection = false;
-    private boolean mGotQualityDirection = false;
+    public boolean gotAccelerationInitX = false;
+    public boolean gotAccelerationInitY = false;
+    public boolean gotAccelerationEndX = false;
+    public boolean gotAccelerationEndY = false;
+    public boolean gotDeltaTime = false;
+    public boolean gotDeltaFlyingTime = false;
+    public boolean gotAccelerationMean = false;
+    public boolean gotAccelerationMax = false;
+    public boolean gotDirectionRawStart = false;
+    public boolean gotDirectionRawEnd = false;
+    public boolean gotRotationDelta = false;
+    public boolean gotAccelZ = false;
+    public boolean gotDirectionStart = false;
+    public boolean gotDirectionEnd = false;
+    public boolean gotQualityDirection = false;
 
     private Status mStatus;
 
@@ -102,51 +142,82 @@ public class KeyPoint {
     public KeyPoint(JSONObject jsonPoint) {
 
         try {
-            mDeltaTime = jsonPoint.getDouble(Keys.DELTA_TIME);
-            mGotDeltaTime = true;
+            accelerationInitX = jsonPoint.getDouble(Keys.ACCELERATION_INIT_X);
+            gotAccelerationInitX = true;
         } catch(Exception e) {}
 
         try {
-            mAccelerationMean = jsonPoint.getDouble(Keys.ACCELERATION_MEAN);
-            mGotAccelerationMean = true;
+            accelerationInitY = jsonPoint.getDouble(Keys.ACCELERATION_INIT_Y);
+            gotAccelerationInitY = true;
         } catch(Exception e) {}
 
         try {
-            mAccelerationMax = jsonPoint.getDouble(Keys.ACCELERATION_MAX);
-            mGotAccelerationMax = true;
+            accelerationEndX = jsonPoint.getDouble(Keys.ACCELERATION_END_X);
+            gotAccelerationEndX = true;
         } catch(Exception e) {}
 
         try {
-            mDirectionRaw = jsonPoint.getDouble(Keys.DIRECTION_RAW);
-            mGotDirectionRaw = true;
+            accelerationEndY = jsonPoint.getDouble(Keys.ACCELERATION_END_Y);
+            gotAccelerationEndY = true;
         } catch(Exception e) {}
 
         try {
-            mIsRadian = jsonPoint.getBoolean(Keys.IS_RADIAN);
+            deltaTime = jsonPoint.getDouble(Keys.DELTA_TIME);
+            gotDeltaTime = true;
         } catch(Exception e) {}
 
         try {
-            JSONArray object = jsonPoint.getJSONArray(Keys.ROTATION_DELTA);
-            mRotationDelta = new double[object.length()];
-            for (int i=0; i<mRotationDelta.length; i++) {
-                mRotationDelta[i] = object.getDouble(i);
-            }
-            mGotRotationDelta = true;
+            deltaFlyingTime = jsonPoint.getDouble(Keys.DELTA_FLYING_TIME);
+            gotDeltaFlyingTime = true;
         } catch(Exception e) {}
 
         try {
-            mAccelZ = jsonPoint.getDouble(Keys.ACCEL_Z);
-            mGotAccelZ = true;
+            accelerationMean = jsonPoint.getDouble(Keys.ACCELERATION_MEAN);
+            gotAccelerationMean = true;
         } catch(Exception e) {}
 
         try {
-            mDirection = jsonPoint.getDouble(Keys.DIRECTION);
-            mGotDirection = true;
+            accelerationMax = jsonPoint.getDouble(Keys.ACCELERATION_MAX);
+            gotAccelerationMax = true;
         } catch(Exception e) {}
 
         try {
-            mQualityDirection = jsonPoint.getDouble(Keys.QUALITY_DIRECTION);
-            mGotQualityDirection = true;
+            directionRawStart = jsonPoint.getDouble(Keys.DIRECTION_RAW_START);
+            gotDirectionRawStart = true;
+        } catch(Exception e) {}
+
+        try {
+            directionRawEnd = jsonPoint.getDouble(Keys.DIRECTION_RAW_END);
+            gotDirectionRawEnd = true;
+        } catch(Exception e) {}
+
+        try {
+            isRadian = jsonPoint.getBoolean(Keys.IS_RADIAN);
+        } catch(Exception e) {}
+
+        try {
+            rotationDelta = jsonPoint.getDouble(Keys.ROTATION_DELTA);
+            gotRotationDelta = true;
+        } catch(Exception e) {}
+
+        try {
+            accelZ = jsonPoint.getDouble(Keys.ACCEL_Z);
+            gotAccelZ = true;
+        } catch(Exception e) {}
+
+        try {
+            directionStart = jsonPoint.getDouble(Keys.DIRECTION_START);
+            gotDirectionStart = true;
+        } catch(Exception e) {}
+
+        try {
+            directionEnd = jsonPoint.getDouble(Keys.DIRECTION_END);
+            gotDirectionEnd = true;
+        } catch(Exception e) {}
+
+        try {
+            qualityDirection = jsonPoint.getDouble(Keys.QUALITY_DIRECTION);
+            gotQualityDirection = true;
         } catch(Exception e) {}
 
         mStatus = Status.COMPUTED;
@@ -156,40 +227,68 @@ public class KeyPoint {
         mStatus = Status.COMPUTED;
         for (int i=0; i<datas.length; i++) {
             switch(types[i]) {
+                case ACCELERATION_INIT_X:
+                    accelerationInitX = (double) datas[i];
+                    gotAccelerationInitX = true;
+                    break;
+                case ACCELERATION_INIT_Y:
+                    accelerationInitY = (double) datas[i];
+                    gotAccelerationInitY = true;
+                    break;
+                case ACCELERATION_END_X:
+                    accelerationEndX = (double) datas[i];
+                    gotAccelerationEndX = true;
+                    break;
+                case ACCELERATION_END_Y:
+                    accelerationEndY = (double) datas[i];
+                    gotAccelerationEndY = true;
+                    break;
                 case DELTA_TIME:
-                    mDeltaTime = (double) datas[i];
-                    mGotDeltaTime = true;
+                    deltaTime = (double) datas[i];
+                    gotDeltaTime = true;
+                    break;
+                case DELTA_FLYING_TIME:
+                    deltaFlyingTime = (double) datas[i];
+                    gotDeltaFlyingTime = true;
                     break;
                 case ACCELERATION_MEAN:
-                    mAccelerationMean = (double) datas[i];
-                    mGotAccelerationMean = true;
+                    accelerationMean = (double) datas[i];
+                    gotAccelerationMean = true;
                     break;
                 case ACCELERATION_MAX:
-                    mAccelerationMax = (double) datas[i];
-                    mGotAccelerationMax = true;
+                    accelerationMax = (double) datas[i];
+                    gotAccelerationMax = true;
                     break;
-                case DIRECTON_RAW:
-                    mDirectionRaw = (double) datas[i];
-                    mGotDirectionRaw = true;
+                case DIRECTION_RAW_START:
+                    directionRawStart = (double) datas[i];
+                    gotDirectionRawStart = true;
+                    break;
+                case DIRECTION_RAW_END:
+                    directionRawEnd = (double) datas[i];
+                    gotDirectionRawEnd = true;
                     break;
                 case IS_RADIAN:
-                    mIsRadian = (boolean) datas[i];
+                    isRadian = (boolean) datas[i];
                     break;
                 case ROTATION_DELTA:
-                    mRotationDelta = (double[]) datas[i];
-                    mGotRotationDelta = true;
+                    rotationDelta = (double) datas[i];
+                    gotRotationDelta = true;
                     break;
                 case ACCEL_Z:
-                    mAccelZ = (double) datas[i];
-                    mGotAccelZ = true;
+                    accelZ = (double) datas[i];
+                    gotAccelZ = true;
                     break;
-                case DIRECTION:
-                    mDirection = (double) datas[i];
-                    mGotDirection = true;
+                case DIRECTION_START:
+                    directionStart = (double) datas[i];
+                    gotDirectionStart = true;
+                    break;
+                case DIRECTION_END:
+                    directionEnd = (double) datas[i];
+                    gotDirectionEnd = true;
                     break;
                 case QUALITY_DIRECTION:
-                    mQualityDirection = (double) datas[i];
-                    mGotQualityDirection = true;
+                    qualityDirection = (double) datas[i];
+                    gotQualityDirection = true;
                     break;
             }
         }
@@ -203,155 +302,27 @@ public class KeyPoint {
         return mStatus;
     }
 
-    public double getAccelerationMean() {
-        return mAccelerationMean;
-    }
-
-    public boolean isAccelerationMax() {
-        return mGotAccelerationMax;
-    }
-
-    public boolean isAccelerationMean() {
-        return mGotAccelerationMean;
-    }
-
-    public double getAccelerationMax() {
-        return mAccelerationMax;
-    }
-
-    public boolean isAccelZ() {
-        return mGotAccelZ;
-    }
-
-    public boolean isDeltaTime() {
-        return mGotDeltaTime;
-    }
-
-    public boolean isDirection() {
-        return mGotDirection;
-    }
-
-    public boolean isDirectionRaw() {
-        return mGotDirectionRaw;
-    }
-
-    public boolean isRadian() {
-        return mIsRadian;
-    }
-
-    public boolean isQualityDirection() {
-        return mGotQualityDirection;
-    }
-
-    public boolean isRotationDelta() {
-        return mGotRotationDelta;
-    }
-
-    public double getAccelZ() {
-        return mAccelZ;
-    }
-
-    public double getDeltaTime() {
-        return mDeltaTime;
-    }
-
-    public double getDirection() {
-        return mDirection;
-    }
-
-    public double getDirectionRaw() {
-        return mDirectionRaw;
-    }
-
-    public double getQualityDirection() {
-        return mQualityDirection;
-    }
-
-    public double[] getRotationDelta() {
-        return mRotationDelta;
-    }
-
-    public void setAccelerationMax(double mAccelerationMax) {
-        this.mAccelerationMax = mAccelerationMax;
-    }
-
-    public void setAccelerationMean(double mAccelerationMean) {
-        this.mAccelerationMean = mAccelerationMean;
-    }
-
-    public void setDeltaTime(double mDeltaTime) {
-        this.mDeltaTime = mDeltaTime;
-    }
-
-    public void setAccelZ(double mAccelZ) {
-        this.mAccelZ = mAccelZ;
-    }
-
-    public void setDirection(double mDirection) {
-        this.mDirection = mDirection;
-    }
-
-    public void setDirectionRaw(double mDirectionRaw) {
-        this.mDirectionRaw = mDirectionRaw;
-    }
-
-    public void setGotAccelerationMax(boolean mGotAccelerationMax) {
-        this.mGotAccelerationMax = mGotAccelerationMax;
-    }
-
-    public void setGotAccelerationMean(boolean mGotAccelerationMean) {
-        this.mGotAccelerationMean = mGotAccelerationMean;
-    }
-
-    public void setGotAccelZ(boolean mGotAccelZ) {
-        this.mGotAccelZ = mGotAccelZ;
-    }
-
-    public void setGotDeltaTime(boolean mGotDeltaTime) {
-        this.mGotDeltaTime = mGotDeltaTime;
-    }
-
-    public void setGotDirection(boolean mGotDirection) {
-        this.mGotDirection = mGotDirection;
-    }
-
-    public void setGotDirectionRaw(boolean mGotDirectionRaw) {
-        this.mGotDirectionRaw = mGotDirectionRaw;
-    }
-
-    public void setGotQualityDirection(boolean mGotQualityDirection) {
-        this.mGotQualityDirection = mGotQualityDirection;
-    }
-
-    public void setGotRotationDelta(boolean mGotRotationDelta) {
-        this.mGotRotationDelta = mGotRotationDelta;
-    }
-
-    public void isRadian(boolean mIsRadian) {
-        this.mIsRadian = mIsRadian;
-    }
-
-    public void setQualityDirection(double mQualityDirection) {
-        this.mQualityDirection = mQualityDirection;
-    }
-
-    public void setRotationDelta(double[] mRotationDelta) {
-        this.mRotationDelta = mRotationDelta;
-    }
 
     public void setStatus(Status mStatus) {
         this.mStatus = mStatus;
     }
 
     private class Keys {
+        public final static String ACCELERATION_INIT_X = "acceleration_init_x";
+        public final static String ACCELERATION_INIT_Y = "acceleration_init_y";
+        public final static String ACCELERATION_END_X = "acceleration_end_x";
+        public final static String ACCELERATION_END_Y = "acceleration_end_y";
         public final static String DELTA_TIME = "delta_time";
+        public final static String DELTA_FLYING_TIME = "delta_flyig_time";
         public final static String ACCELERATION_MEAN = "acceleration_mean";
         public final static String ACCELERATION_MAX = "acceleration_max";
-        public final static String DIRECTION_RAW = "direction_raw";
+        public final static String DIRECTION_RAW_START = "direction_raw_start";
+        public final static String DIRECTION_RAW_END = "direction_raw_end";
         public final static String IS_RADIAN = "is_radian";
         public final static String ROTATION_DELTA = "rotation_delta";
         public final static String ACCEL_Z = "accel_z";
-        public final static String DIRECTION = "direction";
+        public final static String DIRECTION_START = "direction_start";
+        public final static String DIRECTION_END = "direction_end";
         public final static String QUALITY_DIRECTION = "quality_direction";
 
     }

@@ -232,7 +232,7 @@ public class CalibrationFragment extends BaseFragment {
     Runnable mStartCalibrationRunnable = new Runnable() {
         @Override
         public void run() {
-
+            mAppIsBoss = true;
             mActualSettings[5] = 0;
             mActualSettings[6] = 0;
             mActualSettings[7] = 0;
@@ -240,14 +240,14 @@ public class CalibrationFragment extends BaseFragment {
             byte[] send = {Protocol.SHOT_MODE, 0x00};
             try {
                 HomeFragment.getInstance().writeBLE(send);
-                Thread.sleep(1050);
+                Thread.sleep(2050);
             } catch (Exception e) {}
 
             mProgressChange = true;
 
             try {
                 // Sleep fo 1sec (setting thread delay) + 50 ms (IC max delay for settings)
-                Thread.sleep(1050);
+                Thread.sleep(2050);
             } catch (Exception e) {}
 
             mCalibrationValue[0] = 0;

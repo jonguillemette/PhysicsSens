@@ -12,6 +12,7 @@ import android.widget.TextView;
 
 import com.thirdbridge.pucksensor.R;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -63,7 +64,7 @@ public class CellOrganizer {
      * @param columns
      * @param index
      * @param value
-     * @return true if the index exists
+     * @return e if the index exists
      */
     public boolean put(int columns, int index, double value) {
         List<Double> requestList = mDatas.get(columns);
@@ -166,8 +167,9 @@ public class CellOrganizer {
                 try {
                     double value = mDatas.get(i).get(j);
                     String valueStr = "" + value;
+                    DecimalFormat numberFormat = new DecimalFormat("#.00");
                     if (!valueStr.equals("NaN")) {
-                        data.setText("" + valueStr);
+                        data.setText(numberFormat.format(value));
                     }
                 } catch (Exception e) {}
                 tableRow.addView(data);
