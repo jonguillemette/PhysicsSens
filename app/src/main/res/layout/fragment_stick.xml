@@ -106,6 +106,18 @@ android:orientation="vertical">
         android:text="Generate"
         android:id="@+id/generate_button" />
 
+    <CheckBox
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/free_mode"
+        android:id="@+id/free_mode_sh_cb" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/reset_data"
+        android:id="@+id/reset_data" />
+
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -181,10 +193,17 @@ android:orientation="vertical">
 
 </LinearLayout>
 
+<TableLayout
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/stats_box_margin"
+    android:layout_marginRight="@dimen/start_test_top_margin"
+    android:id="@+id/summary_table_layout"
+    android:layout_below="@id/vertical_linear"></TableLayout>
 
 <ScrollView
     android:layout_width="match_parent"
-    android:layout_below="@id/vertical_linear"
+    android:layout_below="@id/summary_table_layout"
     android:layout_alignParentBottom="true"
     android:layout_height="match_parent"
     android:id="@+id/scroll_layout">

@@ -26,15 +26,15 @@ public class KeyPoint {
         ACCELERATION_MAX,
         DIRECTION_RAW_START,
         DIRECTION_RAW_END,
-        IS_RADIAN,
         ROTATION_DELTA,
         ACCEL_Z,
         DIRECTION_START,
         DIRECTION_END,
-        QUALITY_DIRECTION,
+        QUALITY_DIRECTION_MAGNITUDE,
+        QUALITY_DIRECTION_ORIENTATION
     }
 
-    public static String getUnits(Data data, Data data2) {
+    public static String getUnits(Data data) {
         switch (data) {
             case ACCELERATION_INIT_X:
                 return "g";
@@ -53,39 +53,21 @@ public class KeyPoint {
             case ACCELERATION_MAX:
                 return "g";
             case DIRECTION_RAW_START:
-                if (data2 == Data.IS_RADIAN) {
-                    return "rad";
-                } else {
-                    return "degree";
-                }
+                return "degree";
             case DIRECTION_RAW_END:
-                if (data2 == Data.IS_RADIAN) {
-                    return "rad";
-                } else {
-                    return "degree";
-                }
+                return "degree";
             case ROTATION_DELTA:
-                if (data2 == Data.IS_RADIAN) {
-                    return "rad/s";
-                } else {
-                    return "degree/s";
-                }
+                return "degree/s";
             case ACCEL_Z:
                 return "g";
             case DIRECTION_START:
-                if (data2 == Data.IS_RADIAN) {
-                    return "rad";
-                } else {
-                    return "degree";
-                }
+                return "degree";
             case DIRECTION_END:
-                if (data2 == Data.IS_RADIAN) {
-                    return "rad";
-                } else {
-                    return "degree";
-                }
-            case QUALITY_DIRECTION:
+                return "degree";
+            case QUALITY_DIRECTION_MAGNITUDE:
                 return "";
+            case QUALITY_DIRECTION_ORIENTATION:
+                return "degree";
         }
         return "";
     }
@@ -102,14 +84,14 @@ public class KeyPoint {
     public double accelerationMax;
     public double directionRawStart;
     public double directionRawEnd;
-    public boolean isRadian = false;
     public double rotationDelta;
     public double accelZ;
 
     // Computed data
     public double directionStart;
     public double directionEnd;
-    public double qualityDirection;
+    public double qualityDirectionMagnitude;
+    public double qualityDirectionOrientation;
 
     // Which data is used
     public boolean gotAccelerationInitX = false;
@@ -126,7 +108,8 @@ public class KeyPoint {
     public boolean gotAccelZ = false;
     public boolean gotDirectionStart = false;
     public boolean gotDirectionEnd = false;
-    public boolean gotQualityDirection = false;
+    public boolean gotQualityDirectionMagnitude = false;
+    public boolean gotQualityDirectionOrientation = false;
 
     private Status mStatus;
 
@@ -192,10 +175,6 @@ public class KeyPoint {
         } catch(Exception e) {}
 
         try {
-            isRadian = jsonPoint.getBoolean(Keys.IS_RADIAN);
-        } catch(Exception e) {}
-
-        try {
             rotationDelta = jsonPoint.getDouble(Keys.ROTATION_DELTA);
             gotRotationDelta = true;
         } catch(Exception e) {}
@@ -216,15 +195,20 @@ public class KeyPoint {
         } catch(Exception e) {}
 
         try {
-            qualityDirection = jsonPoint.getDouble(Keys.QUALITY_DIRECTION);
-            gotQualityDirection = true;
+            qualityDirectionMagnitude = jsonPoint.getDouble(Keys.QUALITY_DIRECTION_MAGNITUDE);
+            gotQualityDirectionMagnitude = true;
+        } catch(Exception e) {}
+
+        try {
+            qualityDirectionOrientation = jsonPoint.getDouble(Keys.QUALITY_DIRECTION_ORIENTATION);
+            gotQualityDirectionOrientation = true;
         } catch(Exception e) {}
 
         mStatus = Status.COMPUTED;
     }
 
     public KeyPoint(Object[] datas, Data[] types) {
-        mStatus = Status.COMPUTED;
+        mStatus = Status.INIT;
         for (int i=0; i<datas.length; i++) {
             switch(types[i]) {
                 case ACCELERATION_INIT_X:
@@ -267,9 +251,6 @@ public class KeyPoint {
                     directionRawEnd = (double) datas[i];
                     gotDirectionRawEnd = true;
                     break;
-                case IS_RADIAN:
-                    isRadian = (boolean) datas[i];
-                    break;
                 case ROTATION_DELTA:
                     rotationDelta = (double) datas[i];
                     gotRotationDelta = true;
@@ -286,16 +267,106 @@ public class KeyPoint {
                     directionEnd = (double) datas[i];
                     gotDirectionEnd = true;
                     break;
-                case QUALITY_DIRECTION:
-                    qualityDirection = (double) datas[i];
-                    gotQualityDirection = true;
+                case QUALITY_DIRECTION_MAGNITUDE:
+                    qualityDirectionMagnitude = (double) datas[i];
+                    gotQualityDirectionMagnitude = true;
+                    break;
+                case QUALITY_DIRECTION_ORIENTATION:
+                    qualityDirectionOrientation = (double) datas[i];
+                    gotQualityDirectionOrientation = true;
                     break;
             }
         }
     }
 
     public void compute() {
-        //TODO Compute series of classic data to generated complex one.
+        if (mStatus != Status.COMPUTED) {
+            mStatus = Status.COMPUTED;
+            // Get Direction Start
+            double angleAccel = Math.atan2(accelerationInitY, accelerationInitX);
+            directionStart = (Math.toDegrees(angleAccel) + directionRawStart) % 360;
+            gotDirectionStart = true;
+
+            angleAccel = Math.atan2(accelerationEndY, accelerationEndX);
+            directionEnd = (Math.toDegrees(angleAccel) + directionRawEnd) % 360;
+            gotDirectionEnd = true;
+
+            // Retrieve X and Y from new direction.
+            // Start
+            double magnitude = Math.sqrt(Math.pow(accelerationInitX, 2) + Math.pow(accelerationInitY, 2));
+            double dir11 = magnitude * Math.cos(Math.toRadians(directionStart));
+            double dir21 = magnitude * Math.sin(Math.toRadians(directionStart));
+            // End
+            magnitude = Math.sqrt(Math.pow(accelerationEndX, 2) + Math.pow(accelerationEndY, 2));
+            double dir12 = magnitude * Math.cos(Math.toRadians(directionEnd));
+            double dir22 = magnitude * Math.sin(Math.toRadians(directionEnd));
+
+            double x1 = 0;
+            double x2 = deltaTime / 1000;
+
+            // derivation 1
+            double y1 = dir11;
+            double y2 = dir12;
+
+            double slopeX = (y2 - y1) / (x2 - x1);
+
+            y1 = dir21;
+            y2 = dir22;
+
+            double slopeY = (y2 - y1) / (x2 - x1);
+
+            qualityDirectionMagnitude = Math.sqrt(Math.pow(slopeX, 2) + Math.pow(slopeY, 2));
+            gotQualityDirectionMagnitude = true;
+            qualityDirectionOrientation = Math.toDegrees(Math.atan2(slopeY, slopeX));
+            gotQualityDirectionOrientation = true;
+            gotQualityDirectionOrientation = true;
+        }
+    }
+
+    public String packageFormCSV() {
+        //Package every stat into a CSV string format. Create a one line of everything. When multiple KeyPoints, be sure that they are the same type.
+        String retValue = "";
+        retValue += gotAccelerationInitX ? accelerationInitX + "," : "";
+        retValue += gotAccelerationInitY ? accelerationInitY + "," : "";
+        retValue += gotAccelerationEndX ? accelerationEndX + "," : "";
+        retValue += gotAccelerationEndY ? accelerationEndY + "," : "";
+        retValue += gotDeltaTime ? deltaTime + "," : "";
+        retValue += gotDeltaFlyingTime ? deltaFlyingTime + "," : "";
+        retValue += gotAccelerationMean ? accelerationMean + "," : "";
+        retValue += gotAccelerationMax ? accelerationMax + "," : "";
+        retValue += gotDirectionRawStart ? directionRawStart + "," : "";
+        retValue += gotDirectionRawEnd ? directionRawEnd + "," : "";
+        retValue += gotAccelZ ? accelZ + "," : "";
+        retValue += gotRotationDelta ? rotationDelta + "," : "";
+        retValue += gotDirectionStart ? directionStart + "," : "";
+        retValue += gotDirectionEnd ? directionEnd + "," : "";
+        retValue += gotQualityDirectionMagnitude ? qualityDirectionMagnitude + "," : "";
+        retValue += gotQualityDirectionOrientation ? qualityDirectionOrientation + "," : "";
+
+        return retValue;
+    }
+
+    public String packageTitleFormCSV() {
+        //Package every stat into a CSV string format. Create a one line of everything. When multiple KeyPoints, be sure that they are the same type.
+        String retValue = "";
+        retValue += gotAccelerationInitX ? Keys.ACCELERATION_INIT_X + "(" + getUnits(Data.ACCELERATION_INIT_X) + ")" + "," : "";
+        retValue += gotAccelerationInitY ? Keys.ACCELERATION_INIT_Y + "(" + getUnits(Data.ACCELERATION_INIT_Y) + ")" + "," : "";
+        retValue += gotAccelerationEndX ? Keys.ACCELERATION_END_X + "(" + getUnits(Data.ACCELERATION_END_X) + ")"  + "," : "";
+        retValue += gotAccelerationEndY ? Keys.ACCELERATION_END_Y + "(" + getUnits(Data.ACCELERATION_END_Y) + ")"  + "," : "";
+        retValue += gotDeltaTime ? Keys.DELTA_TIME + "(" + getUnits(Data.DELTA_TIME) + ")"  + "," : "";
+        retValue += gotDeltaFlyingTime ? Keys.DELTA_FLYING_TIME + "(" + getUnits(Data.DELTA_FLYING_TIME) + ")"  + "," : "";
+        retValue += gotAccelerationMean ? Keys.ACCELERATION_MEAN + "(" + getUnits(Data.ACCELERATION_MEAN) + ")"  + "," : "";
+        retValue += gotAccelerationMax ? Keys.ACCELERATION_MAX + "(" + getUnits(Data.ACCELERATION_MAX) + ")"  + "," : "";
+        retValue += gotDirectionRawStart ? Keys.DIRECTION_RAW_START + "(" + getUnits(Data.DIRECTION_RAW_START) + ")"  + "," : "";
+        retValue += gotDirectionRawEnd ? Keys.DIRECTION_RAW_END + "(" + getUnits(Data.DIRECTION_RAW_END) + ")"  + "," : "";
+        retValue += gotAccelZ ? Keys.ACCEL_Z + "(" + getUnits(Data.ACCEL_Z) + ")"  + "," : "";
+        retValue += gotRotationDelta ? Keys.ROTATION_DELTA + "(" + getUnits(Data.ROTATION_DELTA) + ")"  + "," : "";
+        retValue += gotDirectionStart ? Keys.DIRECTION_START + "(" + getUnits(Data.DIRECTION_START) + ")"  + "," : "";
+        retValue += gotDirectionEnd ? Keys.DIRECTION_END + "(" + getUnits(Data.DIRECTION_END) + ")"  + "," : "";
+        retValue += gotQualityDirectionMagnitude ? Keys.QUALITY_DIRECTION_MAGNITUDE + "(" + getUnits(Data.QUALITY_DIRECTION_MAGNITUDE) + ")"  + "," : "";
+        retValue += gotQualityDirectionOrientation ? Keys.QUALITY_DIRECTION_ORIENTATION + "(" + getUnits(Data.QUALITY_DIRECTION_ORIENTATION) + ")"  + "," : "";
+
+        return retValue;
     }
 
     public Status getStatus() {
@@ -318,13 +389,12 @@ public class KeyPoint {
         public final static String ACCELERATION_MAX = "acceleration_max";
         public final static String DIRECTION_RAW_START = "direction_raw_start";
         public final static String DIRECTION_RAW_END = "direction_raw_end";
-        public final static String IS_RADIAN = "is_radian";
         public final static String ROTATION_DELTA = "rotation_delta";
         public final static String ACCEL_Z = "accel_z";
         public final static String DIRECTION_START = "direction_start";
         public final static String DIRECTION_END = "direction_end";
-        public final static String QUALITY_DIRECTION = "quality_direction";
-
+        public final static String QUALITY_DIRECTION_MAGNITUDE = "quality_direction_magnitude";
+        public final static String QUALITY_DIRECTION_ORIENTATION = "quality_direction_orientation";
     }
 
 }

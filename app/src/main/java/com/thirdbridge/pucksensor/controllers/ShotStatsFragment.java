@@ -67,7 +67,8 @@ import java.util.UUID;
 public class ShotStatsFragment extends BaseFragment {
 
 	private static String TAG = ShotStatsFragment.class.getSimpleName();
-    private static String FOLDER_SAVE_SHOT = "Statpuck";
+    private static String FOLDER_SAVE = "Statpuck";
+    private static String FOLDER_SAVE_SHOT = "Shots";
     private static final String LOCAL_SHOTS = "LOCAL_SHOTS";
 
     private static final double STAMP = 1.25;
@@ -1271,7 +1272,8 @@ public class ShotStatsFragment extends BaseFragment {
         if (id.equals(LOCAL_SHOTS)) {
             // Step 1: Check every file inside
             File rootsd = Environment.getExternalStorageDirectory();
-            File root = new File(rootsd.getAbsolutePath(), FOLDER_SAVE_SHOT);
+            File parent = new File(rootsd.getAbsolutePath(), FOLDER_SAVE);
+            File root = new File(parent.getAbsolutePath(), FOLDER_SAVE_SHOT);
 
             File[] files = root.listFiles();
             if (files == null) {
@@ -1532,7 +1534,11 @@ public class ShotStatsFragment extends BaseFragment {
     private void save() {
         // Save on a known place every shot shown
         File rootsd = Environment.getExternalStorageDirectory();
-        File root = new File(rootsd.getAbsolutePath(), FOLDER_SAVE_SHOT);
+        File parent = new File(rootsd.getAbsolutePath(), FOLDER_SAVE);
+        File root = new File(parent.getAbsolutePath(), FOLDER_SAVE_SHOT);
+        if (!parent.exists()) {
+            parent.mkdirs();
+        }
         if (!root.exists()) {
             root.mkdirs();
         }

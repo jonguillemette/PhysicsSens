@@ -60,7 +60,8 @@ import java.util.List;
 public class CalibrationFragment extends BaseFragment {
 
 	private static String TAG = CalibrationFragment.class.getSimpleName();
-    private static String FOLDER_SAVE_SHOT = "Statpuck";
+    private static String FOLDER_SAVE = "Statpuck";
+    private static String FOLDER_SAVE_CALIB = "Calibration";
 
     private static final int MINIMAL_G = 5;
     private static final String THRESHOLD_G = "THRESHOLD_G";
@@ -335,7 +336,11 @@ public class CalibrationFragment extends BaseFragment {
 
             // Gather result and save them
             File rootsd = Environment.getExternalStorageDirectory();
-            File root = new File(rootsd.getAbsolutePath(), FOLDER_SAVE_SHOT);
+            File parent = new File(rootsd.getAbsolutePath(), FOLDER_SAVE);
+            File root = new File(parent.getAbsolutePath(), FOLDER_SAVE_CALIB);
+            if (!parent.exists()) {
+                parent.mkdirs();
+            }
             if (!root.exists()) {
                 root.mkdirs();
             }

@@ -73,14 +73,22 @@ import java.util.List;
 public class StickHandlingFragment extends BaseFragment {
 
 	private static String TAG = StickHandlingFragment.class.getSimpleName();
-    private static String FOLDER_SAVE_SHOT = "Statpuck";
+    private static String FOLDER_SAVE = "Statpuck";
+    private static String FOLDER_SAVE_SH = "StickHandling";
+    private static String CHECK_MODE = "CHECK_MODE";
     private static final boolean DEBUG = true;
     private static final double STAMP = 1.25;
     private static final int PARAMETER = 12;
 
 
     private static final int[] RECENT_NAME = {R.string.recent_shot1, R.string.recent_shot2, R.string.recent_shot3, R.string.recent_shot4, R.string.recent_shot5};
+    private static final String TITLES[] = {"Accel Max", "Accel Mean", "Rotation Max", "Flying time", "Quality magnitude", "Quality orientation"};
+    private static final String SUMMARY_TITLES[] = {"Accel Max", "Accel Mean", "Total time", "Total touch time", "Total flying time"};
 
+    private enum Mode {
+        FREE,
+        EXERCICE
+    };
 
     // Saving local instance
     SharedPreferences mSettings;
@@ -90,6 +98,7 @@ public class StickHandlingFragment extends BaseFragment {
 	private User mUser;
 	private boolean mPreviewTest = false;
     private int[] mActualSettings = Protocol.DEFAULT.clone();
+    private Mode mMode;
 
 	private Button mStartStopButton;
 	private Button mSaveButton;
@@ -113,7 +122,11 @@ public class StickHandlingFragment extends BaseFragment {
     Button mStartExercise;
     TableLayout mTable;
     CellOrganizer mCell;
+    TableLayout mSummaryTable;
+    CellOrganizer mSummaryCell;
     ScrollView mScroll;
+    Button mResetButton;
+    CheckBox mSelectModeCB;
 
     // Player comparison management
     private List<Player> mPlayers = new ArrayList<Player>();
@@ -154,6 +167,8 @@ public class StickHandlingFragment extends BaseFragment {
     int mIncrement = 0;
     double[] mTableData = new double[PARAMETER];
     Exercise mExercice = null;
+    boolean mNewData = true;
+    double mDirectionDelta = 0;
 
     // Thread running
     Runnable mRun = new Runnable() {
@@ -256,9 +271,12 @@ public class StickHandlingFragment extends BaseFragment {
         mLoadExercise = (Button) v.findViewById(R.id.load_exercice_button);
         mStartExercise = (Button) v.findViewById(R.id.start_exercice_button);
         mTable = (TableLayout) v.findViewById(R.id.table_layout);
+        mSummaryTable = (TableLayout) v.findViewById(R.id.summary_table_layout);
         mVideobutton = (ImageButton) v.findViewById(R.id.video_button);
         mKeyExerciseTV = (TextView) v.findViewById(R.id.key_exercise);
         mScroll = (ScrollView) v.findViewById(R.id.scroll_layout);
+        mResetButton = (Button) v.findViewById(R.id.reset_data);
+        mSelectModeCB = (CheckBox) v.findViewById(R.id.free_mode_sh_cb);
 
         mVideobutton.setVisibility(View.GONE);
 		mLoadingScreenRelativeLayout = (RelativeLayout) v.findViewById(R.id.loading_screen_relative_layout);
@@ -366,22 +384,25 @@ public class StickHandlingFragment extends BaseFragment {
         mExercisePopup = inflateExercisePopup(container);
 
 
+        mSelectModeCB.setChecked(mSettings.getBoolean(CHECK_MODE, false));
+        if (mSelectModeCB.isChecked()) {
+            mMode = Mode.FREE;
+
+            mCell = new CellOrganizer(mTable, TITLES, "Key Points", true, 1);
+            mCell.allActualize();
+
+            mSummaryCell = new CellOrganizer(mSummaryTable, SUMMARY_TITLES, "Total ", false, 1);
+            mSummaryCell.allActualize();
+
+            mExercice = new Exercise("Free", "", mUser);
+        } else {
+            mMode = Mode.EXERCICE;
+        }
+        updateGUI();
         if (DEBUG) {
             mGenerateButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    String titles[] = {"Accel Init X", "Accel Init Y", "Accel End X", "Accel End Y", "Direction Init", "Direction End",
-                            "Accel Mean", "Accel Max", "Accel Z", "Rotation", "Delta", "Flying time"};
-                    if (mCell == null) {
-                        mCell = new CellOrganizer(mTable, titles, "Key Points", true, 1);
-                        mCell.allActualize();
-                    } else {
-                        mIncrement = 0;
-                        mCell.clear();
-                        mCell.reload(titles, "Key Points", true, 1);
-                        mCell.allActualize();
-                    }
-                    mExercice = new Exercise(mUser.getId(), mUser.getName(), "Live", "QWERTY");
                 }
             });
 
@@ -390,6 +411,40 @@ public class StickHandlingFragment extends BaseFragment {
             mGenerateButton.setVisibility(View.GONE);
         }
 
+        mResetButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mCell == null) {
+                    mCell = new CellOrganizer(mTable, TITLES, "KeyPoints", true, 1);
+                    mCell.allActualize();
+                } else {
+                    mIncrement = 0;
+                    mCell.clear();
+                    mCell.reload(TITLES, "KeyPoints", true, 1);
+                    mCell.allActualize();
+                    mSummaryCell.clear();
+                    mSummaryCell.reload(SUMMARY_TITLES, "Total ", true, 1);
+                    mSummaryCell.allActualize();
+                }
+                mExercice = new Exercise("Free", "", mUser);
+                mNewData = true;
+            }
+        });
+
+        mSelectModeCB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    mMode = Mode.FREE;
+                } else {
+                    mMode = Mode.EXERCICE;
+                }
+                updateGUI();
+                SharedPreferences.Editor editor = mSettings.edit();
+                editor.putBoolean(CHECK_MODE, isChecked);
+                editor.commit();
+            }
+        });
 
 		mStartStopButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -403,15 +458,30 @@ public class StickHandlingFragment extends BaseFragment {
             @Override
             public void onClick(View view) {
                 //TODO Save other format
-                /*
+
                 // Save on a known place every shot shown
                 File rootsd = Environment.getExternalStorageDirectory();
-                File root = new File(rootsd.getAbsolutePath(), FOLDER_SAVE_SHOT);
+                File parent = new File(rootsd.getAbsolutePath(), FOLDER_SAVE);
+                File root = new File(parent.getAbsolutePath(), FOLDER_SAVE_SH);
+                if (!parent.exists()) {
+                    parent.mkdirs();
+                }
+
                 if (!root.exists()) {
                     root.mkdirs();
                 }
 
-                List<Integer> id = new ArrayList<Integer>();
+                Pair<String, String> saveData = mExercice.packageFormCSV();
+                File file = new File(root, saveData.first);
+                IO.saveFile(saveData.second, file);
+                Toast.makeText(getContext(), "Save exercice in " + file, Toast.LENGTH_LONG).show();
+
+                Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+                intent.setData(Uri.fromFile(file));
+                getActivity().sendBroadcast(intent);
+
+                //TODO Save comparaison menu
+                /*List<Integer> id = new ArrayList<Integer>();
                 if (mFirstCheck != -1) {
                     id.add(mFirstCheck);
                 }
@@ -431,8 +501,8 @@ public class StickHandlingFragment extends BaseFragment {
                     Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
                     intent.setData(Uri.fromFile(file));
                     getActivity().sendBroadcast(intent);
-                }
-                */
+                }*/
+
             }
         });
 
@@ -565,6 +635,15 @@ public class StickHandlingFragment extends BaseFragment {
                     mTableData[10] = deltaTick;
                     mTableData[11] = deltaTickFlying;
 
+
+                    if (mNewData) {
+                        mNewData = false;
+                        mDirectionDelta =  mTableData[4];
+                        mTableData[11] = 0;
+                    }
+                    mTableData[4] -= mDirectionDelta;
+                    mTableData[5] -= mDirectionDelta;
+
                     KeyPoint.Data[] types = {
                             KeyPoint.Data.ACCELERATION_INIT_X,
                             KeyPoint.Data.ACCELERATION_INIT_Y,
@@ -578,7 +657,6 @@ public class StickHandlingFragment extends BaseFragment {
                             KeyPoint.Data.ROTATION_DELTA,
                             KeyPoint.Data.DELTA_TIME,
                             KeyPoint.Data.DELTA_FLYING_TIME,
-                            KeyPoint.Data.IS_RADIAN,
                     };
 
                     Object[] datas = {
@@ -593,18 +671,27 @@ public class StickHandlingFragment extends BaseFragment {
                             mTableData[8],
                             mTableData[9],
                             mTableData[10],
-                            mTableData[11],
-                            false
+                            mTableData[11]
                     };
 
                     if (true) { // Find a way to handle small peak
-
                         KeyPoint kp = new KeyPoint(datas, types);
                         mExercice.addKeypoints(kp);
+                        mExercice.compute();
 
-                        for (int i = 0; i < mTableData.length; i++) {
-                            mCell.put(i, mIncrement, mTableData[i], false);
-                        }
+                        mSummaryCell.put(0, 0, mExercice.accelerationMax, false);
+                        mSummaryCell.put(1, 0, mExercice.accelerationMean, false);
+                        mSummaryCell.put(2, 0, mExercice.totalTime, false);
+                        mSummaryCell.put(3, 0, mExercice.totalTouchTime, false);
+                        mSummaryCell.put(4, 0, mExercice.totalFlightTime, false);
+                        mSummaryCell.allActualize();
+
+                        mCell.put(0, mIncrement, kp.accelerationMax, false);
+                        mCell.put(1, mIncrement, kp.accelerationMean, false);
+                        mCell.put(2, mIncrement, kp.rotationDelta, false);
+                        mCell.put(3, mIncrement, kp.deltaFlyingTime, false);
+                        mCell.put(4, mIncrement, kp.qualityDirectionMagnitude, false);
+                        mCell.put(5, mIncrement, kp.qualityDirectionOrientation, false);
 
                         mIncrement++;
                         mCell.put(0, mIncrement, Double.NaN, false);
@@ -816,6 +903,21 @@ public class StickHandlingFragment extends BaseFragment {
         value |= (high & 0xFF) << 8;
 
         return (double) value * STAMP;
+    }
+
+    private void updateGUI() {
+        switch (mMode) {
+            case FREE:
+                mLoadExercise.setVisibility(View.GONE);
+                mStartExercise.setVisibility(View.GONE);
+                mResetButton.setVisibility(View.VISIBLE);
+                break;
+            case EXERCICE:
+                mLoadExercise.setVisibility(View.VISIBLE);
+                mStartExercise.setVisibility(View.VISIBLE);
+                mResetButton.setVisibility(View.GONE);
+                break;
+        }
     }
 
 
