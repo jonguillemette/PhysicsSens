@@ -48,6 +48,12 @@
                 android:textSize="@dimen/stat_button_text_size"
                 android:visibility="visible" />
 
+            <EditText
+                android:id="@+id/header_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="headertotest"/>
+
             <TextView
                 android:id="@+id/stats_description_textview"
                 android:layout_width="wrap_content"

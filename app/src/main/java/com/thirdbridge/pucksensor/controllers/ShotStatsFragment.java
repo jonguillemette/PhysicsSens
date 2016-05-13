@@ -100,6 +100,7 @@ public class ShotStatsFragment extends BaseFragment {
 
 	private Button mStartStopButton;
 	private Button mSaveButton;
+    private EditText mHeaderET;
 	private TextView mDescriptionTextView;
 
 	//Loading screen
@@ -281,6 +282,7 @@ public class ShotStatsFragment extends BaseFragment {
 
 		mStartStopButton = (Button) v.findViewById(R.id.start_button);
 		mSaveButton = (Button) v.findViewById(R.id.save_button);
+        mHeaderET = (EditText) v.findViewById(R.id.header_text);
 		mDescriptionTextView = (TextView) v.findViewById(R.id.stats_description_textview);
 		mGenerateButton = (Button) v.findViewById(R.id.generate_button);
         mHackButton = (Button) v.findViewById(R.id.demo_start_button);
@@ -1556,7 +1558,12 @@ public class ShotStatsFragment extends BaseFragment {
                 continue;
             }
             Pair<String, String> saveData = mRecent[id.get(i)].packageFormCSV();
-            File file = new File(root, saveData.first);
+            File file;
+            if (mHeaderET.getText().length() != 0) {
+                file = new File(root, mHeaderET.getText() + "." + saveData.first);
+            } else {
+                file = new File(root, saveData.first);
+            }
             IO.saveFile(saveData.second, file);
             Toast.makeText(getContext(), "Save " + getString(RECENT_NAME[id.get(i)]) + " in " + file, Toast.LENGTH_LONG).show();
 
