@@ -82,7 +82,8 @@ public class StickHandlingFragment extends BaseFragment {
 
 
     private static final int[] RECENT_NAME = {R.string.recent_shot1, R.string.recent_shot2, R.string.recent_shot3, R.string.recent_shot4, R.string.recent_shot5};
-    private static final String TITLES[] = {"Accel Max", "Accel Mean", "Rotation Max", "Flying time", "Quality magnitude", "Quality orientation"};
+    private static final String TITLES[] = {"Accel\nMax", "Accel\nMean", "Rotation\nMax", "Flying\ntime", "Quality\nmagnitude", "Quality\norientation"/*, "   ", "Accel\nMax", "Accel\nMean", "Rotation\nMax", "Flying\ntime", "Quality\nmagnitude", "Quality\norientation"
+            ,"   ", "Accel\nMax", "Accel\nMean", "Rotation\nMax", "Flying\ntime", "Quality\nmagnitude", "Quality\norientation"*/};
     private static final String SUMMARY_TITLES[] = {"Accel Max", "Accel Mean", "Total time", "Total touch time", "Total flying time"};
 
     private enum Mode {
@@ -284,7 +285,8 @@ public class StickHandlingFragment extends BaseFragment {
         // Menu
         mSettings = getActivity().getSharedPreferences("StatPuck", 0);
 
-
+        mScroll.setHorizontalScrollBarEnabled(true);
+        mScroll.setVerticalScrollBarEnabled(true);
 
         mRecentResult = new CheckBox[5];
         mRecentResult[0] = (CheckBox) v.findViewById(R.id.recent_result1);
@@ -388,7 +390,7 @@ public class StickHandlingFragment extends BaseFragment {
         if (mSelectModeCB.isChecked()) {
             mMode = Mode.FREE;
 
-            mCell = new CellOrganizer(mTable, TITLES, "Key Points", true, 1);
+            mCell = new CellOrganizer(mTable, TITLES, "KeyPoints", true, 1);
             mCell.allActualize();
 
             mSummaryCell = new CellOrganizer(mSummaryTable, SUMMARY_TITLES, "Total ", false, 1);
@@ -423,7 +425,7 @@ public class StickHandlingFragment extends BaseFragment {
                     mCell.reload(TITLES, "KeyPoints", true, 1);
                     mCell.allActualize();
                     mSummaryCell.clear();
-                    mSummaryCell.reload(SUMMARY_TITLES, "Total ", true, 1);
+                    mSummaryCell.reload(SUMMARY_TITLES, "Total ", false, 1);
                     mSummaryCell.allActualize();
                 }
                 mExercice = new Exercise("Free", "", mUser);
