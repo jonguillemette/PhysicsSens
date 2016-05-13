@@ -730,15 +730,15 @@ public class CalibrationFragment extends BaseFragment {
 
         int value = (values[4] & 0xFF);
         value |= (values[5] & 0xFF) << 8;
-        retValue[0] = ((double)value * 0.012;
+        retValue[0] = ((double)value * 0.012);
 
         value = (values[10] & 0xFF);
         value |= (values[11] & 0xFF) << 8;
-        retValue[1] = ((double)value * 0.012;
+        retValue[1] = ((double)value * 0.012);
 
         value = (values[16] & 0xFF);
         value |= (values[17] & 0xFF) << 8;
-        retValue[2] = ((double)value * 0.012;
+        retValue[2] = ((double)value * 0.012);
         return retValue;
     }
 
