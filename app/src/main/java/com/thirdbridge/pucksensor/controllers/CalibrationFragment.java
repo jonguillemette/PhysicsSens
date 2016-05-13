@@ -730,15 +730,15 @@ public class CalibrationFragment extends BaseFragment {
 
         int value = (values[4] & 0xFF);
         value |= (values[5] & 0xFF) << 8;
-        retValue[0] = ((double)value * 16)/2048;
+        retValue[0] = ((double)value * 0.012;
 
         value = (values[10] & 0xFF);
         value |= (values[11] & 0xFF) << 8;
-        retValue[1] = ((double)value * 16)/2048;
+        retValue[1] = ((double)value * 0.012;
 
         value = (values[16] & 0xFF);
         value |= (values[17] & 0xFF) << 8;
-        retValue[2] = ((double)value * 16)/2048;
+        retValue[2] = ((double)value * 0.012;
         return retValue;
     }
 
@@ -749,15 +749,15 @@ public class CalibrationFragment extends BaseFragment {
 
         int value = (values[6] & 0xFF);
         value |= (values[7] & 0xFF) << 8;
-        retValue[0] = ((double)value * 2000)/32767;
+        retValue[0] = ((double)value * 0.07);
 
         value = (values[12] & 0xFF);
         value |= (values[13] & 0xFF) << 8;
-        retValue[1] = ((double)value * 2000)/32767;
+        retValue[1] = ((double)value * 0.07);
 
         value = (values[18] & 0xFF);
         value |= (values[19] & 0xFF) << 8;
-        retValue[2] = ((double)value * 2000)/32767;
+        retValue[2] = ((double)value * 0.07);
         return retValue;
     }
 
