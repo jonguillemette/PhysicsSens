@@ -40,7 +40,7 @@ public class Exercise {
         mTitle = title;
         mDescription = description;
         mVideo = video;
-        mKeypoints = new ArrayList<>();
+        mKeypoints = new ArrayList<KeyPoint>();
 
         DateFormat df = new SimpleDateFormat("dd_MMM_yyyy_HH.mm.ssa");
         mTime = df.format(Calendar.getInstance().getTime());
@@ -52,7 +52,7 @@ public class Exercise {
         mTitle = "No exercice";
         mDescription = "";
         mVideo = video;
-        mKeypoints = new ArrayList<>();
+        mKeypoints = new ArrayList<KeyPoint>();
 
         DateFormat df = new SimpleDateFormat("dd_MMM_yyyy_HH.mm.ssa");
         mTime = df.format(Calendar.getInstance().getTime());
@@ -91,7 +91,7 @@ public class Exercise {
         try {
             jsonRootObject = new JSONObject(jsonData);
             JSONArray jsonArray = jsonRootObject.optJSONArray(JSON_KEYPOINTS);
-            mKeypoints = new ArrayList<>();
+            mKeypoints = new ArrayList<KeyPoint>();
             for (int i=0; i<jsonArray.length(); i++) {
                 mKeypoints.add(new KeyPoint(jsonArray.getJSONObject(i)));
             }
@@ -159,6 +159,6 @@ public class Exercise {
         }
 
         String fileName = mUser.getName().replace(" ", ".") + "_" + mTime + ".csv";
-        return new Pair<>(fileName, retValue);
+        return new Pair<String,String>(fileName, retValue);
     }
 }

@@ -1,5 +1,6 @@
 package com.thirdbridge.pucksensor.controllers;
 
+import android.app.ProgressDialog;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
@@ -8,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -15,6 +17,10 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -33,6 +39,10 @@ import com.thirdbridge.pucksensor.ble.SensorDetails;
 import com.thirdbridge.pucksensor.models.User;
 import com.thirdbridge.pucksensor.utils.BaseFragment;
 import com.thirdbridge.pucksensor.utils.IO;
+import com.thirdbridge.pucksensor.utils.JSONParser;
+
+import org.apache.http.NameValuePair;
+import org.apache.http.message.BasicNameValuePair;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -54,6 +64,8 @@ public class HomeFragment extends BaseFragment {
     private Button mShotTextButton;
     private Button mStickHandlingButton;
     private Button mCalibrationButton;
+    private Button mFreeRoamingButton;
+    private Button mAnalysisButton;
     private ImageButton mNewUserImageButton;
     private Spinner mUserSpinner;
     private Button mSaveUserButton;
@@ -79,7 +91,7 @@ public class HomeFragment extends BaseFragment {
     private boolean mCommunicationDone = false;
 
     // SensorTag
-    private List<Sensor> mEnabledSensors = new ArrayList<>();
+    private List<Sensor> mEnabledSensors = new ArrayList<Sensor>();
     private BluetoothGattService mOadService = null;
     private BluetoothGattService mConnControlService = null;
 
@@ -101,7 +113,7 @@ public class HomeFragment extends BaseFragment {
         mListener.remove(listener);
     }
 
-    private List<BluetoothListener> mListener = new ArrayList<>();
+    private List<BluetoothListener> mListener = new ArrayList<BluetoothListener>();
 
     boolean mPause = false;
     Thread mBackgroundThread;
@@ -161,6 +173,8 @@ public class HomeFragment extends BaseFragment {
         mShotTextButton = (Button) v.findViewById(R.id.shot_test_button);
         mStickHandlingButton = (Button) v.findViewById(R.id.handling_test_button);
         mCalibrationButton = (Button) v.findViewById(R.id.calibration_button);
+        mFreeRoamingButton = (Button) v.findViewById(R.id.roaming_test_button);
+        mAnalysisButton = (Button) v.findViewById(R.id.analysis_test_button);
         mNewUserImageButton = (ImageButton) v.findViewById(R.id.new_user_image_button);
         mUserSpinner = (Spinner) v.findViewById(R.id.user_spinner);
 
@@ -212,17 +226,16 @@ public class HomeFragment extends BaseFragment {
                         Toast.makeText(getActivity(), "Device is connecting...", Toast.LENGTH_LONG).show();
                     else
                         Toast.makeText(getActivity(), "No device connected", Toast.LENGTH_LONG).show();
-               }
+                }
             }
         });
 
         mStickHandlingButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //TODO Delete the "true" statement
-                if (true || mCommunicationDone) {
+                if (mCommunicationDone) {
                     if (mUserSpinner.getSelectedItemPosition() != -1) {
-                        if (true || getController().isBleDeviceConnected()) {
+                        if (getController().isBleDeviceConnected()) {
                             getController().gotoStickHand((User) mUserSpinner.getSelectedItem());
                         }
                     }
@@ -253,11 +266,55 @@ public class HomeFragment extends BaseFragment {
             }
         });
 
+        mFreeRoamingButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mCommunicationDone) {
+                    if (mUserSpinner.getSelectedItemPosition() != -1) {
+                        if (getController().isBleDeviceConnected()) {
+                            getController().gotoFreeRoaming();
+                        }
+                    }
+                } else {
+                    if (getController().isBleDeviceConnected())
+                        Toast.makeText(getActivity(), "Device is connecting...", Toast.LENGTH_LONG).show();
+                    else
+                        Toast.makeText(getActivity(), "No device connected", Toast.LENGTH_LONG).show();
+                }
+            }
+        });
+
+        mAnalysisButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mCommunicationDone || true) {
+                    if (mUserSpinner.getSelectedItemPosition() != -1) {
+                        if (getController().isBleDeviceConnected() || true) {
+                            getController().gotoAnalysis((User) mUserSpinner.getSelectedItem());
+                        }
+                    }
+                } else {
+                    if (getController().isBleDeviceConnected())
+                        Toast.makeText(getActivity(), "Device is connecting...", Toast.LENGTH_LONG).show();
+                    else
+                        Toast.makeText(getActivity(), "No device connected", Toast.LENGTH_LONG).show();
+                }
+            }
+        });
+
+/*
+        WebSettings wSettings;
+        wSettings = mWebView.getSettings();
+        wSettings.setJavaScriptEnabled(true);
+        mWebView.loadUrl("file:///storage/emulated/0/Statpuck/index.html");
+*/
+
         return v;
     }
 
+
     private void populateSpinner(){
-        mUsers = new ArrayList<>();
+        mUsers = new ArrayList<User>();
 
         File root = new File(this.getContext().getFilesDir(), "users");
         if (!root.exists()) {
@@ -332,7 +389,7 @@ public class HomeFragment extends BaseFragment {
 
     private class UserArrayAdapter extends ArrayAdapter<User> {
 
-        List<User> userList = new ArrayList<>();
+        List<User> userList = new ArrayList<User>();
 
         public UserArrayAdapter(Context context, int textViewResourceId, List<User> objects) {
             super(context, textViewResourceId, objects);
@@ -522,7 +579,7 @@ public class HomeFragment extends BaseFragment {
     private void initializeBluetooth() {
         // BLE
         mBtLeService = BluetoothLeService.getInstance();
-        mServiceList = new ArrayList<>();
+        mServiceList = new ArrayList<BluetoothGattService>();
 
         // Initialize sensor list
         updateSensorList();

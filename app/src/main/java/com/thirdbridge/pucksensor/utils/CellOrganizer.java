@@ -37,7 +37,7 @@ public class CellOrganizer {
         mPrefixRows = rowName;
         mIsIncrementPrefix = isIncrement;
         for (int i=0; i<mTitles.length; i++) {
-            List<Double> newList = new ArrayList<> ();
+            List<Double> newList = new ArrayList<Double> ();
             mDatas.add(newList);
         }
         mContext = mTable.getContext();
@@ -50,7 +50,7 @@ public class CellOrganizer {
         mIsIncrementPrefix = isIncrement;
         mLength = length;
         for (int i=0; i<mTitles.length; i++) {
-            List<Double> newList = new ArrayList<> ();
+            List<Double> newList = new ArrayList<Double> ();
             for (int j=0; j<mLength; j++) {
                 newList.add(Double.NaN);
             }
@@ -105,7 +105,7 @@ public class CellOrganizer {
         mPrefixRows = rowName;
         mIsIncrementPrefix = isIncrement;
         for (int i=0; i<mTitles.length; i++) {
-            List<Double> newList = new ArrayList<> ();
+            List<Double> newList = new ArrayList<Double> ();
             mDatas.add(newList);
         }
         mContext = mTable.getContext();
@@ -117,7 +117,7 @@ public class CellOrganizer {
         mIsIncrementPrefix = isIncrement;
         mLength = length;
         for (int i=0; i<mTitles.length; i++) {
-            List<Double> newList = new ArrayList<> ();
+            List<Double> newList = new ArrayList<Double> ();
             for (int j=0; j<mLength; j++) {
                 newList.add(Double.NaN);
             }

@@ -62,6 +62,11 @@ public class Protocol {
      */
     public static final int STICK_MOMENT = 12;
 
+    /**
+     * The App want free roaming data
+     */
+    public static final int FREE_MODE = 13;
+
 
 
     // PROTOCOL DEFAULT SETTINGS

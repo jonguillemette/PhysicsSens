@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_grey">
+
+    <RelativeLayout
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:id="@+id/test_control_linear_layout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="@dimen/stats_box_margin"
+            android:layout_marginTop="@dimen/start_test_top_margin"
+            android:orientation="horizontal">
+
+
+            <Button
+                android:id="@+id/start_button"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/stats_test_button_height"
+                android:layout_gravity="center_horizontal"
+                android:background="@drawable/small_button_shadow"
+                android:drawablePadding="@dimen/button_drawable_padding"
+                android:drawableStart="@drawable/btn_check_buttonless_on"
+                android:text="@string/start"
+                android:textAllCaps="false"
+                android:textColor="@color/instruction_grey"
+                android:textSize="@dimen/stat_button_text_size"
+                android:visibility="visible" />
+
+            <TextView
+                android:id="@+id/stats_description_textview"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginEnd="@dimen/stats_box_margin"
+                android:layout_marginStart="@dimen/stats_box_margin"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_below="@+id/test_control_linear_layout"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <CheckBox
+                android:id="@+id/show_acceleration_check"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="@string/show_acceleration" />
+
+            <CheckBox
+                android:id="@+id/show_angular_check"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="false"
+                android:text="@string/show_angular" />
+
+
+            <LinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/stats_box_margin"
+                android:layout_marginEnd="@dimen/stats_box_margin"
+                android:layout_marginStart="@dimen/stats_box_margin"
+                android:orientation="horizontal"
+                android:weightSum="10"
+                android:id="@+id/accel_layout">
+
+
+                <LinearLayout
+                    android:id="@+id/accel_stats_linear_layout"
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/stats_graph_height"
+                    android:layout_marginEnd="@dimen/stats_box_margin"
+                    android:layout_weight="7"
+                    android:background="@drawable/stats_card_shadow"
+                    android:orientation="vertical"
+                    android:paddingTop="@dimen/stats_box_inner_padding">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:paddingStart="@dimen/stats_box_inner_padding"
+                            android:text="@string/accelChartTitle"
+                            android:textColor="@color/dark_grey"
+                            android:textSize="@dimen/stats_text_size" />
+
+                        <ProgressBar
+                            style="?android:attr/progressBarStyleSmall"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:id="@+id/accel_stats_progress"
+                            android:indeterminate="true"/>
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="2dp"
+                        android:layout_marginBottom="@dimen/stats_separator_margin"
+                        android:layout_marginTop="@dimen/stats_separator_margin"
+                        android:background="@color/light_grey"
+                        android:paddingStart="@dimen/stats_box_inner_padding" />
+
+                    <com.github.mikephil.charting.charts.LineChart
+                        android:id="@+id/accel_stats_chart"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_marginBottom="5dp"
+                        android:layout_marginLeft="5dp"
+                        android:layout_marginRight="5dp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="3"
+                    android:background="@drawable/stats_card_shadow"
+                    android:orientation="vertical"
+                    android:paddingStart="@dimen/stats_box_inner_padding"
+                    android:paddingTop="@dimen/stats_box_inner_padding">
+
+                    <LinearLayout
+                        android:id="@+id/accel_xyz_stats_box_linear_layout"
+                        android:layout_width="fill_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/topAccelXYZ"
+                                android:textColor="@color/dark_grey"
+                                android:textSize="@dimen/stats_text_size" />
+
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="2dp"
+                            android:layout_marginBottom="@dimen/stats_separator_margin"
+                            android:layout_marginTop="@dimen/stats_separator_margin"
+                            android:background="@color/light_grey" />
+
+                        <TextView
+                            android:id="@+id/top_accel_xyz_textview"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="end"
+                            android:layout_marginBottom="@dimen/stats_bottom_margin"
+                            android:layout_marginEnd="@dimen/stats_right_margin"
+                            android:textColor="@color/primary_green"
+                            android:textSize="@dimen/stats_text_size" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+
+            <LinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/stats_box_margin"
+                android:layout_marginEnd="@dimen/stats_box_margin"
+                android:layout_marginStart="@dimen/stats_box_margin"
+                android:orientation="horizontal"
+                android:weightSum="10"
+                android:id="@+id/angular_layout">
+
+                <LinearLayout
+                    android:id="@+id/rotation_stats_linear_layout"
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/stats_graph_height"
+                    android:layout_marginEnd="@dimen/stats_box_margin"
+                    android:layout_weight="7"
+                    android:background="@drawable/stats_card_shadow"
+                    android:orientation="vertical"
+                    android:paddingTop="@dimen/stats_box_inner_padding">
+
+
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:paddingStart="@dimen/stats_box_inner_padding"
+                            android:text="@string/rotationChartTitle"
+                            android:textColor="@color/dark_grey"
+                            android:textSize="@dimen/stats_text_size" />
+
+                        <ProgressBar
+                            style="?android:attr/progressBarStyleSmall"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:id="@+id/rotation_stats_progress"
+                            android:indeterminate="true"/>
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="2dp"
+                        android:layout_marginBottom="@dimen/stats_separator_margin"
+                        android:layout_marginTop="@dimen/stats_separator_margin"
+                        android:background="@color/light_grey"
+                        android:paddingStart="@dimen/stats_box_inner_padding" />
+
+                    <com.github.mikephil.charting.charts.LineChart
+                        android:id="@+id/rotation_stats_chart"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_marginBottom="5dp"
+                        android:layout_marginLeft="5dp"
+                        android:layout_marginRight="5dp" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="3"
+                    android:background="@drawable/stats_card_shadow"
+                    android:orientation="vertical"
+                    android:paddingStart="@dimen/stats_box_inner_padding"
+                    android:paddingTop="@dimen/stats_box_inner_padding">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/topRotation"
+                        android:textColor="@color/dark_grey"
+                        android:textSize="@dimen/stats_text_size" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="2dp"
+                        android:layout_marginBottom="@dimen/stats_separator_margin"
+                        android:layout_marginTop="@dimen/stats_separator_margin"
+                        android:background="@color/light_grey" />
+
+                    <TextView
+                        android:id="@+id/top_rotation_textview"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="end"
+                        android:layout_marginBottom="@dimen/stats_bottom_margin"
+                        android:layout_marginEnd="@dimen/stats_right_margin"
+                        android:textColor="@color/primary_green"
+                        android:textSize="@dimen/stats_text_size" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+
+        <RelativeLayout
+            android:id="@+id/loading_screen_relative_layout"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:background="@color/transparent_grey"
+            android:layout_alignParentTop="true"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/loadingTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:text="@string/loading"
+                android:textColor="@color/white"
+                android:textSize="22sp"/>
+
+        </RelativeLayout>
+
+    </RelativeLayout>
+
+</ScrollView>
+

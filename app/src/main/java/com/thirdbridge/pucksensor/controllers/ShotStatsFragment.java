@@ -69,6 +69,7 @@ public class ShotStatsFragment extends BaseFragment {
 	private static String TAG = ShotStatsFragment.class.getSimpleName();
     private static String FOLDER_SAVE = "Statpuck";
     private static String FOLDER_SAVE_SHOT = "Shots";
+    private static String FOLDER_SAVE_ANALYSIS = "Analysis";
     private static final String LOCAL_SHOTS = "LOCAL_SHOTS";
 
     private static final double STAMP = 1.25;
@@ -713,8 +714,6 @@ public class ShotStatsFragment extends BaseFragment {
                 currentLineDataSet = createSet(getActivity().getString(RECENT_NAME[idName]), GRAPH_COLOR[id], 1f, 1f, true);
                 data.addDataSet(currentLineDataSet);
                 mAccelDataSetIndexXYZ = data.getIndexOfDataSet(currentLineDataSet);
-
-
             }
             data.addEntry(new Entry(yValue, xValueInt), mAccelDataSetIndexXYZ);
 
@@ -1566,6 +1565,29 @@ public class ShotStatsFragment extends BaseFragment {
             }
             IO.saveFile(saveData.second, file);
             Toast.makeText(getContext(), "Save " + getString(RECENT_NAME[id.get(i)]) + " in " + file, Toast.LENGTH_LONG).show();
+
+            if (id.get(i) == 0 && mRecent[0].getMeanAccel() > 0) {
+                File analysis = new File(parent.getAbsolutePath(), FOLDER_SAVE_ANALYSIS);
+                if (!analysis.exists()) {
+                    analysis.mkdirs();
+                }
+                File userFile = new File(analysis, mUser.getName() + ".csv");
+                if (userFile.exists()) {
+                    String data = IO.loadFile(userFile);
+                    data += mRecent[0].getTime() + "," + mRecent[0].getMeanAccel() + "," + mRecent[0].getMaxAccel() + "\n";
+                    IO.saveFile(data, userFile);
+                } else {
+                    String data = "Name:," + mUser.getName() + "\n";
+                    data += "Id:," + mUser.getId() + "\n";
+                    data += "Date,Mean Acceleration,Max Acceleration\n";
+                    data += mRecent[0].getTime() + "," + mRecent[0].getMeanAccel() + "," + mRecent[0].getMaxAccel() + "\n";
+                    IO.saveFile(data, userFile);
+                }
+
+                Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+                intent.setData(Uri.fromFile(userFile));
+                getActivity().sendBroadcast(intent);
+            }
 
             Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
             intent.setData(Uri.fromFile(file));

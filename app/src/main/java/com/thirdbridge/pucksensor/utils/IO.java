@@ -28,11 +28,11 @@ public class IO {
         }
     }
 
-    public static void saveFile(String dada, File path) {
+    public static void saveFile(String data, File path) {
         FileOutputStream stream = null;
         try {
             stream = new FileOutputStream(path);
-            stream.write(dada.getBytes());
+            stream.write(data.getBytes());
             stream.close();
         } catch (FileNotFoundException e) {
             e.printStackTrace();

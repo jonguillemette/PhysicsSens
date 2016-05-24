@@ -26,6 +26,7 @@ public class Shot {
     private double[] mSpeedTotal;
     private String mTime;
     private double mMaxAccel = 0;
+    private double mMeanAccel = -1;
     private double mMaxSpeed = 0;
     private double mMaxRotation = 0;
     private User mUser;
@@ -157,7 +158,7 @@ public class Shot {
         }
 
         String fileName = mUser.getName().replace(" ", "_") + "_" + mTime + ".csv";
-        return new Pair<>(fileName, text);
+        return new Pair<String,String>(fileName, text);
     }
 
     public void depackageFormCSV(File filename) {
@@ -206,7 +207,7 @@ public class Shot {
         // Get release ticks
 
         // Phase 1, get all max:
-        List<Integer> maxes = new ArrayList<>();
+        List<Integer> maxes = new ArrayList<Integer>();
         for (int i=2; i<mAccTotal.length -2;i++) {
             if (mAccTotal[i] - mAccTotal[i-2] > 0  && mAccTotal[i] - mAccTotal[i+2] > 0 && mAccTotal[i] >= threshold) {
                 maxes.add(i);
@@ -215,7 +216,7 @@ public class Shot {
         }
 
         // Phase 2, keep max with good data
-        List<Integer> cleanMaxes = new ArrayList<>();
+        List<Integer> cleanMaxes = new ArrayList<Integer>();
 
         for (int i=0; i<maxes.size(); i++) {
             int center = maxes.get(i);
@@ -316,7 +317,24 @@ public class Shot {
             return false;
         }
 
+        double sum = 0;
+        for (int i=mMin; i<mMax; i++) {
+            sum += mAccTotal[i];
+        }
+        mMeanAccel = sum / (mMax-mMin);
         return true;
+    }
+
+    public double getMeanAccel() {
+        return mMeanAccel;
+    }
+
+    public String getTime(){
+        return mTime;
+    }
+
+    public double getMaxAccel() {
+        return mMaxAccel;
     }
 
     public double getReleaseTime() {

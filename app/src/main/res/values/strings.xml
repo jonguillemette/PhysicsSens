@@ -13,6 +13,7 @@
     <string name="home_instruction_2">After selecting a user, choose the test you want to do.</string>
     <string name="shot">Shot</string>
     <string name="evaluation">Evaluation</string>
+    <string name="analysis">Analysis</string>
     <string name="stickHandling">Stick Handling</string>
     <string name="freeRoaming">Free Roaming</string>
     <string name="calibration">Calibration and Settings</string>

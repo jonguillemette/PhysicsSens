@@ -30,7 +30,9 @@ import com.thirdbridge.pucksensor.R;
 import com.thirdbridge.pucksensor.ble.BLEDeviceInfo;
 import com.thirdbridge.pucksensor.ble.BluetoothLeService;
 import com.thirdbridge.pucksensor.controllers.ActionBarFragment;
+import com.thirdbridge.pucksensor.controllers.AnalysisFragment;
 import com.thirdbridge.pucksensor.controllers.CalibrationFragment;
+import com.thirdbridge.pucksensor.controllers.FreeRoamingFragment;
 import com.thirdbridge.pucksensor.controllers.HistoryFragment;
 import com.thirdbridge.pucksensor.controllers.HomeFragment;
 import com.thirdbridge.pucksensor.controllers.ScanBleFragment;
@@ -54,7 +56,7 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 
 
 
-	private enum VisibleFragment {BLE, HOME, HISTORY, STATS, STICK_HAND, YOUTUBE, CALIBRATION}
+	private enum VisibleFragment {BLE, HOME, HISTORY, STATS, STICK_HAND, YOUTUBE, CALIBRATION, FREE_ROAMING, ANALYSIS}
 
 	private VisibleFragment mVisibleFragment;
 	private Constants.SelectedTest mSelectedTest;
@@ -85,6 +87,12 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 
 	private FrameLayout mCalibrationFragmentContainer;
 	private CalibrationFragment mCalibrationFragment;
+
+	private FrameLayout mFreeRoamingFragmentContainer;
+	private FreeRoamingFragment mFreeRoamingFragment;
+
+	private FrameLayout mAnalysisFragmentContainer;
+	private AnalysisFragment mAnalysisFragment;
 
     @Override
     public void onInitializationSuccess(YouTubePlayer.Provider provider, YouTubePlayer youTubePlayer, boolean b) {
@@ -240,6 +248,26 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 		ft.commit();
 	}
 
+	private void initializeFreeRoamingFragment() {
+		mFreeRoamingFragmentContainer = (FrameLayout) findViewById(R.id.freeroaming_fragment_container);
+		mFreeRoamingFragment = FreeRoamingFragment.newInstance();
+
+		FragmentManager fm = getSupportFragmentManager();
+		FragmentTransaction ft = fm.beginTransaction();
+		ft.replace(R.id.freeroaming_fragment_container, mFreeRoamingFragment);
+		ft.commit();
+	}
+
+	private void initializeAnalysisFragment(User user) {
+		mAnalysisFragmentContainer = (FrameLayout) findViewById(R.id.analysis_fragment_container);
+		mAnalysisFragment = AnalysisFragment.newInstance(user);
+
+		FragmentManager fm = getSupportFragmentManager();
+		FragmentTransaction ft = fm.beginTransaction();
+		ft.replace(R.id.analysis_fragment_container, mAnalysisFragment);
+		ft.commit();
+	}
+
 	private void initializeYoutubeFragment(String video) {
 		mYoutubeFragmentContainer = (FrameLayout) findViewById(R.id.youtube_fragment_container);
 		mYoutubeFragment = (YouTubePlayerFragment) getFragmentManager().findFragmentById(R.id.youtube_fragment);
@@ -306,6 +334,9 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 		if (mCalibrationFragmentContainer != null)
 			mCalibrationFragmentContainer.setVisibility(View.GONE);
 
+		if (mFreeRoamingFragmentContainer != null)
+			mFreeRoamingFragmentContainer.setVisibility(View.GONE);
+
 		mActionBarFragment.setActionBarTitle("BLE Device Discovery");
 
 
@@ -336,6 +367,9 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 		if (mCalibrationFragmentContainer != null)
 			mCalibrationFragmentContainer.setVisibility(View.GONE);
 
+		if (mFreeRoamingFragmentContainer != null)
+			mFreeRoamingFragmentContainer.setVisibility(View.GONE);
+
 		mActionBarFragment.setActionBarTitle("Home");
 
 		setVisibleFragment(VisibleFragment.HOME);
@@ -349,6 +383,9 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 			mStatsFragmentContainer.setVisibility(View.GONE);
 
 		mHistoryFragmentContainer.setVisibility(View.VISIBLE);
+
+		if (mFreeRoamingFragmentContainer != null)
+			mFreeRoamingFragmentContainer.setVisibility(View.GONE);
 
 		mActionBarFragment.setActionBarTitle("Shot Test History");
 		setVisibleFragment(VisibleFragment.HISTORY);
@@ -382,6 +419,26 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 		mCalibrationFragmentContainer.setVisibility(View.VISIBLE);
 		setVisibleFragment(VisibleFragment.CALIBRATION);
 		mActionBarFragment.setActionBarTitle("Calibration & Settings");
+	}
+
+    public void gotoFreeRoaming() {
+        initializeFreeRoamingFragment();
+        mHomeFragmentContainer.setVisibility(View.GONE);
+        if(mHistoryFragmentContainer != null)
+            mHistoryFragmentContainer.setVisibility(View.GONE);
+        mFreeRoamingFragmentContainer.setVisibility(View.VISIBLE);
+        setVisibleFragment(VisibleFragment.FREE_ROAMING);
+        mActionBarFragment.setActionBarTitle("Freeroaming");
+    }
+
+	public void gotoAnalysis(User user) {
+		initializeAnalysisFragment(user);
+		mHomeFragmentContainer.setVisibility(View.GONE);
+		if(mHistoryFragmentContainer != null)
+			mHistoryFragmentContainer.setVisibility(View.GONE);
+		mAnalysisFragmentContainer.setVisibility(View.VISIBLE);
+		setVisibleFragment(VisibleFragment.ANALYSIS);
+		mActionBarFragment.setActionBarTitle("Analysis");
 	}
 
 	public void backfromYoutube() {
@@ -426,6 +483,9 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 				gotoHome();
 				break;
 			case CALIBRATION:
+				gotoHome();
+				break;
+			case ANALYSIS:
 				gotoHome();
 				break;
             case YOUTUBE:

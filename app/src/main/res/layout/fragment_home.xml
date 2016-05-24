@@ -81,9 +81,9 @@
             <Button
                 android:layout_width="@dimen/test_box_width"
                 android:layout_height="@dimen/test_box_height"
-                android:id="@+id/evaluation_test_button"
+                android:id="@+id/analysis_test_button"
                 android:background="@drawable/test_button_shadow"
-                android:text="@string/evaluation"
+                android:text="@string/analysis"
                 android:textAllCaps="false"
                 android:textColor="@color/dark_grey"
                 android:textSize="@dimen/test_text_size"
@@ -91,6 +91,8 @@
                 android:gravity="center"
                 android:clickable="false"
                 />
+
+
 
         </LinearLayout>
 
@@ -125,7 +127,6 @@
                 android:textSize="@dimen/test_text_size"
                 android:layout_marginStart="@dimen/test_horizontal_margin"
                 android:gravity="center"
-                android:clickable="false"
                 />
 
         </LinearLayout>
@@ -145,5 +146,4 @@
             />
 
     </LinearLayout>
-
 </ScrollView>

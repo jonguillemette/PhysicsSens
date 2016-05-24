@@ -1,5 +1,7 @@
 package com.thirdbridge.pucksensor.models;
 
+import android.util.Log;
+
 import org.json.JSONObject;
 
 /**
@@ -212,67 +214,67 @@ public class KeyPoint {
         for (int i=0; i<datas.length; i++) {
             switch(types[i]) {
                 case ACCELERATION_INIT_X:
-                    accelerationInitX = (double) datas[i];
+                    accelerationInitX = (Double) datas[i];
                     gotAccelerationInitX = true;
                     break;
                 case ACCELERATION_INIT_Y:
-                    accelerationInitY = (double) datas[i];
+                    accelerationInitY = (Double) datas[i];
                     gotAccelerationInitY = true;
                     break;
                 case ACCELERATION_END_X:
-                    accelerationEndX = (double) datas[i];
+                    accelerationEndX = (Double) datas[i];
                     gotAccelerationEndX = true;
                     break;
                 case ACCELERATION_END_Y:
-                    accelerationEndY = (double) datas[i];
+                    accelerationEndY = (Double) datas[i];
                     gotAccelerationEndY = true;
                     break;
                 case DELTA_TIME:
-                    deltaTime = (double) datas[i];
+                    deltaTime = (Double) datas[i];
                     gotDeltaTime = true;
                     break;
                 case DELTA_FLYING_TIME:
-                    deltaFlyingTime = (double) datas[i];
+                    deltaFlyingTime = (Double) datas[i];
                     gotDeltaFlyingTime = true;
                     break;
                 case ACCELERATION_MEAN:
-                    accelerationMean = (double) datas[i];
+                    accelerationMean = (Double) datas[i];
                     gotAccelerationMean = true;
                     break;
                 case ACCELERATION_MAX:
-                    accelerationMax = (double) datas[i];
+                    accelerationMax = (Double) datas[i];
                     gotAccelerationMax = true;
                     break;
                 case DIRECTION_RAW_START:
-                    directionRawStart = (double) datas[i];
+                    directionRawStart = (Double) datas[i];
                     gotDirectionRawStart = true;
                     break;
                 case DIRECTION_RAW_END:
-                    directionRawEnd = (double) datas[i];
+                    directionRawEnd = (Double) datas[i];
                     gotDirectionRawEnd = true;
                     break;
                 case ROTATION_DELTA:
-                    rotationDelta = (double) datas[i];
+                    rotationDelta = (Double) datas[i];
                     gotRotationDelta = true;
                     break;
                 case ACCEL_Z:
-                    accelZ = (double) datas[i];
+                    accelZ = (Double) datas[i];
                     gotAccelZ = true;
                     break;
                 case DIRECTION_START:
-                    directionStart = (double) datas[i];
+                    directionStart = (Double) datas[i];
                     gotDirectionStart = true;
                     break;
                 case DIRECTION_END:
-                    directionEnd = (double) datas[i];
+                    directionEnd = (Double) datas[i];
                     gotDirectionEnd = true;
                     break;
                 case QUALITY_DIRECTION_MAGNITUDE:
-                    qualityDirectionMagnitude = (double) datas[i];
+                    qualityDirectionMagnitude = (Double) datas[i];
                     gotQualityDirectionMagnitude = true;
                     break;
                 case QUALITY_DIRECTION_ORIENTATION:
-                    qualityDirectionOrientation = (double) datas[i];
+                    qualityDirectionOrientation = (Double) datas[i];
                     gotQualityDirectionOrientation = true;
                     break;
             }
@@ -282,6 +284,16 @@ public class KeyPoint {
     public void compute() {
         if (mStatus != Status.COMPUTED) {
             mStatus = Status.COMPUTED;
+
+   /*         accelerationInitX = -0.25;
+            accelerationInitY = 1.18;
+            directionRawStart = 0;
+            deltaTime = 187.5;
+
+            accelerationEndX = -0.19;
+            accelerationEndY = -1.15;
+            directionRawEnd = -291;
+*/
             // Get Direction Start
             double angleAccel = Math.atan2(accelerationInitY, accelerationInitX);
             directionStart = (Math.toDegrees(angleAccel) + directionRawStart) % 360;
@@ -291,15 +303,19 @@ public class KeyPoint {
             directionEnd = (Math.toDegrees(angleAccel) + directionRawEnd) % 360;
             gotDirectionEnd = true;
 
+            //Log.i("YOLLO", "Direction: " + directionStart + ", " + directionEnd);
             // Retrieve X and Y from new direction.
             // Start
             double magnitude = Math.sqrt(Math.pow(accelerationInitX, 2) + Math.pow(accelerationInitY, 2));
             double dir11 = magnitude * Math.cos(Math.toRadians(directionStart));
             double dir21 = magnitude * Math.sin(Math.toRadians(directionStart));
+            //Log.i("YOLLO", "Init Magnitude: " + magnitude + " X: " + dir11 + ", " + dir21);
+
             // End
             magnitude = Math.sqrt(Math.pow(accelerationEndX, 2) + Math.pow(accelerationEndY, 2));
             double dir12 = magnitude * Math.cos(Math.toRadians(directionEnd));
             double dir22 = magnitude * Math.sin(Math.toRadians(directionEnd));
+            //Log.i("YOLLO", "End Magnitude: " + magnitude + " X: " + dir12 + ", " + dir22);
 
             double x1 = 0;
             double x2 = deltaTime / 1000;
@@ -309,17 +325,20 @@ public class KeyPoint {
             double y2 = dir12;
 
             double slopeX = (y2 - y1) / (x2 - x1);
+            //Log.i("YOLLO", "Slope X: " + slopeX);
 
             y1 = dir21;
             y2 = dir22;
 
             double slopeY = (y2 - y1) / (x2 - x1);
+            //Log.i("YOLLO", "Slope Y:"   + slopeY);
 
             qualityDirectionMagnitude = Math.sqrt(Math.pow(slopeX, 2) + Math.pow(slopeY, 2));
             gotQualityDirectionMagnitude = true;
             qualityDirectionOrientation = Math.toDegrees(Math.atan2(slopeY, slopeX));
             gotQualityDirectionOrientation = true;
-            gotQualityDirectionOrientation = true;
+
+            //Log.i("YOLLO", "Final: " + qualityDirectionMagnitude + ", " + qualityDirectionOrientation);
         }
     }
 

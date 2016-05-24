@@ -18,7 +18,7 @@ public class Calibrate {
 
 
     public Calibrate() {
-        mData = new ArrayList<>();
+        mData = new ArrayList<Pair<Double, Double>>();
 
         DateFormat df = new SimpleDateFormat("dd_MMM_yyyy_HH.mm.ssa");
         mTime = df.format(Calendar.getInstance().getTime());
@@ -39,6 +39,6 @@ public class Calibrate {
         }
 
         String fileName = "calibration_" + mTime + ".csv";
-        return new Pair<>(fileName, text);
+        return new Pair<String, String>(fileName, text);
     }
 }
