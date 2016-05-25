@@ -49,6 +49,12 @@
     <!-- Loading exercise pop-up -->
     <string name="choose_exercise">Which exercise you want to try: </string>
 
+    <!-- Analysis Screen -->
+    <string name="time_evolution">Time evolution</string>
+    <string name="compare">Compare with other user:</string>
+    <string name="max_accel">Maximum acceleration:</string>
+    <string name="mean_accel">Mean acceleration:</string>
+
 
     <!-- Calibration Screen -->
     <string name="peak_acc">Shot peak threshold: </string>

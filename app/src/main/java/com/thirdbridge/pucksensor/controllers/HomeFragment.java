@@ -287,17 +287,8 @@ public class HomeFragment extends BaseFragment {
         mAnalysisButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (mCommunicationDone || true) {
-                    if (mUserSpinner.getSelectedItemPosition() != -1) {
-                        if (getController().isBleDeviceConnected() || true) {
-                            getController().gotoAnalysis((User) mUserSpinner.getSelectedItem());
-                        }
-                    }
-                } else {
-                    if (getController().isBleDeviceConnected())
-                        Toast.makeText(getActivity(), "Device is connecting...", Toast.LENGTH_LONG).show();
-                    else
-                        Toast.makeText(getActivity(), "No device connected", Toast.LENGTH_LONG).show();
+                if (mUserSpinner.getSelectedItemPosition() != -1) {
+                    getController().gotoAnalysis((User) mUserSpinner.getSelectedItem());
                 }
             }
         });
@@ -385,41 +376,6 @@ public class HomeFragment extends BaseFragment {
         });
 
         return popupWindow;
-    }
-
-    private class UserArrayAdapter extends ArrayAdapter<User> {
-
-        List<User> userList = new ArrayList<User>();
-
-        public UserArrayAdapter(Context context, int textViewResourceId, List<User> objects) {
-            super(context, textViewResourceId, objects);
-            userList = objects;
-        }
-
-        @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
-            return getCustomView(position,convertView,parent);
-        }
-
-
-        @Override
-        public View getDropDownView(int position, View convertView, ViewGroup parent) {
-            return getCustomView(position,convertView,parent);
-        }
-
-        public View getCustomView(int position, View convertView, ViewGroup parent) {
-
-            LayoutInflater inflater = (LayoutInflater)getController().getBaseContext()
-                    .getSystemService(getController().LAYOUT_INFLATER_SERVICE);
-
-            View spinnerView = inflater.inflate(R.layout.spinner_dropdown_item, parent, false);
-
-            CheckedTextView checkedTextView = (CheckedTextView) spinnerView.findViewById(R.id.spinner_dropdown_item);
-
-            checkedTextView.setText(userList.get(position).getName());
-
-            return spinnerView;
-        }
     }
 
     // Bluetooth connexion

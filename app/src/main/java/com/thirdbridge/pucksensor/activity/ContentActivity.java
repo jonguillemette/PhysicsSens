@@ -337,6 +337,9 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 		if (mFreeRoamingFragmentContainer != null)
 			mFreeRoamingFragmentContainer.setVisibility(View.GONE);
 
+		if (mAnalysisFragmentContainer != null)
+			mAnalysisFragmentContainer.setVisibility(View.GONE);
+
 		mActionBarFragment.setActionBarTitle("BLE Device Discovery");
 
 
@@ -369,6 +372,9 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 
 		if (mFreeRoamingFragmentContainer != null)
 			mFreeRoamingFragmentContainer.setVisibility(View.GONE);
+
+		if (mAnalysisFragmentContainer != null)
+			mAnalysisFragmentContainer.setVisibility(View.GONE);
 
 		mActionBarFragment.setActionBarTitle("Home");
 
