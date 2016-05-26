@@ -5,6 +5,7 @@ import android.content.Context;
 import android.util.Log;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -69,6 +70,35 @@ public class IO {
         }
 
         return null;
+    }
+
+    public static String loadRawTextAsString(Context context, int name) {
+        BufferedReader in = null;
+        InputStream is = context.getResources().openRawResource(name);;
+        String raw = readTextFile(is);
+        return raw;
+    }
+
+    //http://stackoverflow.com/questions/15912825/how-to-read-file-from-res-raw-by-name
+    private static  String readTextFile(InputStream inputStream) {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try {
+            Log.i("YOLLO", "Size: " + inputStream.available());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        byte buf[] = new byte[1024];
+        int len;
+        try {
+            while ((len = inputStream.read(buf)) != -1) {
+                outputStream.write(buf, 0, len);
+            }
+            outputStream.close();
+            inputStream.close();
+        } catch (IOException e) {
+
+        }
+        return outputStream.toString();
     }
 
 

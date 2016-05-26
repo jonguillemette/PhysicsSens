@@ -101,7 +101,7 @@ public class HomeFragment extends BaseFragment {
 
     //Interface for other fragment
     public interface  BluetoothListener {
-        public void onBluetoothCommand(byte[] values);
+        void onBluetoothCommand(byte[] values);
     }
 
     public void addBluetoothListener(BluetoothListener listener) {
@@ -377,6 +377,7 @@ public class HomeFragment extends BaseFragment {
 
         return popupWindow;
     }
+
 
     // Bluetooth connexion
     @Override

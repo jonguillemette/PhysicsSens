@@ -1574,13 +1574,52 @@ public class ShotStatsFragment extends BaseFragment {
                 File userFile = new File(analysis, mUser.getName() + ".csv");
                 if (userFile.exists()) {
                     String data = IO.loadFile(userFile);
-                    data += mRecent[0].getTime() + "," + mRecent[0].getMeanAccel() + "," + mRecent[0].getMaxAccel() + "\n";
+                    double[] elements = Shot.extractMeanMax(data);
+
+                    double[] accelMean = new double[elements.length/4 + 1];
+
+                    double[] accelMax = new double[elements.length/4 + 1];
+
+                    for(int index=0; index<accelMean.length; index++) {
+                        if (index < accelMax.length-1) {
+                            accelMean[index] = elements[index*4];
+                            accelMax[index] = elements[index*4 + 2];
+                        } else {
+                            accelMean[index] = mRecent[0].getMeanAccel();
+                            accelMax[index] = mRecent[0].getMaxAccel();
+                        }
+                    }
+
+                    //MEAN
+                    double temp=0,temp2=0;
+                    for(int j=0;j<accelMean.length;j++){
+                        temp +=accelMean[j];
+                    }
+                    double mean = temp/accelMean.length;
+                    for(int j=0;j<accelMean.length;j++){
+                        temp2 +=Math.pow(mean-accelMean[j],2);
+                    }
+                    double errorMean = temp2/Math.sqrt(accelMean.length);
+
+                    //MAX
+                    temp=0;
+                    temp2=0;
+                    for(int j=0;j<accelMax.length;j++){
+                        temp +=accelMax[j];
+                    }
+                    mean = temp/accelMax.length;
+                    for(int j=0;j<accelMax.length;j++){
+                        temp2 +=Math.pow(mean-accelMax[j],2);
+                    }
+                    double errorMax = temp2/Math.sqrt(accelMax.length);
+
+                    data += mRecent[0].getTime() + "," + mRecent[0].getMeanAccel() + "," + errorMean + ", " + mRecent[0].getMaxAccel() + "," + errorMax + "\n";
                     IO.saveFile(data, userFile);
                 } else {
                     String data = "Name:," + mUser.getName() + "\n";
                     data += "Id:," + mUser.getId() + "\n";
-                    data += "Date,Mean Acceleration,Max Acceleration\n";
-                    data += mRecent[0].getTime() + "," + mRecent[0].getMeanAccel() + "," + mRecent[0].getMaxAccel() + "\n";
+                    data += "Date,Mean Acceleration,Mean Standard Error,Max Acceleration,Max Standard Error\n";
+                    data += mRecent[0].getTime() + "," + mRecent[0].getMeanAccel() + ",0," + mRecent[0].getMaxAccel() + ",0\n";
                     IO.saveFile(data, userFile);
                 }
 

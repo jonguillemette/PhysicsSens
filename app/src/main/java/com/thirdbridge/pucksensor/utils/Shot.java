@@ -357,4 +357,21 @@ public class Shot {
         return Math.min(val1, val2) / Math.max(val1, val2) >= ((100-percent))/100;
     }
 
+    public static double[] extractMeanMax(String userData) {
+        String[] elements = userData.split("\n");
+
+        double[] retValue = new double[(elements.length-3)*4];
+
+        for (int i=0; i<elements.length-3; i++) {
+            Log.i("YOLLO", elements[i+3]);
+            String[] values = elements[i+3].split(",");
+            retValue[i*4 + 0] = Double.parseDouble(values[1]);
+            retValue[i*4 + 1] = Double.parseDouble(values[2]);
+            retValue[i*4 + 2] = Double.parseDouble(values[3]);
+            retValue[i*4 + 3] = Double.parseDouble(values[4]);
+        }
+
+        return retValue;
+    }
+
 }
