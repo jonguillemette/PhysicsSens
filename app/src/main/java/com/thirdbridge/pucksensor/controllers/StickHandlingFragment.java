@@ -167,7 +167,7 @@ public class StickHandlingFragment extends BaseFragment {
     private PopupWindow mShotSpecPopup;
 
     // Beta tested autoincroment
-    int mIncrement = 0;
+    int mIncrement = -1;
     double[] mTableData = new double[PARAMETER];
     Exercise mExercice = null;
     boolean mNewData = true;
@@ -423,7 +423,7 @@ public class StickHandlingFragment extends BaseFragment {
                     mCell = new CellOrganizer(mTable, TITLES, "KeyPoints", true, 1);
                     mCell.allActualize();
                 } else {
-                    mIncrement = 0;
+                    mIncrement = -1;
                     mCell.clear();
                     mCell.reload(TITLES, "KeyPoints", true, 1);
                     mCell.allActualize();
@@ -687,7 +687,14 @@ public class StickHandlingFragment extends BaseFragment {
 
                     if (true) { // Find a way to handle small peak
                         KeyPoint kp = new KeyPoint(datas, types);
-                        mExercice.addKeypoints(kp);
+                        boolean hasMerge = mExercice.addKeypoints(kp);
+
+                        if (!hasMerge) {
+                            mIncrement++;
+                            mCell.put(0, mIncrement, Double.NaN, false);
+                            mCell.put(0, mIncrement+1, Double.NaN, false);
+                        }
+
                         mExercice.compute();
 
                         mSummaryCell.put(0, 0, mExercice.accelerationMax, false);
@@ -697,18 +704,16 @@ public class StickHandlingFragment extends BaseFragment {
                         mSummaryCell.put(4, 0, mExercice.totalFlightTime, false);
                         mSummaryCell.allActualize();
 
-                        mCell.put(0, mIncrement, kp.accelerationMax, false);
-                        mCell.put(1, mIncrement, kp.accelerationMean, false);
-                        mCell.put(2, mIncrement, kp.rotationDelta, false);
-                        mCell.put(3, mIncrement, kp.deltaFlyingTime, false);
-                        mCell.put(4, mIncrement, kp.qualityDirectionMagnitude, false);
-                        mCell.put(5, mIncrement, kp.qualityDirectionOrientation, false);
+                        mCell.put(0, mIncrement, mExercice.getKeyPoint(-1).accelerationMax, false);
+                        mCell.put(1, mIncrement, mExercice.getKeyPoint(-1).accelerationMean, false);
+                        mCell.put(2, mIncrement, mExercice.getKeyPoint(-1).rotationDelta, false);
+                        mCell.put(3, mIncrement, mExercice.getKeyPoint(-1).deltaFlyingTime, false);
+                        mCell.put(4, mIncrement, mExercice.getKeyPoint(-1).qualityDirectionMagnitude, false);
+                        mCell.put(5, mIncrement, mExercice.getKeyPoint(-1).qualityDirectionOrientation, false);
 
-                        mIncrement++;
-                        mCell.put(0, mIncrement, Double.NaN, false);
+
                         mCell.allActualize();
                         mScroll.fullScroll(View.FOCUS_DOWN);
-
                     }
 
                 }
@@ -719,9 +724,9 @@ public class StickHandlingFragment extends BaseFragment {
                 mSendOnce = true;
             }
 
-            for (int i=0; i<mActualSettings.length; i++) {
+            /*for (int i=0; i<mActualSettings.length; i++) {
                 mActualSettings[i] = value[2+i];
-            }
+            }*/
         }
 
         String val = "";

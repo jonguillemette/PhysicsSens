@@ -63,6 +63,18 @@
                 android:layout_height="wrap_content"
                 android:checked="false"
                 android:text="@string/show_angular" />
+            <CheckBox
+                android:id="@+id/show_high_check"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="false"
+                android:text="@string/show_high" />
+            <CheckBox
+                android:id="@+id/show_low_check"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="false"
+                android:text="@string/show_low" />
 
 
             <LinearLayout

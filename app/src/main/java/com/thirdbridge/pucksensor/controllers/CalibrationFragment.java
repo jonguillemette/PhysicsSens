@@ -87,7 +87,7 @@ public class CalibrationFragment extends BaseFragment {
 	private boolean mTestRunning = false;
     private boolean mAutoStart = false;
 	private boolean mPreviewTest = false;
-    private boolean mProgressChange = true;
+    private boolean mProgressChange = false;
     private int[] mActualSettings = Protocol.DEFAULT.clone();
 
 	private Button mStartStopButton;
@@ -219,7 +219,8 @@ public class CalibrationFragment extends BaseFragment {
                         HomeFragment.getInstance().writeBLE(send);
                         mProgressChange = false;
                         mAppIsBoss = false;
-                    } catch(Exception e) {}
+                    } catch(Exception e) {
+                    }
                 }
 
 
@@ -238,7 +239,7 @@ public class CalibrationFragment extends BaseFragment {
             mActualSettings[6] = 0;
             mActualSettings[7] = 0;
 
-            byte[] send = {Protocol.SHOT_MODE, 0x00};
+            byte[] send = {Protocol.FREE_MODE, 0x00};
             try {
                 HomeFragment.getInstance().writeBLE(send);
                 Thread.sleep(2050);
@@ -305,7 +306,7 @@ public class CalibrationFragment extends BaseFragment {
             editor.putInt(THRESHOLD_G, 4000);
             editor.commit();
 
-            byte[] send = {Protocol.SHOT_MODE, 0x00};
+            byte[] send = {Protocol.FREE_MODE, 0x00};
             try {
                 HomeFragment.getInstance().writeBLE(send);
                 Thread.sleep(1050);
@@ -689,11 +690,11 @@ public class CalibrationFragment extends BaseFragment {
                 }
             }
 
-            if (!mAppIsBoss) {
+            /*if (!mAppIsBoss) {
                 for (int i = 0; i < mActualSettings.length; i++) {
                     mActualSettings[i] = value[2 + i];
                 }
-            }
+            }*/
         }
 
         String val = "";
@@ -793,7 +794,11 @@ public class CalibrationFragment extends BaseFragment {
             byte[] send = {Protocol.SETTINGS_MODE, 0x00};
             try {
                 HomeFragment.getInstance().writeBLE(send);
+                Thread.sleep(1500);
+                mProgressChange = true;
             } catch (Exception e) {}
+
+
         }
     }
 

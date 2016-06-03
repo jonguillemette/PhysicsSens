@@ -59,8 +59,19 @@ public class Exercise {
     }
 
     // Live action
-    public void addKeypoints(KeyPoint point) {
-        mKeypoints.add(point);
+    public boolean addKeypoints(KeyPoint point) {
+        /*mKeypoints.add(point);
+        return false;
+        */if (mKeypoints.size() >= 1) {
+            boolean merge = mKeypoints.get(mKeypoints.size() - 1).merge(point);
+            if (!merge) {
+                mKeypoints.add(point);
+            }
+            return merge;
+        } else {
+            mKeypoints.add(point);
+            return false;
+        }
     }
 
     public void compute() {
@@ -132,6 +143,9 @@ public class Exercise {
     }
 
     public KeyPoint getKeyPoint(int index) {
+        if (index == -1) {
+            return mKeypoints.get(mKeypoints.size()-1);
+        }
         return mKeypoints.get(index);
     }
 

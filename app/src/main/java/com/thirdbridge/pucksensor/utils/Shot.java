@@ -287,7 +287,7 @@ public class Shot {
         // The peak is set. get the minimum:
         mMin = 0;
         for (int i=finalId-1; i>=0; i-=1) {
-            if ( (mAccTotal[i]-mAccTotal[i+1] > 0 && !isBetween(mAccTotal[i], mAccTotal[i+1], 10)) || mAccTotal[i] < mAccTotal[finalId]/4) {
+            if ( mAccTotal[i] < mAccTotal[finalId]/8/*(mAccTotal[i]-mAccTotal[i+1] > 0 && !isBetween(mAccTotal[i], mAccTotal[i+1], 10)) || mAccTotal[i] < mAccTotal[finalId]/4*/) {
                 mMin = i;
                 break;
             }
@@ -297,7 +297,7 @@ public class Shot {
         // And the maximum
         mMax = 0;
         for (int i=finalId+1; i<mAccTotal.length; i+= 1) {
-            if ((mAccTotal[i]-mAccTotal[i-1] > 0 && !isBetween(mAccTotal[i], mAccTotal[i+1], 10)) || mAccTotal[i] < mAccTotal[finalId]/4) {
+            if (mAccTotal[i] < mAccTotal[finalId]/8 /*(mAccTotal[i]-mAccTotal[i-1] > 0 && !isBetween(mAccTotal[i], mAccTotal[i+1], 10)) || mAccTotal[i] < mAccTotal[finalId]/4*/) {
                 mMax = i;
                 break;
             }

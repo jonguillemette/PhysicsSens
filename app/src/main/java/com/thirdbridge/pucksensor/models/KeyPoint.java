@@ -281,6 +281,67 @@ public class KeyPoint {
         }
     }
 
+    /**
+     * Try to merge this keypoint to this one.
+     * Return false if it's too different.
+     * @param kp
+     * @return
+     */
+    public boolean merge(KeyPoint kp) {
+        // Compute kp to get real data
+        kp.compute();
+
+        boolean merge = false;
+/*
+        if (kp.deltaFlyingTime < 2  || this.deltaTime < 2) {
+            merge = true;
+        }*/
+
+        if (Math.abs(kp.directionStart-this.directionEnd) < 90) {
+            merge = true;
+        }
+
+        if (merge) {
+            fuse(kp);
+        }
+
+        return merge;
+    }
+
+    public void fuse(KeyPoint kp) {
+        mStatus = Status.INIT;
+
+        if (gotAccelerationEndX && kp.gotAccelerationEndX) {
+            accelerationEndX = kp.accelerationEndX;
+        }
+
+        if (gotAccelerationEndY && kp.gotAccelerationEndY) {
+            accelerationEndY = kp.accelerationEndY;
+        }
+
+        if (gotAccelerationMean && this.gotAccelerationMean && gotDeltaTime && this.gotDeltaTime) {
+            accelerationMean = accelerationMean*(deltaTime/(deltaTime+kp.deltaTime)) +  kp.accelerationMean*(kp.deltaTime/(deltaTime+kp.deltaTime));
+        }
+
+        if (gotDeltaTime && this.gotDeltaTime && gotDeltaFlyingTime && this.gotDeltaFlyingTime) {
+            deltaTime += kp.deltaTime + kp.deltaFlyingTime;
+        }
+
+        if (gotAccelerationMax && kp.gotAccelerationMax) {
+            accelerationMax = Math.max(accelerationMax, kp.accelerationMax);
+        }
+
+        if (gotDirectionRawEnd && kp.gotDirectionRawEnd) {
+            directionRawEnd = kp.directionRawEnd;
+        }
+
+        if (gotAccelZ && kp.gotAccelZ) {
+            accelZ = Math.max(accelZ, kp.accelZ);
+        }
+
+
+    }
+
     public void compute() {
         if (mStatus != Status.COMPUTED) {
             mStatus = Status.COMPUTED;
@@ -403,7 +464,7 @@ public class KeyPoint {
         public final static String ACCELERATION_END_X = "acceleration_end_x";
         public final static String ACCELERATION_END_Y = "acceleration_end_y";
         public final static String DELTA_TIME = "delta_time";
-        public final static String DELTA_FLYING_TIME = "delta_flyig_time";
+        public final static String DELTA_FLYING_TIME = "delta_flying_time";
         public final static String ACCELERATION_MEAN = "acceleration_mean";
         public final static String ACCELERATION_MAX = "acceleration_max";
         public final static String DIRECTION_RAW_START = "direction_raw_start";

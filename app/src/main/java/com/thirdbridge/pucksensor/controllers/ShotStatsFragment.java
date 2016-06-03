@@ -944,7 +944,7 @@ public class ShotStatsFragment extends BaseFragment {
         if (Protocol.isSameMode(Protocol.SHOT_MODE, value[0])) {
             double[] realAccel = new double[accelLow.length];
             for (int i = 0; i < realAccel.length; i++) {
-                if (accelLow[i] >= 15) {
+                if (accelHigh[i] > accelLow[i]  && accelHigh[i] > 10) {
                     realAccel[i] = accelHigh[i];
                 } else {
                     realAccel[i] = accelLow[i];
@@ -961,9 +961,9 @@ public class ShotStatsFragment extends BaseFragment {
                 mSendOnce = true;
             }
 
-            for (int i=0; i<mActualSettings.length; i++) {
+            /*for (int i=0; i<mActualSettings.length; i++) {
                 mActualSettings[i] = value[2+i];
-            }
+            }*/
         }
 
         String val = "";

@@ -99,6 +99,10 @@ public class FreeRoamingFragment extends BaseFragment {
     // Menu
     private CheckBox mAccCheckB;
     private CheckBox mAngularCheckB;
+    private CheckBox mShowHighOnlyCheckB;
+    private boolean mShotHighOnly;
+    private CheckBox mShowLowOnlyCheckB;
+    private boolean mShotLowOnly;
 
 
 	//Accel Chart
@@ -237,6 +241,8 @@ public class FreeRoamingFragment extends BaseFragment {
         // Menu
         mAccCheckB = (CheckBox) v.findViewById(R.id.show_acceleration_check);
         mAngularCheckB = (CheckBox) v.findViewById(R.id.show_angular_check);
+        mShowHighOnlyCheckB = (CheckBox) v.findViewById(R.id.show_high_check);
+        mShowLowOnlyCheckB = (CheckBox) v.findViewById(R.id.show_low_check);
 
         mSettings = getActivity().getSharedPreferences("StatPuck", 0);
 
@@ -272,6 +278,33 @@ public class FreeRoamingFragment extends BaseFragment {
 
         showAcceleration(mAccCheckB.isChecked());
         showAngularSpeed(mAngularCheckB.isChecked());
+
+        mShowHighOnlyCheckB.setChecked(false);
+        mShowLowOnlyCheckB.setChecked(false);
+        mShotHighOnly = false;
+        mShotLowOnly = false;
+
+        mShowHighOnlyCheckB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    mShotLowOnly = false;
+                    mShowLowOnlyCheckB.setChecked(false);
+                }
+                mShotHighOnly = isChecked;
+            }
+        });
+
+        mShowLowOnlyCheckB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    mShotHighOnly = false;
+                    mShowHighOnlyCheckB.setChecked(false);
+                }
+                mShotLowOnly = isChecked;
+            }
+        });
 
         mAccCheckB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -613,7 +646,13 @@ public class FreeRoamingFragment extends BaseFragment {
         if (Protocol.isSameMode(Protocol.SHOT_MODE, value[0])) {
             double[] realAccel = new double[accelLow.length];
             for (int i = 0; i < realAccel.length; i++) {
-                if (accelLow[i] >= 15) {
+                if (!mShotHighOnly && !mShotLowOnly) {
+                    if (accelHigh[i] > accelLow[i] && accelHigh[i] > 10) {
+                        realAccel[i] = accelHigh[i];
+                    } else {
+                        realAccel[i] = accelLow[i];
+                    }
+                } else if (mShotHighOnly) {
                     realAccel[i] = accelHigh[i];
                 } else {
                     realAccel[i] = accelLow[i];
@@ -630,9 +669,9 @@ public class FreeRoamingFragment extends BaseFragment {
                 mSendOnce = true;
             }
 
-            for (int i=0; i<mActualSettings.length; i++) {
+            /*for (int i=0; i<mActualSettings.length; i++) {
                 mActualSettings[i] = value[2+i];
-            }
+            }*/
         }
 
         String val = "";
@@ -796,6 +835,7 @@ public class FreeRoamingFragment extends BaseFragment {
                     mRotationChart.getData().getXVals().clear();
                 }
 
+                mNewSetRequired = true;
                 mAccelChart.clear();
                 mRotationChart.clear();
 
