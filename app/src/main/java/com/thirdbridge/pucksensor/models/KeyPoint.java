@@ -36,6 +36,12 @@ public class KeyPoint {
         QUALITY_DIRECTION_ORIENTATION
     }
 
+    public enum Interact {
+        NEW,
+        TAKE_FIRST,
+        TAKE_SECOND
+    }
+
     public static String getUnits(Data data) {
         switch (data) {
             case ACCELERATION_INIT_X:
@@ -282,33 +288,59 @@ public class KeyPoint {
     }
 
     /**
-     * Try to merge this keypoint to this one.
+     * Try to interact this keypoint to this one.
      * Return false if it's too different.
      * @param kp
+     * @param leftOver
      * @return
      */
-    public boolean merge(KeyPoint kp) {
+    public Interact interact(KeyPoint kp, double leftOver) {
         // Compute kp to get real data
         kp.compute();
 
-        boolean merge = false;
-/*
-        if (kp.deltaFlyingTime < 2  || this.deltaTime < 2) {
-            merge = true;
-        }*/
+
+        if (kp.deltaFlyingTime < 1) {
+            fuse(kp, leftOver);
+            return Interact.TAKE_SECOND;
+        }
 
         if (Math.abs(kp.directionStart-this.directionEnd) < 90) {
-            merge = true;
+            return select(kp, leftOver);
+        } else {
+            return Interact.NEW;
         }
 
-        if (merge) {
-            fuse(kp);
-        }
-
-        return merge;
     }
 
-    public void fuse(KeyPoint kp) {
+    public Interact select(KeyPoint kp, double leftOver) {
+        if (Math.abs(kp.directionStart-kp.directionEnd) > Math.abs(directionStart-directionEnd)) {
+
+            double tmp = deltaTime + deltaFlyingTime;
+            accelerationInitX = kp.accelerationInitX;
+            accelerationInitY = kp.accelerationInitY;
+            accelerationEndX = kp.accelerationEndX;
+            accelerationEndY = kp.accelerationEndY;
+            deltaTime = kp.deltaTime;
+            deltaFlyingTime = kp.deltaFlyingTime + tmp + leftOver;
+            accelerationMean = kp.accelerationMean;
+            accelerationMax = kp.accelerationMax;
+            directionRawStart = kp.directionRawStart;
+            directionRawEnd = kp.directionRawEnd;
+            rotationDelta = kp.rotationDelta;
+            accelZ = kp.accelZ;
+            directionStart = kp.directionStart;
+            directionEnd = kp.directionEnd;
+            qualityDirectionMagnitude = kp.qualityDirectionMagnitude;
+            qualityDirectionOrientation = kp.qualityDirectionOrientation;
+
+            return Interact.TAKE_SECOND;
+
+        } else {
+            return Interact.TAKE_FIRST;
+        }
+    }
+
+    public void fuse(KeyPoint kp, double leftOver) {
         mStatus = Status.INIT;
 
         if (gotAccelerationEndX && kp.gotAccelerationEndX) {
@@ -325,6 +357,7 @@ public class KeyPoint {
 
         if (gotDeltaTime && this.gotDeltaTime && gotDeltaFlyingTime && this.gotDeltaFlyingTime) {
             deltaTime += kp.deltaTime + kp.deltaFlyingTime;
+            deltaFlyingTime += leftOver;
         }
 
         if (gotAccelerationMax && kp.gotAccelerationMax) {

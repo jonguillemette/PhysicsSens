@@ -35,6 +35,8 @@ public class Exercise {
     public double totalTouchTime;
     public double totalFlightTime;
 
+    private double mLeftOver;
+
     public Exercise(String id, String title, String description, String video) {
         mId = id;
         mTitle = title;
@@ -62,16 +64,25 @@ public class Exercise {
     public boolean addKeypoints(KeyPoint point) {
         /*mKeypoints.add(point);
         return false;
-        */if (mKeypoints.size() >= 1) {
-            boolean merge = mKeypoints.get(mKeypoints.size() - 1).merge(point);
-            if (!merge) {
-                mKeypoints.add(point);
+        */
+        if (mKeypoints.size() >= 1) {
+            KeyPoint.Interact interact = mKeypoints.get(mKeypoints.size() - 1).interact(point, mLeftOver);
+            switch (interact) {
+                case NEW:
+                    point.deltaFlyingTime += mLeftOver;
+                    mKeypoints.add(point);
+                    mLeftOver = 0;
+                    return false;
+                case TAKE_FIRST:
+                    mLeftOver += point.deltaFlyingTime + point.deltaTime;
+                    return true;
+                case TAKE_SECOND:
+                    return true;
             }
-            return merge;
         } else {
             mKeypoints.add(point);
-            return false;
         }
+        return false;
     }
 
     public void compute() {
