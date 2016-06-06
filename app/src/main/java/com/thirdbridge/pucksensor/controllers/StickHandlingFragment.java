@@ -83,7 +83,7 @@ public class StickHandlingFragment extends BaseFragment {
 
 
     private static final int[] RECENT_NAME = {R.string.recent_shot1, R.string.recent_shot2, R.string.recent_shot3, R.string.recent_shot4, R.string.recent_shot5};
-    private static final String TITLES[] = {"Accel\nMax", "Accel\nMean", "Rotation\nMax", "Flying\ntime", "Quality\nmagnitude", "Quality\norientation"/*, "   ", "Accel\nMax", "Accel\nMean", "Rotation\nMax", "Flying\ntime", "Quality\nmagnitude", "Quality\norientation"
+    private static final String TITLES[] = {"Accel\nMax", "Accel\nMean", "Rotation\nMax", "Flying\ntime", "Quality\nmagnitude"/*, "   ", "Accel\nMax", "Accel\nMean", "Rotation\nMax", "Flying\ntime", "Quality\nmagnitude", "Quality\norientation"
             ,"   ", "Accel\nMax", "Accel\nMean", "Rotation\nMax", "Flying\ntime", "Quality\nmagnitude", "Quality\norientation"*/};
     private static final String SUMMARY_TITLES[] = {"Accel Max", "Accel Mean", "Total time", "Total touch time", "Total flying time"};
 
@@ -709,7 +709,6 @@ public class StickHandlingFragment extends BaseFragment {
                         mCell.put(2, mIncrement, mExercice.getKeyPoint(-1).rotationDelta, false);
                         mCell.put(3, mIncrement, mExercice.getKeyPoint(-1).deltaFlyingTime, false);
                         mCell.put(4, mIncrement, mExercice.getKeyPoint(-1).qualityDirectionMagnitude, false);
-                        mCell.put(5, mIncrement, mExercice.getKeyPoint(-1).qualityDirectionOrientation, false);
 
 
                         mCell.allActualize();
