@@ -15,8 +15,15 @@ public class PlotLyConverter {
     private final static String SEPARATOR_X= "##X##";
     private final static String SEPARATOR_Y= "##Y##";
     private final static String SEPARATOR_ERROR= "##ERROR##";
+    private final static String SEPARATOR_ERROR_CONTAIN= "##ERROR_CONTAIN##";
     private final static String SEPARATOR_DIMEN = "##DIMEN##";
     private final static String SEPARATOR_TYPE = "##TYPE##";
+
+    private final static String USE_ERROR = "error_y: {\n" +
+            "      type: 'data',\n" +
+            "      array: ##ERROR_CONTAIN##,\n" +
+            "      visible: true\n" +
+            "    },";
 
     public PlotLyConverter(Context context) {
         mContext = context;
@@ -54,7 +61,36 @@ public class PlotLyConverter {
         String retValue;
         retValue = mDefault.replaceAll(SEPARATOR_X, xStr);
         retValue = retValue.replaceAll(SEPARATOR_Y, yStr);
-        retValue = retValue.replaceAll(SEPARATOR_ERROR, errorStr);
+        retValue = retValue.replaceAll(SEPARATOR_ERROR, USE_ERROR);
+        retValue = retValue.replaceAll(SEPARATOR_ERROR_CONTAIN, errorStr);
+        retValue = retValue.replaceAll(SEPARATOR_DIMEN, dimension + "");
+        retValue = retValue.replaceAll(SEPARATOR_TYPE, "scatter");
+
+        return  retValue;
+    }
+
+    public String makeLine(double[] x, double[] y, int dimension) {
+        String xStr = "[";
+        for (int i=0; i<x.length; i++) {
+            if (i ==  x.length -1) {
+                xStr +=  x[i] + "]";
+            } else {
+                xStr += x[i] + ", ";
+            }
+        }
+        String yStr = "[";
+        for (int i=0; i<y.length; i++) {
+            if (i ==  y.length -1) {
+                yStr +=  y[i] + "]";
+            } else {
+                yStr += y[i] + ", ";
+            }
+        }
+
+        String retValue;
+        retValue = mDefault.replaceAll(SEPARATOR_X, xStr);
+        retValue = retValue.replaceAll(SEPARATOR_Y, yStr);
+        retValue = retValue.replaceAll(SEPARATOR_ERROR, "");
         retValue = retValue.replaceAll(SEPARATOR_DIMEN, dimension + "");
         retValue = retValue.replaceAll(SEPARATOR_TYPE, "scatter");
 
@@ -90,7 +126,8 @@ public class PlotLyConverter {
         String retValue;
         retValue = mDefault.replaceAll(SEPARATOR_X, xStr);
         retValue = retValue.replaceAll(SEPARATOR_Y, yStr);
-        retValue = retValue.replaceAll(SEPARATOR_ERROR, errorStr);
+        retValue = retValue.replaceAll(SEPARATOR_ERROR, USE_ERROR);
+        retValue = retValue.replaceAll(SEPARATOR_ERROR_CONTAIN, errorStr);
         retValue = retValue.replaceAll(SEPARATOR_DIMEN, dimension + "");
         retValue = retValue.replaceAll(SEPARATOR_TYPE, "bar");
 

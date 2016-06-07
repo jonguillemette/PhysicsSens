@@ -1,7 +1,5 @@
 package com.thirdbridge.pucksensor.controllers;
 
-import android.app.ActionBar;
-import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
@@ -9,7 +7,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.util.Pair;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,29 +14,25 @@ import android.view.ViewGroup;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.AdapterView;
-import android.widget.Button;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
-import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.thirdbridge.pucksensor.R;
+import com.thirdbridge.pucksensor.models.Statistic;
 import com.thirdbridge.pucksensor.models.User;
 import com.thirdbridge.pucksensor.utils.BaseFragment;
-import com.thirdbridge.pucksensor.utils.Calibrate;
 import com.thirdbridge.pucksensor.utils.Constants;
 import com.thirdbridge.pucksensor.utils.IO;
 import com.thirdbridge.pucksensor.utils.PlotLyConverter;
-import com.thirdbridge.pucksensor.utils.Protocol;
 import com.thirdbridge.pucksensor.utils.Shot;
 
 import java.io.File;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by Christophe on 2015-10-14.
@@ -70,10 +63,20 @@ public class AnalysisFragment extends BaseFragment {
 	private TextView mMaxAccelTV;
 	private WebView mMaxAccelWV;
 	private TextView mCompareTV;
+    private TextView mCompareStatTV;
+    private TextView mStandardErrorTV;
+    private WebView mStandardErrorWV;
+    private TextView mReleaseTimeTV;
+    private WebView mReleaseTimeWB;
 	private Spinner mCompareSpinner;
+    private Spinner mCompareStatSpinner;
 	private WebView mCompareWB;
 	private UserArrayAdapter mSpinnerAdapter;
+    private StatArrayAdapter mSpinnerStatAdapter;
     private int mWidthWebView;
+
+    private int mCompare;
+    private int mCompareStat = 0;
 
     private PlotLyConverter mConverter;
 
@@ -128,10 +131,26 @@ public class AnalysisFragment extends BaseFragment {
 		mMaxAccelTV = (TextView) v.findViewById(R.id.max_accel_label);
 		mMaxAccelWV = (WebView) v.findViewById(R.id.max_accel_webview);
 		mCompareTV = (TextView) v.findViewById(R.id.compare_label);
+        mCompareStatTV = (TextView) v.findViewById(R.id.compare_stat_label);
 		mCompareSpinner = (Spinner) v.findViewById(R.id.compare_spinner);
+        mCompareStatSpinner = (Spinner) v.findViewById(R.id.compare_stat_spinner);
 		mCompareWB = (WebView) v.findViewById(R.id.compare_webview);
+        mStandardErrorTV = (TextView) v.findViewById(R.id.standard_error_label);
+        mStandardErrorWV = (WebView) v.findViewById(R.id.standard_error_webview);
+        mReleaseTimeTV = (TextView) v.findViewById(R.id.release_time_label);
+        mReleaseTimeWB = (WebView) v.findViewById(R.id.release_time_webview);
 
 		mLoadingScreenRelativeLayout = (RelativeLayout) v.findViewById(R.id.loading_screen_relative_layout);
+
+        mTimeEvolutionTV.setVisibility(View.GONE);
+        mMeanAccelTV.setVisibility(View.GONE);
+        mMeanAccelWV.setVisibility(View.GONE);
+        mMaxAccelTV.setVisibility(View.GONE);
+        mMaxAccelWV.setVisibility(View.GONE);
+        mStandardErrorTV.setVisibility(View.GONE);
+        mStandardErrorWV.setVisibility(View.GONE);
+        mReleaseTimeTV.setVisibility(View.GONE);
+        mReleaseTimeWB.setVisibility(View.GONE);
 
         mSettings = getActivity().getSharedPreferences("StatPuck", 0);
 
@@ -150,13 +169,14 @@ public class AnalysisFragment extends BaseFragment {
 		mMaxAccelWV.setLayoutParams(webViewLayout);
 		mCompareWB.setLayoutParams(webViewLayout);
 
-        populateSpinner();
+        populateSpinners();
         mCompareWB.setVisibility(View.GONE);
 
         mCompareSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                updateCompare(position);
+                mCompare = position;
+                updateCompare(mCompare, mCompareStat);
             }
 
             @Override
@@ -165,11 +185,26 @@ public class AnalysisFragment extends BaseFragment {
             }
         });
 
+        mCompareStatSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                mCompareStat = position;
+                updateCompare(mCompare, mCompareStat);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
+
+
         if (mCompareSpinner.getSelectedItemPosition() >= 0) {
-            updateCompare(mCompareSpinner.getSelectedItemPosition());
+            updateCompare(mCompareSpinner.getSelectedItemPosition(), mCompareStat);
         }
 
-        loadData();
+        //TODO Enable this after demo
+        //loadData();
 
 		return v;
 	}
@@ -195,7 +230,7 @@ public class AnalysisFragment extends BaseFragment {
 		}
 	}
 
-    private void updateCompare(int position) {
+    private void updateCompare(int position, int position2) {
 
         File rootsd = Environment.getExternalStorageDirectory();
         final File parent = new File(rootsd.getAbsolutePath(), FOLDER_SAVE);
@@ -213,42 +248,91 @@ public class AnalysisFragment extends BaseFragment {
             WebSettings wSettings1;
             wSettings1 = mCompareWB.getSettings();
             wSettings1.setJavaScriptEnabled(true);
-            File file = new File(parent, "web3.html");
+            File file = new File(parent, "web03.html");
 
             double[] elements1 = Shot.extractMeanMax(data1);
             double[] elements2 = Shot.extractMeanMax(data2);
-            String[] x = {"Mean " + mUser.getName(), "Mean " + mUsers.get(position).getName(),
-                          "Max " + mUser.getName(), "Max " + mUsers.get(position).getName()};
-            double mean1 = 0;
-            double mean1Error = 0;
-            double mean2 = 0;
-            double mean2Error = 0;
-            double max1 = 0;
-            double max1Error = 0;
-            double max2 = 0;
-            double max2Error = 0;
+            String[] x = {mUser.getName(), mUsers.get(position).getName()};
 
-            for (int i=0; i<elements1.length/4; i++) {
-                mean1 += elements1[i*4 + 0];
-                mean1Error += elements1[i*4 + 1];
-                max1 += elements1[i*4 + 2];
-                max1Error += elements1[i*4 + 3];
+            double[] max1 = new double[elements1.length/3];
+            double[] max2 = new double[elements2.length/3];
+
+            double[] mean1 = new double[elements1.length/3];
+            double[] mean2 = new double[elements2.length/3];
+
+            double[] release1 = new double[elements1.length/3];
+            double[] release2 = new double[elements2.length/3];
+
+            for (int i=0;i<elements1.length/3; i++) {
+                max1[i] = elements1[i*3 + 1];
+                mean1[i] = elements1[i*3 + 0];
+                release1[i] = elements1[i*3 + 2];
             }
 
-            for (int i=0; i<elements2.length/4; i++) {
-                mean2 += elements2[i*4 + 0];
-                mean2Error += elements2[i*4 + 1];
-                max2 += elements2[i*4 + 2];
-                max2Error += elements2[i*4 + 3];
+            for (int i=0;i<elements2.length/3; i++) {
+                max2[i] = elements2[i*3 + 1];
+                mean2[i] = elements2[i*3 + 0];
+                release2[i] = elements2[i*3 + 2];
             }
-            double sum1 = elements1.length/4;
-            double sum2 = elements2.length/4;
 
-            double[] data = {mean1/sum1, mean2/sum2, max1/sum1, max2/sum2};
-            double[] error = {mean1Error/sum1, mean2Error/sum2, max1Error/sum1, max2Error/sum2};
+            double[] data = new double[2];
+            double[] error = new double[2];
+
+            double[] dataY1;
+            double[] dataY2;
+
+            switch (Statistic.getAll()[position2]) {
+                case MAX_ACCEL:
+                    dataY1 = max1;
+                    dataY2 = max2;
+                    break;
+                case MEAN_ACCEL:
+                    dataY1 = mean1;
+                    dataY2 = mean2;
+                    break;
+                case RELEASE_TIME:
+                default:
+                    dataY1 = release1;
+                    dataY2 = release2;
+                    break;
+            }
+
+            double mean = 0;
+            double ecart = 0;
+
+            for (int i=0; i<dataY1.length; i++) {
+                mean += dataY1[i];
+            }
+            mean /= dataY1.length;
+
+            for (int i=0;i<dataY1.length; i++) {
+                ecart += Math.pow(dataY1[i] - mean,2);
+            }
+            ecart /= dataY1.length;
+            ecart = Math.sqrt(ecart);
+
+            data[0] = mean;
+            error[0] = ecart / Math.sqrt(dataY1.length);
+
+            mean = 0;
+            ecart = 0;
+
+            for (int i=0; i<dataY2.length; i++) {
+                mean += dataY2[i];
+            }
+            mean /= dataY2.length;
+
+            for (int i=0;i<dataY2.length; i++) {
+                ecart += Math.pow(dataY2[i] - mean,2);
+            }
+            ecart /= dataY2.length;
+            ecart = Math.sqrt(ecart);
+
+            data[1] = mean;
+            error[1] = ecart / Math.sqrt(dataY2.length);
 
             IO.saveFile(mConverter.makeBar(x, data, error, mWidthWebView), file);
-            mCompareWB.loadUrl("file:///storage/emulated/0/Statpuck/web3.html");
+            mCompareWB.loadUrl("file:///storage/emulated/0/Statpuck/web03.html");
 
             Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
             intent.setData(Uri.fromFile(file));
@@ -278,21 +362,17 @@ public class AnalysisFragment extends BaseFragment {
             File file = new File(parent, "web1.html");
 
             double[] elements = Shot.extractMeanMax(data);
-            double[] x = new double[elements.length/4];
-            double[] y = new double[elements.length/4];
-            double[] error = new double[elements.length/4];
+            double[] x = new double[elements.length/3];
+            double[] y = new double[elements.length/3];
+            double[] releasetime = new double[elements.length/3];
 
-            double sum = 0;
-            double mean;
-            double sd;
-            double se;
-            for (int i=0; i<elements.length/4; i++) {
+            for (int i=0; i<elements.length/3; i++) {
                 x[i] = i;
-                y[i] = elements[i*4 + 0];
-                error[i] = elements[i*4 + 1];
+                y[i] = elements[i*3 + 0];
+                releasetime[i] = elements[i*3 + 2];
             }
 
-            IO.saveFile(mConverter.makeLine(x, y, error, mWidthWebView), file);
+            IO.saveFile(mConverter.makeLine(x, y, mWidthWebView), file);
             mMeanAccelWV.loadUrl("file:///storage/emulated/0/Statpuck/web1.html");
 
             Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
@@ -306,18 +386,15 @@ public class AnalysisFragment extends BaseFragment {
             file = new File(parent, "web2.html");
 
             elements = Shot.extractMeanMax(data);
-            x = new double[elements.length/4];
-            y = new double[elements.length/4];
-            error = new double[elements.length/4];
+            x = new double[elements.length/3];
+            y = new double[elements.length/3];
 
-            sum = 0;
-            for (int i=0; i<elements.length/4; i++) {
+            for (int i=0; i<elements.length/3; i++) {
                 x[i] = i;
-                y[i] = elements[i*4 + 2];
-                error[i] = elements[i*4 + 3];
+                y[i] = elements[i*3 + 1];
             }
 
-            IO.saveFile(mConverter.makeLine(x, y, error, mWidthWebView), file);
+            IO.saveFile(mConverter.makeLine(x, y, mWidthWebView), file);
             mMaxAccelWV.loadUrl("file:///storage/emulated/0/Statpuck/web2.html");
 
             intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
@@ -329,8 +406,13 @@ public class AnalysisFragment extends BaseFragment {
         }
     }
 
-	private void populateSpinner(){
+	private void populateSpinners(){
 		mUsers = new ArrayList<User>();
+        Statistic.Stat[] stats = Statistic.getAll();
+        List<Statistic.Stat> statsList = new ArrayList<Statistic.Stat>();
+        for (int i=0; i<stats.length; i++) {
+            statsList.add(stats[i]);
+        }
 
 		File root = new File(this.getContext().getFilesDir(), "users");
 		if (!root.exists()) {
@@ -348,5 +430,9 @@ public class AnalysisFragment extends BaseFragment {
 
 		mSpinnerAdapter = new UserArrayAdapter(getController(), R.layout.spinner_dropdown_item, mUsers);
 		mCompareSpinner.setAdapter(mSpinnerAdapter);
+
+        mSpinnerStatAdapter = new StatArrayAdapter(getController(), R.layout.spinner_dropdown_item, statsList);
+        mCompareStatSpinner.setAdapter(mSpinnerStatAdapter);
 	}
+
 }

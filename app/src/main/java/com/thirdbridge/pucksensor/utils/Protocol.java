@@ -67,7 +67,15 @@ public class Protocol {
      */
     public static final int FREE_MODE = 13;
 
+    /**
+     * The Puck send information about the calibration.
+     */
+    public static final int CALIB_OUTPUT = 14;
 
+    /**
+     * The App want the master to self calibrate his axis. Everybody know that the Puck as some problem with this...
+     */
+    public static final int CALIB_AXIS = 15;
 
     // PROTOCOL DEFAULT SETTINGS
     public static final byte VALIDITY_TOKEN = 0x3D;

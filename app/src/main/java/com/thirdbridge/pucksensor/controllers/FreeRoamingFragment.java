@@ -835,7 +835,6 @@ public class FreeRoamingFragment extends BaseFragment {
                     mRotationChart.getData().getXVals().clear();
                 }
 
-                mNewSetRequired = true;
                 mAccelChart.clear();
                 mRotationChart.clear();
 

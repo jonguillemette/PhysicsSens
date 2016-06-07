@@ -360,15 +360,13 @@ public class Shot {
     public static double[] extractMeanMax(String userData) {
         String[] elements = userData.split("\n");
 
-        double[] retValue = new double[(elements.length-3)*4];
+        double[] retValue = new double[(elements.length-3)*3];
 
         for (int i=0; i<elements.length-3; i++) {
-            Log.i("YOLLO", elements[i+3]);
             String[] values = elements[i+3].split(",");
-            retValue[i*4 + 0] = Double.parseDouble(values[1]);
-            retValue[i*4 + 1] = Double.parseDouble(values[2]);
-            retValue[i*4 + 2] = Double.parseDouble(values[3]);
-            retValue[i*4 + 3] = Double.parseDouble(values[4]);
+            retValue[i*3 + 0] = Double.parseDouble(values[1]);
+            retValue[i*3 + 1] = Double.parseDouble(values[2]);
+            retValue[i*3 + 2] = Double.parseDouble(values[3]);
         }
 
         return retValue;

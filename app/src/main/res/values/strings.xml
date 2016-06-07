@@ -52,8 +52,12 @@
     <!-- Analysis Screen -->
     <string name="time_evolution">Time evolution</string>
     <string name="compare">Compare with other user:</string>
+    <string name="compare_stat">Compare which statistic:</string>
     <string name="max_accel">Maximum acceleration:</string>
     <string name="mean_accel">Mean acceleration:</string>
+    <string name="standard_error_label">Standard Error:</string>
+    <string name="release_time_label">Release time:</string>
+
 
 
     <!-- Calibration Screen -->
@@ -61,6 +65,10 @@
     <string name="stick_acc">Stick handling threshold: </string>
     <string name="release_acc">Release threshold: </string>
     <string name="points_board">Nb of points on each side: </string>
+    <string name="calibrate_shot">Calibrate axis</string>
+    <string name="calibrate_centrifuge">Calibrate centrifuge</string>
+
+
 
 
     <!-- Shot Statistics Screen -->

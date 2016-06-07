@@ -234,51 +234,16 @@ public class CalibrationFragment extends BaseFragment {
     Runnable mStartCalibrationRunnable = new Runnable() {
         @Override
         public void run() {
-            mAppIsBoss = true;
-            mActualSettings[5] = 0;
-            mActualSettings[6] = 0;
-            mActualSettings[7] = 0;
 
-            byte[] send = {Protocol.FREE_MODE, 0x00};
+            byte[] send = {Protocol.CALIB_AXIS, 0x00};
+
+            // The puck is working by itself, the most idiot thing to do is to touch it actually..
+            // validate by freeroaming mode after.
+
             try {
                 HomeFragment.getInstance().writeBLE(send);
                 Thread.sleep(2050);
             } catch (Exception e) {}
-
-            mProgressChange = true;
-
-            try {
-                // Sleep fo 1sec (setting thread delay) + 50 ms (IC max delay for settings)
-                Thread.sleep(2050);
-            } catch (Exception e) {}
-
-            mCalibrationValue[0] = 0;
-            mCalibrationValue[1] = 0;
-            mCalibrationValue[2] = 0;
-            mCalibrateNb = 0;
-            mStartCalibration = true;
-
-            while (mCalibrateNb< 100) {}
-
-            mStartCalibration = false;
-            mCalibrationValue[0] = (mCalibrationValue[0] / mCalibrateNb) % 256;
-            mCalibrationValue[1] = (mCalibrationValue[1] / mCalibrateNb) % 256;
-            mCalibrationValue[2] = (mCalibrationValue[2] / mCalibrateNb) % 256;
-
-            mAppIsBoss = true;
-            mActualSettings[5] = (int)mCalibrationValue[0];
-            mActualSettings[6] = (int)mCalibrationValue[1];
-            mActualSettings[7] = (int)mCalibrationValue[2];
-            Log.i("ALLO", "Settings: " + mActualSettings[5] + ", " + mActualSettings[6] + ", " + mActualSettings[7]);
-
-
-            byte[] send2 = {Protocol.SETTINGS_MODE, 0x00};
-            try {
-                HomeFragment.getInstance().writeBLE(send2);
-                Thread.sleep(1050);
-            } catch (Exception e) {}
-
-            mProgressChange = true;
 
             getActivity().runOnUiThread(new Runnable() {
                 @Override
