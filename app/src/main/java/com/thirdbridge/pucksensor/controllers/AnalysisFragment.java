@@ -161,7 +161,7 @@ public class AnalysisFragment extends BaseFragment {
 
 		float ratio = getActivity().findViewById(android.R.id.content).getWidth();
         mWidthWebView = (int)(ratio * 0.45);
-		LinearLayout.LayoutParams webViewLayout = new LinearLayout.LayoutParams(mWidthWebView, mWidthWebView);
+		LinearLayout.LayoutParams webViewLayout = new LinearLayout.LayoutParams(mWidthWebView*2, mWidthWebView);
 		webViewLayout.setMargins(20, 20, 20, 20);
         webViewLayout.gravity = Gravity.CENTER;
 
@@ -331,7 +331,7 @@ public class AnalysisFragment extends BaseFragment {
             data[1] = mean;
             error[1] = ecart / Math.sqrt(dataY2.length);
 
-            IO.saveFile(mConverter.makeBar(x, data, error, mWidthWebView), file);
+            IO.saveFile(mConverter.makeTwoBar(x, data, error, (int)((float)mWidthWebView * 0.9f)), file);
             mCompareWB.loadUrl("file:///storage/emulated/0/Statpuck/web03.html");
 
             Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
