@@ -75,6 +75,10 @@ public class CalibrationFragment extends BaseFragment {
     private static final int MINIMAL_POINTS = 5;
     private static final String POINTS_BOARD = "POINTS_BOARD";
 
+    private static final int SHOT_WAIT_MINIMUM = 1;
+    private static final int SHOT_WAIT_VALUE = 3;
+    private static final String SHOT_WAIT = "SHOT_WAIT";
+
 
     // Calibration pattern
     final static long[] CALIB_TIME= {5000, 1000}; // Position time, transition time.
@@ -113,6 +117,8 @@ public class CalibrationFragment extends BaseFragment {
     private SeekBar mReleaseAccSB;
     private TextView mPointsBoardTV;
     private SeekBar mPointsBoardSB;
+    private TextView mShotWaitTV;
+    private SeekBar mShotWaitSB;
 
 
 	//Calibration
@@ -408,6 +414,8 @@ public class CalibrationFragment extends BaseFragment {
         mReleaseAccSB = (SeekBar) v.findViewById(R.id.release_acc_seekbar);
         mPointsBoardTV = (TextView) v.findViewById(R.id.points_board_number);
         mPointsBoardSB = (SeekBar) v.findViewById(R.id.points_board_seekbar);
+        mShotWaitTV = (TextView) v.findViewById(R.id.shot_wait_number);
+        mShotWaitSB = (SeekBar) v.findViewById(R.id.shot_wait_seekbar);
 
 		mLoadingScreenRelativeLayout = (RelativeLayout) v.findViewById(R.id.loading_screen_relative_layout);
 
@@ -430,6 +438,10 @@ public class CalibrationFragment extends BaseFragment {
         value = "" + (mSettings.getInt(POINTS_BOARD, MINIMAL_POINTS));
         mPointsBoardTV.setText(value);
         mPointsBoardSB.setProgress((int) ((mSettings.getInt(POINTS_BOARD, MINIMAL_POINTS) - MINIMAL_POINTS) * 0.5f));
+
+        value = "" + (mSettings.getInt(SHOT_WAIT, SHOT_WAIT_VALUE));
+        mShotWaitTV.setText(value + " s");
+        mShotWaitSB.setProgress(mSettings.getInt(SHOT_WAIT, SHOT_WAIT_VALUE)-SHOT_WAIT_MINIMUM);
 
 
         mStartStopButton.setVisibility(View.VISIBLE);
@@ -536,6 +548,27 @@ public class CalibrationFragment extends BaseFragment {
                 mPointsBoardTV.setText("" + value);
                 SharedPreferences.Editor editor = mSettings.edit();
                 editor.putInt(POINTS_BOARD, value);
+                editor.commit();
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+
+        mShotWaitSB.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                int value = (int)((double)progress) + SHOT_WAIT_MINIMUM;
+                mShotWaitTV.setText(value + " s");
+                SharedPreferences.Editor editor = mSettings.edit();
+                editor.putInt(SHOT_WAIT, value);
                 editor.commit();
             }
 

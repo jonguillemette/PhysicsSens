@@ -239,6 +239,49 @@
 
             </LinearLayout>
 
+            <LinearLayout
+                android:layout_below="@+id/test_control_linear_layout"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/shot_wait_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="@dimen/stats_test_button_height"
+                    android:checked="false"
+                    android:text="@string/shot_wait"
+                    android:layout_gravity="center_horizontal"
+                    android:textAllCaps="false"
+                    android:textColor="@color/instruction_grey"
+                    android:textSize="@dimen/stat_button_text_size"
+                    android:layout_marginEnd="@dimen/stats_box_margin"
+                    android:layout_marginStart="@dimen/stats_box_margin"
+                    />
+
+                <TextView
+                    android:id="@+id/shot_wait_number"
+                    android:layout_width="wrap_content"
+                    android:layout_height="@dimen/stats_test_button_height"
+                    android:checked="false"
+                    android:text="0"
+                    android:layout_gravity="center_horizontal"
+                    android:textAllCaps="false"
+                    android:textColor="@color/instruction_grey"
+                    android:textSize="@dimen/stat_button_text_size"
+                    android:layout_marginEnd="@dimen/stats_box_margin"
+                    android:layout_marginStart="@dimen/stats_box_margin"
+                    />
+
+                <SeekBar
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/shot_wait_seekbar"
+                    android:layout_weight="1"
+                    android:max="10" />
+
+            </LinearLayout>
+
         </LinearLayout>
 
 

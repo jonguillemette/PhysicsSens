@@ -85,6 +85,8 @@ public class ShotStatsFragment extends BaseFragment {
     private static final String CHECK_AUTOSAVE = "CHECK_AUTOSAVE";
     private static final int MINIMAL_POINTS = 5;
     private static final String POINTS_BOARD = "POINTS_BOARD";
+    private static final int SHOT_WAIT_VALUE = 3;
+    private static final String SHOT_WAIT = "SHOT_WAIT";
 
     private static final int[] GRAPH_COLOR = {Color.BLUE, Color.RED};
     private static final int[] RECENT_NAME = {R.string.recent_shot1, R.string.recent_shot2, R.string.recent_shot3, R.string.recent_shot4, R.string.recent_shot5};
@@ -193,6 +195,10 @@ public class ShotStatsFragment extends BaseFragment {
     private PopupWindow mPlayerPopup;
     private PopupWindow mShotSpecPopup;
 
+    // Wait management
+    private boolean mLock = false;
+    private boolean mWait = false;
+
     // Thread running
     Runnable mRun = new Runnable() {
         @Override
@@ -227,6 +233,23 @@ public class ShotStatsFragment extends BaseFragment {
                     break;
                 }
             }
+        }
+    };
+
+    Runnable mWaitRun = new Runnable() {
+        @Override
+        public void run() {
+            mWait = true;
+            int value = mSettings.getInt(SHOT_WAIT, SHOT_WAIT_VALUE);
+            for (int i=0; i<value; i++) {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+            }
+            mWait = false;
         }
     };
 
@@ -1009,6 +1032,10 @@ public class ShotStatsFragment extends BaseFragment {
                     }
                 }
             } else if (mode == Protocol.DATA_START) {
+                if (mWait) {
+                    mLock = true;
+                    return; // Don't care, I'm waiting!!
+                }
                 Log.i(TAG, "START!");
                 //Draw data
                 double[] sendAcc = new double[mAccelCircularBuffer.length];
@@ -1046,6 +1073,9 @@ public class ShotStatsFragment extends BaseFragment {
                 populateStatisticsFields();
                 mCircularIndex = 0;
             } else if (mode == Protocol.DATA) {
+                if (mLock) {
+                    return;
+                }
                 for (int i=0; i<acceleration.length; i++) {
                     // Use circular buffer
                     mReal.setAccelerationXYZ(acceleration[i], mRealIndex+i);
@@ -1053,6 +1083,14 @@ public class ShotStatsFragment extends BaseFragment {
                     mRealIndex ++;
                 }
             } else if (mode == Protocol.DATA_END){
+                if (mLock) {
+                    mLock = false;
+                    return;
+                }
+                if (!mWait) {
+                    Thread t = new Thread(mWaitRun);
+                    t.start();
+                }
                 for (int i=0; i<acceleration.length; i++) {
                     // Use circular buffer
                     mReal.setAccelerationXYZ(acceleration[i], mRealIndex+i);

@@ -67,6 +67,8 @@
     <string name="points_board">Nb of points on each side: </string>
     <string name="calibrate_shot">Calibrate axis</string>
     <string name="calibrate_centrifuge">Calibrate centrifuge</string>
+    <string name="shot_wait">Shot mode delay between</string>
+
 
 
 
