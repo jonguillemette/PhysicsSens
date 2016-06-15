@@ -11,6 +11,7 @@ public class BLEDeviceInfo {
     mRssi = rssi;
   }
 
+
   public int getRssi() {
     return mRssi;
   }

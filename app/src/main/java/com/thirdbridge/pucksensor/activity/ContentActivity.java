@@ -566,6 +566,9 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 		if (mScanning) {
 			stopScan();
 		} else {
+            if(mConnIndex != NO_DEVICE) {
+                mBluetoothLeService.disconnect(mBluetoothDevice.getAddress());
+            }
 			startScan();
 		}
 	}
@@ -641,6 +644,7 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 			if (mConnIndex != NO_DEVICE) {
 				mBluetoothLeService.disconnect(mBluetoothDevice.getAddress());
 			}
+            startScan();
 		}
 	}
 
@@ -814,7 +818,9 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 					startDeviceActivity();
 					mScanFragment.setDeviceConnected(mConnIndex, true);
 					mBleDeviceConnected = true;
-					updateBleGUI();
+                    mDeviceInfoList.clear();
+                    mScanFragment.updateGuiDisconnect();
+                    updateBleGUI();
 				} else
 					setError("Connect failed. Status: " + status);
 			} else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) {

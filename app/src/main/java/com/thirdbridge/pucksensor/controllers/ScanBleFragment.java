@@ -129,7 +129,7 @@ public class ScanBleFragment extends BaseFragment {
         if (mBtnScan == null)
             return; // UI not ready
         setBusy(scanning);
-
+        mBtnScan.setTextSize(28);
         if (scanning) {
             mScanTimer = new Timer(SCAN_TIMEOUT, mPgScanCallback);
             mStatus.setTextAppearance(mContext, R.style.statusStyle_Busy);
@@ -146,6 +146,19 @@ public class ScanBleFragment extends BaseFragment {
             mDeviceAdapter.notifyDataSetChanged();
         }
     }
+
+
+    public void updateGuiDisconnect() {
+        if (mBtnScan == null)
+            return; // UI not ready
+
+        mBtnScan.setText("Disconnect and rescan");
+        mBtnScan.setTextSize(20);
+        mEmptyMsg.setText(R.string.scan_advice);
+        getController().setProgressBarIndeterminateVisibility(false);
+        mDeviceAdapter.notifyDataSetChanged();
+    }
+
 
     public void setDeviceConnected(int deviceIntex, boolean connected){
         int viewCount = mDeviceListView.getChildCount();
