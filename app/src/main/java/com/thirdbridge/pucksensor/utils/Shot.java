@@ -349,6 +349,10 @@ public class Shot {
         return MAX_DATA;
     }
 
+    public static int getMaxRevisedData() {
+        return MAX_DATA/2;
+    }
+
     public static int getMaxDraftData() {
         return MAX_DRAFT_DATA;
     }

@@ -72,7 +72,7 @@ public class ShotStatsFragment extends BaseFragment {
     private static String FOLDER_SAVE_ANALYSIS = "Analysis";
     private static final String LOCAL_SHOTS = "LOCAL_SHOTS";
 
-    private static final double STAMP = 1.25;
+    private static final double STAMP = 1;
     private static final double DRAFT_STAMP = 50/3;
     private static final boolean DEBUG = false;
     private static final int MINIMAL_G = 1;
@@ -1027,7 +1027,7 @@ public class ShotStatsFragment extends BaseFragment {
                 mRecent[1] = mRecent[0];
                 mRecent[0] = new Shot(Shot.getMaxDraftData(), mUser, true);
 
-                mReal = new Shot(Shot.getMaxData(), mUser, false);
+                mReal = new Shot(Shot.getMaxRevisedData(), mUser, false);
                 mRealIndex = 0;
 
                 for (int i = 0; i < sendRot.length; i++) {
