@@ -24,11 +24,13 @@ public class Shot {
     private double[] mRotDatas;
     private double[] mAccTotal;
     private double[] mSpeedTotal;
+    private double[] mPowerTotal;
     private String mTime;
     private double mMaxAccel = 0;
     private double mMeanAccel = -1;
     private double mMaxSpeed = 0;
     private double mMaxRotation = 0;
+    private double mMaxPower = 0;
     private User mUser;
     private boolean mCooked;
     private boolean mDraft = false;
@@ -45,6 +47,7 @@ public class Shot {
             mRotDatas = new double[min];
             mAccTotal = new double[min];
             mSpeedTotal = new double[min];
+            mPowerTotal = new double[min];
 
             for (int i=0; i<min; i++) {
                 mAccDatas[i] = acceleration[i];
@@ -72,6 +75,7 @@ public class Shot {
         mRotDatas = new double[min];
         mAccTotal = new double[min];
         mSpeedTotal = new double[min];
+        mPowerTotal = new double[min];
 
         DateFormat df = new SimpleDateFormat("dd_MMM_yyyy_HH.mm.ssa");
         mTime = df.format(Calendar.getInstance().getTime());
@@ -105,6 +109,14 @@ public class Shot {
         return retValue;
     }
 
+    public double[] getPowers() {
+        double[] retValue = new double[mMax-mMin];
+        for(int i=0; i<mMax-mMin; i++) {
+            retValue[i] = mPowerTotal[mMin+i];
+        }
+        return retValue;
+    }
+
     public double[] getRotations() {
         double[] retValue = new double[mMax-mMin];
         for(int i=0; i<mMax-mMin; i++) {
@@ -118,6 +130,11 @@ public class Shot {
             mRotDatas[id] = data;
     }
 
+    public void setPower(double data, int id) {
+        if (id < mPowerTotal.length)
+            mPowerTotal[id] = data;
+    }
+
     public void setAccelerationXYZ(double data, int id) {
         if (id < mAccTotal.length)
             mAccTotal[id] = data;
@@ -128,10 +145,11 @@ public class Shot {
             mSpeedTotal[id] = data;
     }
 
-    public void setMax(double acceleration, double speed, double angular) {
+    public void setMax(double acceleration, double speed, double angular, double power) {
         mMaxAccel = acceleration;
         mMaxSpeed = speed;
         mMaxRotation = angular;
+        mMaxPower = power;
     }
 
     public double[] getMax() {
@@ -150,11 +168,12 @@ public class Shot {
         text += "Acceleration, " + mMaxAccel + " g\n";
         text += "Speed, " + mMaxSpeed + " km/h\n";
         text += "Rotation, " + mMaxRotation + " degrees/s\n";
+        text += "Power, " + mMaxPower + " W\n";
         text += "Data,\n";
-        text += "Acceleration,Speed,Rotation\n";
+        text += "Acceleration,Speed,Rotation,Power\n";
 
         for (int i=0; i< mAccTotal.length; i++) {
-            text += mAccTotal[i] + "," + mSpeedTotal[i] + "," + mRotDatas[i] + "\n";
+            text += mAccTotal[i] + "," + mSpeedTotal[i] + "," + mRotDatas[i] + "," + mPowerTotal[i] + "\n";
         }
 
         String fileName = mUser.getName().replace(" ", "_") + "_" + mTime + ".csv";
@@ -173,17 +192,21 @@ public class Shot {
         mMaxSpeed = Double.parseDouble(datas[3].replace("Speed, ", "").replace(" km/h", "").replace(" m/s", ""));
         mMaxRotation = Double.parseDouble(datas[4].replace("Rotation, ", "").replace(" degrees/s", ""));
 
-        int length = datas.length - 7;
+        mMaxPower = Double.parseDouble(datas[4].replace("Power, ", "").replace(" W", ""));
+
+        int length = datas.length - 8;
 
         mAccTotal = new double[length];
         mSpeedTotal = new double[length];
         mRotDatas = new double[length];
+        mPowerTotal = new double[length];
 
         int index = 0;
         for (int i = 7; i<datas.length; i++) {
             mAccTotal[index] = Double.parseDouble(datas[i].split(",")[0]);
             mSpeedTotal[index] = Double.parseDouble(datas[i].split(",")[1]);
             mRotDatas[index] = Double.parseDouble(datas[i].split(",")[2]);
+            mPowerTotal[index] = Double.parseDouble(datas[i].split(",")[3]);
             index++;
         }
 

@@ -68,7 +68,7 @@ public class ShotStatsFragment extends BaseFragment {
 
 	private static String TAG = ShotStatsFragment.class.getSimpleName();
     private static String FOLDER_SAVE = "Statpuck";
-    private static String FOLDER_SAVE_SHOT = "Shots";
+    private static String FOLDER_SAVE_SHOT = "MedicShots";
     private static String FOLDER_SAVE_ANALYSIS = "Analysis";
     private static final String LOCAL_SHOTS = "LOCAL_SHOTS";
 
@@ -80,6 +80,7 @@ public class ShotStatsFragment extends BaseFragment {
     private static final int MINIMAL_RELEASE_G = 2;
     private static final String THRESHOLD_RELEASE_G = "THRESHOLD_RELEASE_G";
     private static final String CHECK_ACCEL = "CHECK_ACCEL";
+    private static final String CHECK_POWER = "CHECK_POWER";
     private static final String CHECK_SPEED = "CHECK_SPEED";
     private static final String CHECK_ROTATION = "CHECK_ROTATION";
     private static final String CHECK_AUTOSAVE = "CHECK_AUTOSAVE";
@@ -122,6 +123,7 @@ public class ShotStatsFragment extends BaseFragment {
 
     // Menu
     private CheckBox mAccCheckB;
+    private CheckBox mPowerCheckB;
     private CheckBox mSpeedCheckB;
     private CheckBox mAngularCheckB;
     private CheckBox mAutosaveCheckB;
@@ -145,10 +147,17 @@ public class ShotStatsFragment extends BaseFragment {
 	//Accel Chart
     private LinearLayout mAccelLayout;
     private ProgressBar mAccelProgress;
-	private LineChart mAccelChart;
-	private TextView mTopAccelXYZTextView;
-	private float[] mAccelMax = {0f, 0f};
+    private LineChart mAccelChart;
+    private TextView mTopAccelXYZTextView;
+    private float[] mAccelMax = {0f, 0f};
 
+    //Power Chart
+    private LinearLayout mPowerLayout;
+    private ProgressBar mPowerProgress;
+    private LineChart mPowerChart;
+    private TextView mTopPowerXYZTextView;
+    private float[] mPowerMax = {0f, 0f};
+    private float mSpeedMS = 0f;
 
 	//Speed Chart
     private LinearLayout mSpeedLayout;
@@ -157,6 +166,7 @@ public class ShotStatsFragment extends BaseFragment {
 	private TextView mTopSpeedXYZTextView;
 	private float[] mSpeedMax = {0f, 0f};
 	private float mPuckSpeedXYZ = 0f;
+
 	private Button mGenerateButton;
     private Button mHackButton;
 
@@ -176,6 +186,9 @@ public class ShotStatsFragment extends BaseFragment {
 
 	//Accel Chart
 	private int mAccelDataSetIndexXYZ;
+
+    //Power Chart
+    private int mPowerDataSetIndexXYZ;
 
 	//Speed Chart
 	private int mSpeedDataSetIndexXYZ;
@@ -315,6 +328,7 @@ public class ShotStatsFragment extends BaseFragment {
 
         // Menu
         mAccCheckB = (CheckBox) v.findViewById(R.id.show_acceleration_check);
+        mPowerCheckB = (CheckBox) v.findViewById(R.id.show_power_check);
         mSpeedCheckB = (CheckBox) v.findViewById(R.id.show_speed_check);
         mAngularCheckB = (CheckBox) v.findViewById(R.id.show_angular_check);
         mAutosaveCheckB = (CheckBox) v.findViewById(R.id.autosave);
@@ -323,6 +337,7 @@ public class ShotStatsFragment extends BaseFragment {
 
         // Main structure
         mAccelLayout = (LinearLayout) v.findViewById(R.id.accel_layout);
+        mPowerLayout = (LinearLayout) v.findViewById(R.id.accel_layout);
         mSpeedLayout = (LinearLayout) v.findViewById(R.id.speed_layout);
         mAngularLayout = (LinearLayout) v.findViewById(R.id.angular_layout);
 
@@ -411,6 +426,11 @@ public class ShotStatsFragment extends BaseFragment {
 		mTopAccelXYZTextView = (TextView) v.findViewById(R.id.top_accel_xyz_textview);
 
 
+        mPowerChart = (LineChart) v.findViewById(R.id.power_stats_chart);
+        mPowerProgress = (ProgressBar) v.findViewById(R.id.power_stats_progress);
+        mPowerProgress.setVisibility(View.GONE);
+        mTopPowerXYZTextView = (TextView) v.findViewById(R.id.top_power_xyz_textview);
+
         if (DEBUG) {
             mGenerateButton.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -450,11 +470,13 @@ public class ShotStatsFragment extends BaseFragment {
         });
 
         mAccCheckB.setChecked(mSettings.getBoolean(CHECK_ACCEL, mAccCheckB.isChecked()));
+        mPowerCheckB.setChecked(mSettings.getBoolean(CHECK_POWER, mPowerCheckB.isChecked()));
         mSpeedCheckB.setChecked(mSettings.getBoolean(CHECK_SPEED, mSpeedCheckB.isChecked()));
         mAngularCheckB.setChecked(mSettings.getBoolean(CHECK_ROTATION, mAngularCheckB.isChecked()));
         mAutosaveCheckB.setChecked(mSettings.getBoolean(CHECK_AUTOSAVE, mAutosaveCheckB.isChecked()));
 
         showAcceleration(mAccCheckB.isChecked());
+        showPower(mPowerCheckB.isChecked());
         showSpeed(mSpeedCheckB.isChecked());
         showAngularSpeed(mAngularCheckB.isChecked());
 
@@ -473,6 +495,16 @@ public class ShotStatsFragment extends BaseFragment {
                 showAcceleration(isChecked);
                 SharedPreferences.Editor editor = mSettings.edit();
                 editor.putBoolean(CHECK_ACCEL, isChecked);
+                editor.commit();
+            }
+        });
+
+        mPowerCheckB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                showPower(isChecked);
+                SharedPreferences.Editor editor = mSettings.edit();
+                editor.putBoolean(CHECK_POWER, isChecked);
                 editor.commit();
             }
         });
@@ -567,6 +599,7 @@ public class ShotStatsFragment extends BaseFragment {
 					setupAccelChart();
 					setupSpeedChart();
 					setupRotationChart();
+                    setupPowerChart();
 					populateStatisticsFields();
 				}
 			}, 1000);
@@ -628,6 +661,22 @@ public class ShotStatsFragment extends BaseFragment {
             mAccelChart.fitScreen();
             mAccelChart.notifyDataSetChanged();
 		}
+
+        if (mPowerChart != null) {
+            float max = 0;
+            for (int i=0; i<mPowerMax.length; i++) {
+                if (mPowerMax[i] > max) {
+                    max = mPowerMax[i];
+                }
+            }
+            YAxis leftAxis = mPowerChart.getAxisLeft();
+            leftAxis.setAxisMaxValue(Math.abs(max));
+            leftAxis.setAxisMinValue(0);
+            //speed
+            mTopPowerXYZTextView.setText(MathHelper.round(mPowerMax[0], 2) + " W and " + MathHelper.round(mPowerMax[1], 2) + "W");
+            mPowerChart.fitScreen();
+            mPowerChart.notifyDataSetChanged();
+        }
 
 		if (mSpeedChart != null) {
             float max = 0;
@@ -745,6 +794,89 @@ public class ShotStatsFragment extends BaseFragment {
             }
 		}
 	}
+
+    private void setupPowerChart() {
+        mPowerChart.setNoDataTextDescription("");
+
+        mPowerChart.setAutoScaleMinMaxEnabled(true);
+
+        // enable touch gestures
+        mPowerChart.setTouchEnabled(false);
+
+        // enable scaling and dragging
+        mPowerChart.setDragEnabled(false);
+        mPowerChart.setScaleEnabled(false);
+        mPowerChart.setDrawGridBackground(false);
+
+        // if disabled, scaling can be done on x- and y-axis separately
+        mPowerChart.setPinchZoom(true);
+
+        // set an alternative background color
+        mPowerChart.setBackgroundColor(Color.WHITE);
+
+        LineData data = new LineData();
+        data.setValueTextColor(Color.BLACK);
+
+        // add empty data
+        mPowerChart.setData(data);
+
+        mPowerChart.setDescription("");
+
+        // get the legend (only possible after setting data)
+        Legend l = mPowerChart.getLegend();
+
+        // modify the legend ...
+        // l.setPosition(LegendPosition.LEFT_OF_CHART);
+        l.setForm(Legend.LegendForm.LINE);
+        l.setTextColor(Color.BLACK);
+
+        XAxis xl = mPowerChart.getXAxis();
+        xl.setTextColor(Color.BLACK);
+        xl.setDrawGridLines(false);
+        xl.setAvoidFirstLastClipping(true);
+        xl.setSpaceBetweenLabels(5);
+        xl.setPosition(XAxis.XAxisPosition.BOTTOM);
+        xl.setEnabled(true);
+
+        YAxis leftAxis = mPowerChart.getAxisLeft();
+        leftAxis.setTextColor(Color.BLACK);
+        leftAxis.setAxisMaxValue(1f);
+        leftAxis.setAxisMinValue(-1f);
+        leftAxis.setStartAtZero(false);
+        leftAxis.setDrawGridLines(false);
+        leftAxis.setEnabled(false);
+
+        YAxis rightAxis = mPowerChart.getAxisRight();
+        rightAxis.setEnabled(false);
+
+        if (mPreviewTest) {
+            mPowerChart.getAxisLeft().setDrawGridLines(true);
+            mPowerChart.getAxisLeft().setEnabled(true);
+        }
+    }
+
+    private void addPowerEntry(String xValue, int xValueInt, float yValue, boolean newData, int idName, int id) {
+        LineData data = mPowerChart.getData();
+
+        if (data != null) {
+            LineDataSet currentLineDataSet = null;
+
+            if (!data.getXVals().contains(xValue + " ms"))
+                data.addXValue(xValue + " ms");
+
+            if (newData) {
+                mPowerMax[id] = 0;
+                currentLineDataSet = createSet(getActivity().getString(RECENT_NAME[idName]), GRAPH_COLOR[id], 1f, 1f, true);
+                data.addDataSet(currentLineDataSet);
+                mPowerDataSetIndexXYZ = data.getIndexOfDataSet(currentLineDataSet);
+            }
+            data.addEntry(new Entry(yValue, xValueInt), mPowerDataSetIndexXYZ);
+
+            if (Math.abs(yValue) > Math.abs(mPowerMax[id])) {
+                mPowerMax[id] = Math.abs(yValue);
+            }
+        }
+    }
 
 	private void setupSpeedChart() {
 		mSpeedChart.setNoDataTextDescription("");
@@ -1008,9 +1140,11 @@ public class ShotStatsFragment extends BaseFragment {
             mCalibrationDone = true;
 
             mAccelChart.getAxisLeft().setDrawGridLines(true);
+            mPowerChart.getAxisLeft().setDrawGridLines(true);
             mSpeedChart.getAxisLeft().setDrawGridLines(true);
             mRotationChart.getAxisLeft().setDrawGridLines(true);
             mAccelChart.getAxisLeft().setEnabled(true);
+            mPowerChart.getAxisLeft().setEnabled(true);
             mSpeedChart.getAxisLeft().setEnabled(true);
             mRotationChart.getAxisLeft().setEnabled(true);
 
@@ -1125,6 +1259,13 @@ public class ShotStatsFragment extends BaseFragment {
         mAccelMax[0] = 0f;
         mAccelMax[1] = 0f;
 
+        mPowerChart.clear();
+        LineData pData = new LineData();
+        aData.setValueTextColor(Color.BLACK);
+        mPowerChart.setData(pData);
+        mPowerMax[0] = 0f;
+        mPowerMax[1] = 0f;
+
         mSpeedChart.clear();
         LineData sData = new LineData();
         sData.setValueTextColor(Color.BLACK);
@@ -1152,6 +1293,7 @@ public class ShotStatsFragment extends BaseFragment {
             Log.d(TAG, "ID: " + idData.get(id) + " using color " + GRAPH_COLOR[id]);
             boolean newSetRequired = true;
 
+            mSpeedMS = 0f;
             mPuckSpeedXYZ = 0f;
             for (int i = 0; i < mRecent[idData.get(id)].getLength(); i++) {
                 if (mRecent[idData.get(id)] == null) {
@@ -1172,14 +1314,16 @@ public class ShotStatsFragment extends BaseFragment {
                     addAccelEntry(i * mTimeStep + "", i, (float) accelXYZ, newSetRequired, idData.get(id), id);
                 }
                 mPuckSpeedXYZ = (float) (mRecent[idData.get(id)].getAccelerations()[i] * GRAVITY * mTimeStep / 1000f * 3.6 + mPuckSpeedXYZ);
+                mSpeedMS = (float) (mRecent[idData.get(id)].getAccelerations()[i] * GRAVITY * mTimeStep / 1000f + mSpeedMS);
 
                 mRecent[idData.get(id)].setSpeedXYZ(mPuckSpeedXYZ, i);
                 addSpeedEntry(i * mTimeStep + "", i, mPuckSpeedXYZ, newSetRequired, idData.get(id), id);
                 addRotationEntry(i * mTimeStep + "", i, (float) mRecent[idData.get(id)].getRotations()[i], newSetRequired, idData.get(id), id);
+                addPowerEntry(i * mTimeStep + "", i, (float)(mRecent[idData.get(id)].getAccelerations()[i]* mSpeedMS), newSetRequired, idData.get(id), id);
 
                 newSetRequired = false;
             }
-            mRecent[idData.get(id)].setMax(mAccelMax[id], mSpeedMax[id], mRotationMax[id]);
+            mRecent[idData.get(id)].setMax(mAccelMax[id], mSpeedMax[id], mRotationMax[id], mPowerMax[id]);
 
         }
 
@@ -1191,10 +1335,12 @@ public class ShotStatsFragment extends BaseFragment {
                 }
                 if (mRecent[0].isDraft()) {
                     mAccelProgress.setVisibility(View.VISIBLE);
+                    mPowerProgress.setVisibility(View.VISIBLE);
                     mSpeedProgress.setVisibility(View.VISIBLE);
                     mRotationProgress.setVisibility(View.VISIBLE);
                 } else {
                     mAccelProgress.setVisibility(View.GONE);
+                    mPowerProgress.setVisibility(View.GONE);
                     mSpeedProgress.setVisibility(View.GONE);
                     mRotationProgress.setVisibility(View.GONE);
                 }
@@ -1207,6 +1353,14 @@ public class ShotStatsFragment extends BaseFragment {
             mAccelLayout.setVisibility(View.VISIBLE);
         } else {
             mAccelLayout.setVisibility(View.GONE);
+        }
+    }
+
+    private void showPower(boolean show) {
+        if (show) {
+            mPowerLayout.setVisibility(View.VISIBLE);
+        } else {
+            mPowerLayout.setVisibility(View.GONE);
         }
     }
 
@@ -1551,6 +1705,7 @@ public class ShotStatsFragment extends BaseFragment {
                 setupAccelChart();
                 setupSpeedChart();
                 setupRotationChart();
+                setupPowerChart();
 
                 mTopAccelXYZTextView.setText("");
 

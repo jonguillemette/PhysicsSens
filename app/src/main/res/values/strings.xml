@@ -86,6 +86,7 @@
     <string name="yAxisData">Show Y Axis Data</string>
     <string name="zAxisData">Show Z Axis Data</string>
     <string name="show_acceleration">Show acceleration</string>
+    <string name="show_power">Show power</string>
     <string name="show_speed">Show speed</string>
     <string name="show_angular">Show angular speed</string>
     <string name="show_high">Show only high G data</string>
@@ -109,15 +110,20 @@
 
 
     <!-- Acceleration Chart -->
-    <string name="accelChartTitle">Puck acceleration over time (g)</string>
+    <string name="accelChartTitle">Acceleration over time (g)</string>
     <string name="topAccel">Top Acceleration</string>
     <string name="topAccelXYZ">Top Acceleration XYZ Axis</string>
     <string name="topAccelX">Top Acceleration X Axis</string>
     <string name="topAccelY">Top Acceleration Y Axis</string>
     <string name="topAccelZ">Top Acceleration Z Axis</string>
 
+    <!-- Power Chart -->
+    <string name="powerChartTitle">Puck power over time (W)</string>
+    <string name="topPower">Top Pover</string>
+    <string name="topPowerXYZ">Top Power</string>
+
     <!-- Speed Chart -->
-    <string name="speedChartTitle">Puck speed over time (km/h)</string>
+    <string name="speedChartTitle">Speed over time (km/h)</string>
     <string name="topSpeed">Top Speed</string>
     <string name="topSpeedXYZ">Top Speed XYZ Axis</string>
     <string name="topSpeedX">Top Speed X Axis</string>
@@ -125,7 +131,7 @@
     <string name="topSpeedZ">Top Speed Z Axis</string>
 
     <!-- Rotation Chart -->
-    <string name="rotationChartTitle">Puck rotation over time (degrees/s)</string>
+    <string name="rotationChartTitle">Rotation over time (degrees/s)</string>
     <string name="topRotation">Top Rotation</string>
 
     <!-- Sensortag strings -->

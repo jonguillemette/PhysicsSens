@@ -79,9 +79,16 @@
                 android:text="@string/show_acceleration" />
 
             <CheckBox
-                android:id="@+id/show_speed_check"
+                android:id="@+id/show_power_check"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="@string/show_power" />
+
+            <CheckBox
+                android:id="@+id/show_speed_check"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
                 android:checked="false"
                 android:text="@string/show_speed" />
 
@@ -264,6 +271,115 @@
 
             </LinearLayout>
 
+            <LinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/stats_box_margin"
+                android:layout_marginEnd="@dimen/stats_box_margin"
+                android:layout_marginStart="@dimen/stats_box_margin"
+                android:orientation="horizontal"
+                android:weightSum="10"
+                android:id="@+id/power_layout">
+
+                <LinearLayout
+                    android:id="@+id/power_stats_linear_layout"
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/stats_graph_height"
+                    android:layout_marginEnd="@dimen/stats_box_margin"
+                    android:layout_weight="7"
+                    android:background="@drawable/stats_card_shadow"
+                    android:orientation="vertical"
+                    android:paddingTop="@dimen/stats_box_inner_padding">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:paddingStart="@dimen/stats_box_inner_padding"
+                            android:text="@string/powerChartTitle"
+                            android:textColor="@color/dark_grey"
+                            android:textSize="@dimen/stats_text_size" />
+
+                        <ProgressBar
+                            style="?android:attr/progressBarStyleSmall"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:id="@+id/power_stats_progress"
+                            android:indeterminate="true"/>
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="2dp"
+                        android:layout_marginBottom="@dimen/stats_separator_margin"
+                        android:layout_marginTop="@dimen/stats_separator_margin"
+                        android:background="@color/light_grey"
+                        android:paddingStart="@dimen/stats_box_inner_padding" />
+
+                    <com.github.mikephil.charting.charts.LineChart
+                        android:id="@+id/power_stats_chart"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_marginBottom="5dp"
+                        android:layout_marginLeft="5dp"
+                        android:layout_marginRight="5dp" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="3"
+                    android:background="@drawable/stats_card_shadow"
+                    android:orientation="vertical"
+                    android:paddingStart="@dimen/stats_box_inner_padding"
+                    android:paddingTop="@dimen/stats_box_inner_padding">
+
+                    <LinearLayout
+                        android:id="@+id/power_xyz_stats_box_linear_layout"
+                        android:layout_width="fill_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/topPowerXYZ"
+                                android:textColor="@color/dark_grey"
+                                android:textSize="@dimen/stats_text_size" />
+
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="2dp"
+                            android:layout_marginBottom="@dimen/stats_separator_margin"
+                            android:layout_marginTop="@dimen/stats_separator_margin"
+                            android:background="@color/light_grey" />
+
+                        <TextView
+                            android:id="@+id/top_power_xyz_textview"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="end"
+                            android:layout_marginBottom="@dimen/stats_bottom_margin"
+                            android:layout_marginEnd="@dimen/stats_right_margin"
+                            android:textColor="@color/primary_green"
+                            android:textSize="@dimen/stats_text_size" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="fill_parent"
