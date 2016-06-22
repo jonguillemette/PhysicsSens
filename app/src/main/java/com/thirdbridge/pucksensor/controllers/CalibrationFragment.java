@@ -94,7 +94,6 @@ public class CalibrationFragment extends BaseFragment {
     private boolean mProgressChange = false;
     private int[] mActualSettings = Protocol.DEFAULT.clone();
 
-	private Button mStartStopButton;
 	private TextView mDescriptionTextView;
 
 	//Loading screen
@@ -160,10 +159,8 @@ public class CalibrationFragment extends BaseFragment {
                 if (mSensorReady != mSensorReadyChange) {
                     if (HomeFragment.getInstance().IsBluetoothReady()) {
                         mSensorReady = true;
-                        activateTestButtons();
                     } else {
                         mSensorReady = false;
-                        deactivateTestButtons();
                     }
                     mSensorReadyChange = mSensorReady;
                 }
@@ -401,7 +398,6 @@ public class CalibrationFragment extends BaseFragment {
 
 		View v = inflater.inflate(R.layout.fragment_calibration, container, false);
 
-		mStartStopButton = (Button) v.findViewById(R.id.start_button);
 		mDescriptionTextView = (TextView) v.findViewById(R.id.stats_description_textview);
         mPeakAccTV = (TextView) v.findViewById(R.id.peak_acc_number);
         mPeakAccSB = (SeekBar) v.findViewById(R.id.peak_acc_seekbar);
@@ -442,10 +438,6 @@ public class CalibrationFragment extends BaseFragment {
         value = "" + (mSettings.getInt(SHOT_WAIT, SHOT_WAIT_VALUE));
         mShotWaitTV.setText(value + " s");
         mShotWaitSB.setProgress(mSettings.getInt(SHOT_WAIT, SHOT_WAIT_VALUE)-SHOT_WAIT_MINIMUM);
-
-
-        mStartStopButton.setVisibility(View.VISIBLE);
-
 
         mCalibratePB.setVisibility(View.GONE);
 
@@ -610,30 +602,8 @@ public class CalibrationFragment extends BaseFragment {
 
 		}
 
-		if (mSensorReady) {
-            activateTestButtons();
-		}
 	}
 
-	private void activateTestButtons() {
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (mStartStopButton != null) {
-                    mStartStopButton.setVisibility(View.VISIBLE);
-                }
-            }
-        });
-	}
-
-	private void deactivateTestButtons(){
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                mStartStopButton.setEnabled(false);
-            }
-        });
-	}
 
 
 	private void onCharacteristicChanged(byte[] value) {
@@ -767,32 +737,22 @@ public class CalibrationFragment extends BaseFragment {
      */
     private void start() {
         if (mSensorReady) {
-            mStartStopButton.setVisibility(View.GONE);
             mCalibrateBtn.setVisibility(View.VISIBLE);
 
             if (mTestRunning) {
                 mTestRunning = false;
-                mStartStopButton.setText(getString(R.string.reset));
-                mStartStopButton.setCompoundDrawablesWithIntrinsicBounds(R.drawable.reset, 0, 0, 0);
             } else if (mTestWasRun) {
                 mTestWasRun = false;
                 getController().reloadShotStatsFragment();
-                if (!getController().isBleDeviceConnected())
-                    mStartStopButton.setEnabled(false);
             } else {
                 mTestWasRun = true;
-
-
-                mStartStopButton.setText(getString(R.string.stopTest));
-                mStartStopButton.setCompoundDrawablesWithIntrinsicBounds(android.R.drawable.ic_delete, 0, 0, 0);
-
                 mTestRunning = true;
 
             }
             byte[] send = {Protocol.SETTINGS_MODE, 0x00};
             try {
                 HomeFragment.getInstance().writeBLE(send);
-                Thread.sleep(1500);
+                Thread.sleep(100);
                 mProgressChange = true;
             } catch (Exception e) {}
 
