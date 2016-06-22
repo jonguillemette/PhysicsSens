@@ -280,9 +280,9 @@ public class FreeRoamingFragment extends BaseFragment {
         showAngularSpeed(mAngularCheckB.isChecked());
 
         mShowHighOnlyCheckB.setChecked(false);
-        mShowLowOnlyCheckB.setChecked(false);
+        mShowLowOnlyCheckB.setChecked(true);
         mShotHighOnly = false;
-        mShotLowOnly = false;
+        mShotLowOnly = true;
 
         mShowHighOnlyCheckB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override

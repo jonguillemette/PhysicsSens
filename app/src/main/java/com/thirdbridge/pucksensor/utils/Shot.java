@@ -164,6 +164,7 @@ public class Shot {
     public Pair<String,String> packageFormCSV() {
         // Create a form that is easily parceable
         String text = "Player, " + mUser.getName() + "," + mUser.getId() + "\n";
+        text += "Ball weight,1 kg\n";
         text += "Max,\n";
         text += "Acceleration, " + mMaxAccel + " g\n";
         text += "Speed, " + mMaxSpeed + " km/h\n";
@@ -188,13 +189,13 @@ public class Shot {
         String[] user = datas[0].replace("Player, ", "").split(",");
         mUser = new User(user[1], user[0]);
 
-        mMaxAccel = Double.parseDouble(datas[2].replace("Acceleration, ", "").replace(" g", ""));
-        mMaxSpeed = Double.parseDouble(datas[3].replace("Speed, ", "").replace(" km/h", "").replace(" m/s", ""));
-        mMaxRotation = Double.parseDouble(datas[4].replace("Rotation, ", "").replace(" degrees/s", ""));
+        mMaxAccel = Double.parseDouble(datas[3].replace("Acceleration, ", "").replace(" g", ""));
+        mMaxSpeed = Double.parseDouble(datas[4].replace("Speed, ", "").replace(" km/h", "").replace(" m/s", ""));
+        mMaxRotation = Double.parseDouble(datas[5].replace("Rotation, ", "").replace(" degrees/s", ""));
 
-        mMaxPower = Double.parseDouble(datas[4].replace("Power, ", "").replace(" W", ""));
+        mMaxPower = Double.parseDouble(datas[6].replace("Power, ", "").replace(" W", ""));
 
-        int length = datas.length - 8;
+        int length = datas.length - 9;
 
         mAccTotal = new double[length];
         mSpeedTotal = new double[length];
@@ -202,7 +203,7 @@ public class Shot {
         mPowerTotal = new double[length];
 
         int index = 0;
-        for (int i = 7; i<datas.length; i++) {
+        for (int i = 9; i<datas.length; i++) {
             mAccTotal[index] = Double.parseDouble(datas[i].split(",")[0]);
             mSpeedTotal[index] = Double.parseDouble(datas[i].split(",")[1]);
             mRotDatas[index] = Double.parseDouble(datas[i].split(",")[2]);

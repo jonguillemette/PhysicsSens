@@ -1099,11 +1099,12 @@ public class ShotStatsFragment extends BaseFragment {
         if (Protocol.isSameMode(Protocol.SHOT_MODE, value[0])) {
             double[] realAccel = new double[accelLow.length];
             for (int i = 0; i < realAccel.length; i++) {
-                if (accelHigh[i] > accelLow[i]  && accelHigh[i] > 10) {
+                /*if (accelHigh[i] > accelLow[i]  && accelHigh[i] > 10) {
                     realAccel[i] = accelHigh[i];
                 } else {
                     realAccel[i] = accelLow[i];
-                }
+                }*/
+                realAccel[i] = accelLow[i];
             }
             if (mTestRunning) {
                 calculationMethod(realAccel, gyro, value[0]);
@@ -1317,9 +1318,10 @@ public class ShotStatsFragment extends BaseFragment {
                 mSpeedMS = (float) (mRecent[idData.get(id)].getAccelerations()[i] * GRAVITY * mTimeStep / 1000f + mSpeedMS);
 
                 mRecent[idData.get(id)].setSpeedXYZ(mPuckSpeedXYZ, i);
+                mRecent[idData.get(id)].setPower((float) (mRecent[idData.get(id)].getAccelerations()[i] * mSpeedMS), i);
                 addSpeedEntry(i * mTimeStep + "", i, mPuckSpeedXYZ, newSetRequired, idData.get(id), id);
                 addRotationEntry(i * mTimeStep + "", i, (float) mRecent[idData.get(id)].getRotations()[i], newSetRequired, idData.get(id), id);
-                addPowerEntry(i * mTimeStep + "", i, (float)(mRecent[idData.get(id)].getAccelerations()[i]* mSpeedMS), newSetRequired, idData.get(id), id);
+                addPowerEntry(i * mTimeStep + "", i, (float) (mRecent[idData.get(id)].getAccelerations()[i] * mSpeedMS), newSetRequired, idData.get(id), id);
 
                 newSetRequired = false;
             }

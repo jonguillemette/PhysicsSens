@@ -63,7 +63,7 @@ public class CalibrationFragment extends BaseFragment {
     private static String FOLDER_SAVE = "Statpuck";
     private static String FOLDER_SAVE_CALIB = "Calibration";
 
-    private static final int MINIMAL_G = 5;
+    private static final int MINIMAL_G = 2;
     private static final String THRESHOLD_G = "THRESHOLD_G";
 
     private static final float MINIMAL_STICK_G = 0.25f;
