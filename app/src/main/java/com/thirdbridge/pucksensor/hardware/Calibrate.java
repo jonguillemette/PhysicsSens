@@ -1,4 +1,4 @@
-package com.thirdbridge.pucksensor.utils;
+package com.thirdbridge.pucksensor.hardware;
 
 import android.util.Pair;
 

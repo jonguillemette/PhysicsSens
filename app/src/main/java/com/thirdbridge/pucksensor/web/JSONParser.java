@@ -1,4 +1,4 @@
-package com.thirdbridge.pucksensor.utils;
+package com.thirdbridge.pucksensor.web;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;

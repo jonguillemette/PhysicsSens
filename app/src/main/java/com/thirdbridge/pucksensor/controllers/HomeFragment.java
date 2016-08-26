@@ -1,6 +1,5 @@
 package com.thirdbridge.pucksensor.controllers;
 
-import android.app.ProgressDialog;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
@@ -9,7 +8,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -17,14 +15,9 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.webkit.WebChromeClient;
-import android.webkit.WebSettings;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.CheckedTextView;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.PopupWindow;
@@ -32,6 +25,7 @@ import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.thirdbridge.pucksensor.R;
+import com.thirdbridge.pucksensor.adapter.UserArrayAdapter;
 import com.thirdbridge.pucksensor.ble.BluetoothLeService;
 import com.thirdbridge.pucksensor.ble.GattInfo;
 import com.thirdbridge.pucksensor.ble.Sensor;
@@ -39,10 +33,6 @@ import com.thirdbridge.pucksensor.ble.SensorDetails;
 import com.thirdbridge.pucksensor.models.User;
 import com.thirdbridge.pucksensor.utils.BaseFragment;
 import com.thirdbridge.pucksensor.utils.IO;
-import com.thirdbridge.pucksensor.utils.JSONParser;
-
-import org.apache.http.NameValuePair;
-import org.apache.http.message.BasicNameValuePair;
 
 import java.io.File;
 import java.util.ArrayList;

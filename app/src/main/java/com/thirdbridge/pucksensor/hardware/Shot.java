@@ -1,9 +1,10 @@
-package com.thirdbridge.pucksensor.utils;
+package com.thirdbridge.pucksensor.hardware;
 
 import android.util.Log;
 import android.util.Pair;
 
 import com.thirdbridge.pucksensor.models.User;
+import com.thirdbridge.pucksensor.utils.IO;
 
 import java.io.File;
 import java.text.DateFormat;

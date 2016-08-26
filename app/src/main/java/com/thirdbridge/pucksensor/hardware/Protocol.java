@@ -1,4 +1,4 @@
-package com.thirdbridge.pucksensor.utils;
+package com.thirdbridge.pucksensor.hardware;
 
 import com.thirdbridge.pucksensor.controllers.HomeFragment;
 
@@ -110,4 +110,107 @@ public class Protocol {
 
         }
     }
+
+    public static double[] getAccelHighShot(byte[] values) {
+        // According to protocol, byte 2-19
+        double[] retValue;
+        retValue = new double[3];
+        int value = (values[2] & 0xFF);
+        value |= (values[3] & 0xFF) << 8;
+        retValue[0] = ((double)value * 400)/2048;
+
+        value = (values[8] & 0xFF);
+        value |= (values[9] & 0xFF) << 8;
+        retValue[1] = ((double)value * 400)/2048;
+
+        value = (values[14] & 0xFF);
+        value |= (values[15] & 0xFF) << 8;
+        retValue[2] = ((double)value * 400)/2048;
+        return retValue;
+    }
+
+    public static double[] getAccelLowShot(byte[] values) {
+        // According to protocol, byte 2-19
+        double[] retValue;
+        retValue = new double[3];
+
+        int value = (values[4] & 0xFF);
+        value |= (values[5] & 0xFF) << 8;
+        retValue[0] = ((double)value * 0.012);
+
+        value = (values[10] & 0xFF);
+        value |= (values[11] & 0xFF) << 8;
+        retValue[1] = ((double)value * 0.012);
+
+        value = (values[16] & 0xFF);
+        value |= (values[17] & 0xFF) << 8;
+        retValue[2] = ((double)value * 0.012);
+        return retValue;
+    }
+
+    public static double[] getGyroShot(byte[] values) {
+        // According to protocol, byte 2-19
+        double[] retValue;
+        retValue = new double[3];
+
+        int value = (values[6] & 0xFF);
+        value |= (values[7] & 0xFF) << 8;
+        retValue[0] = ((double)value * 0.07);
+
+        value = (values[12] & 0xFF);
+        value |= (values[13] & 0xFF) << 8;
+        retValue[1] = ((double)value * 0.07);
+
+        value = (values[18] & 0xFF);
+        value |= (values[19] & 0xFF) << 8;
+        retValue[2] = ((double)value * 0.07);
+        return retValue;
+    }
+
+    public static double getAccelSH(byte low, byte high) {
+        double retValue;
+        int value = (low & 0xFF);
+        value |= (high & 0xFF) << 8;
+        boolean negative = false;
+        boolean lowAccel = false;
+        if ((value & (1<<14)) > 1) {
+            value -= (1<<14);
+            negative = true;
+        }
+        if ((value & (1<<15)) > 1) {
+            value -= (1<<15);
+            lowAccel = true;
+        }
+
+        if (lowAccel) {
+            retValue = (double)value * 0.012;
+        } else {
+            retValue = ((double)value * 400)/2048;
+        }
+
+        if (negative) {
+            retValue *= -1;
+        }
+
+        return retValue;
+    }
+
+    public static double getDirectionSH(byte angle) {
+        return (double) angle;
+    }
+
+    public static double getRotationSH(byte low, byte high) {
+        int value = (low & 0xFF);
+        value |= (high & 0xFF) << 8;
+        return  ((double)value * 0.07);
+    }
+
+    public static double getTickSH(byte low, byte high, double step) {
+        int value = (low & 0xFF);
+        value |= (high & 0xFF) << 8;
+
+        return (double) value * step;
+    }
+
+
 }

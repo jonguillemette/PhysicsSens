@@ -1,4 +1,4 @@
-package com.thirdbridge.pucksensor.controllers;
+package com.thirdbridge.pucksensor.adapter;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * Created by Jayson Dalpé on 2016-04-01.
  */
-class ComparisonShotAdapter extends BaseAdapter {
+public class ComparisonShotAdapter extends BaseAdapter {
     private List<ShotSpecification> mShotSpecs;
     private LayoutInflater mInflater;
     private Context mContext;

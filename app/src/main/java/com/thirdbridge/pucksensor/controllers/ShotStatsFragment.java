@@ -1,16 +1,13 @@
 package com.thirdbridge.pucksensor.controllers;
 
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
-import android.provider.MediaStore;
 import android.support.v4.content.ContextCompat;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -20,18 +17,15 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
-import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -44,21 +38,21 @@ import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.google.gson.Gson;
 import com.thirdbridge.pucksensor.R;
+import com.thirdbridge.pucksensor.adapter.ComparisonPlayerAdapter;
+import com.thirdbridge.pucksensor.adapter.ComparisonShotAdapter;
 import com.thirdbridge.pucksensor.models.Player;
 import com.thirdbridge.pucksensor.models.ShotSpecification;
 import com.thirdbridge.pucksensor.models.User;
 import com.thirdbridge.pucksensor.utils.BaseFragment;
-import com.thirdbridge.pucksensor.utils.Calibrate;
 import com.thirdbridge.pucksensor.utils.Constants;
 import com.thirdbridge.pucksensor.utils.IO;
 import com.thirdbridge.pucksensor.utils.MathHelper;
-import com.thirdbridge.pucksensor.utils.Protocol;
-import com.thirdbridge.pucksensor.utils.Shot;
+import com.thirdbridge.pucksensor.hardware.Protocol;
+import com.thirdbridge.pucksensor.hardware.Shot;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Created by Christophe on 2015-10-14.
@@ -961,9 +955,9 @@ public class ShotStatsFragment extends BaseFragment {
 
 	private void onCharacteristicChanged(byte[] value) {
         mAutoStart = true;
-        double[] accelHigh = getAccelHigh(value);
-        double[] accelLow = getAccelLow(value);
-        double[] gyro = getGyro(value);
+        double[] accelHigh = Protocol.getAccelHighShot(value);
+        double[] accelLow = Protocol.getAccelLowShot(value);
+        double[] gyro = Protocol.getGyroShot(value);
         if (Protocol.isSameMode(Protocol.SHOT_MODE, value[0])) {
             double[] realAccel = new double[accelLow.length];
             for (int i = 0; i < realAccel.length; i++) {
@@ -1226,61 +1220,6 @@ public class ShotStatsFragment extends BaseFragment {
         }
     }
 
-    private double[] getAccelHigh(byte[] values) {
-        // According to protocol, byte 2-19
-        double[] retValue;
-        retValue = new double[3];
-        int value = (values[2] & 0xFF);
-        value |= (values[3] & 0xFF) << 8;
-        retValue[0] = ((double)value * 400)/2048;
-
-        value = (values[8] & 0xFF);
-        value |= (values[9] & 0xFF) << 8;
-        retValue[1] = ((double)value * 400)/2048;
-
-        value = (values[14] & 0xFF);
-        value |= (values[15] & 0xFF) << 8;
-        retValue[2] = ((double)value * 400)/2048;
-        return retValue;
-    }
-
-    private double[] getAccelLow(byte[] values) {
-        // According to protocol, byte 2-19
-        double[] retValue;
-        retValue = new double[3];
-
-        int value = (values[4] & 0xFF);
-        value |= (values[5] & 0xFF) << 8;
-        retValue[0] = (double)value * 0.012;
-
-        value = (values[10] & 0xFF);
-        value |= (values[11] & 0xFF) << 8;
-        retValue[1] = (double)value * 0.012;
-
-        value = (values[16] & 0xFF);
-        value |= (values[17] & 0xFF) << 8;
-        retValue[2] = (double)value * 0.012;
-        return retValue;
-    }
-
-    private double[] getGyro(byte[] values) {
-        // According to protocol, byte 2-19
-        double[] retValue;
-        retValue = new double[3];
-
-        int value = (values[6] & 0xFF);
-        value |= (values[7] & 0xFF) << 8;
-        retValue[0] = ((double)value * 0.07);
-
-        value = (values[12] & 0xFF);
-        value |= (values[13] & 0xFF) << 8;
-        retValue[1] = ((double)value * 0.07);
-
-        value = (values[18] & 0xFF);
-        value |= (values[19] & 0xFF) << 8;
-        retValue[2] = ((double)value * 0.07);
-        return retValue;
-    }
 
     private void openComparisonMenu(boolean open, boolean player, ViewGroup container, String id) {
         if (open) {

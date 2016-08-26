@@ -1,4 +1,4 @@
-package com.thirdbridge.pucksensor.controllers;
+package com.thirdbridge.pucksensor.adapter;
 
 import android.content.Context;
 import android.graphics.Typeface;
@@ -6,19 +6,17 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.thirdbridge.pucksensor.R;
 import com.thirdbridge.pucksensor.models.Exercise;
-import com.thirdbridge.pucksensor.models.Player;
 
 import java.util.List;
 
 /**
  * Created by Jayson Dalpé on 2016-04-20.
  */
-class LoadExerciseAdapter extends BaseAdapter {
+public class LoadExerciseAdapter extends BaseAdapter {
     private List<Exercise> mExercises;
     private LayoutInflater mInflater;
 

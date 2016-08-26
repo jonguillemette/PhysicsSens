@@ -22,13 +22,15 @@ import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.thirdbridge.pucksensor.R;
+import com.thirdbridge.pucksensor.adapter.StatArrayAdapter;
+import com.thirdbridge.pucksensor.adapter.UserArrayAdapter;
 import com.thirdbridge.pucksensor.models.Statistic;
 import com.thirdbridge.pucksensor.models.User;
 import com.thirdbridge.pucksensor.utils.BaseFragment;
 import com.thirdbridge.pucksensor.utils.Constants;
 import com.thirdbridge.pucksensor.utils.IO;
-import com.thirdbridge.pucksensor.utils.PlotLyConverter;
-import com.thirdbridge.pucksensor.utils.Shot;
+import com.thirdbridge.pucksensor.web.PlotLyConverter;
+import com.thirdbridge.pucksensor.hardware.Shot;
 
 import java.io.File;
 import java.util.ArrayList;

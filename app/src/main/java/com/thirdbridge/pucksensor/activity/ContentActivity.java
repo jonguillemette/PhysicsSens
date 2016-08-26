@@ -55,7 +55,7 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 	private static String TAG = ContentActivity.class.getSimpleName();
 
 
-
+	// TODO Need better management
 	private enum VisibleFragment {BLE, HOME, HISTORY, STATS, STICK_HAND, YOUTUBE, CALIBRATION, FREE_ROAMING, ANALYSIS}
 
 	private VisibleFragment mVisibleFragment;

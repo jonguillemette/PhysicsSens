@@ -1,8 +1,6 @@
 package com.thirdbridge.pucksensor.models;
 
-import android.graphics.Bitmap;
-
-import com.thirdbridge.pucksensor.utils.Shot;
+import com.thirdbridge.pucksensor.hardware.Shot;
 
 /**
  * Created by Jayson Dalpé on 2016-04-01.

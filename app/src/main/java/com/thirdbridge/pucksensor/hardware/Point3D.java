@@ -1,4 +1,4 @@
-package com.thirdbridge.pucksensor.utils;
+package com.thirdbridge.pucksensor.hardware;
 
 /**
  * Created by Jayson Dalpé on 2016-03-25.

@@ -1,9 +1,7 @@
-package com.thirdbridge.pucksensor.controllers;
+package com.thirdbridge.pucksensor.adapter;
 
 import android.content.Context;
 import android.graphics.Typeface;
-import android.support.v4.content.ContextCompat;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,7 +17,7 @@ import java.util.List;
 /**
  * Created by Jayson Dalpé on 2016-04-01.
  */
-class ComparisonPlayerAdapter extends BaseAdapter {
+public class ComparisonPlayerAdapter extends BaseAdapter {
     private List<Player> mPlayers;
     private LayoutInflater mInflater;
 

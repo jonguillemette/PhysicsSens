@@ -4,8 +4,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Color;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -24,44 +22,30 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupWindow;
-import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
-import android.widget.SeekBar;
 import android.widget.TableLayout;
-import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.github.mikephil.charting.charts.LineChart;
-import com.github.mikephil.charting.components.Legend;
-import com.github.mikephil.charting.components.XAxis;
-import com.github.mikephil.charting.components.YAxis;
-import com.github.mikephil.charting.data.Entry;
-import com.github.mikephil.charting.data.LineData;
-import com.github.mikephil.charting.data.LineDataSet;
 import com.google.gson.Gson;
 import com.thirdbridge.pucksensor.R;
+import com.thirdbridge.pucksensor.adapter.LoadExerciseAdapter;
 import com.thirdbridge.pucksensor.models.Exercise;
 import com.thirdbridge.pucksensor.models.KeyPoint;
 import com.thirdbridge.pucksensor.models.Player;
 import com.thirdbridge.pucksensor.models.ShotSpecification;
 import com.thirdbridge.pucksensor.models.User;
 import com.thirdbridge.pucksensor.utils.BaseFragment;
-import com.thirdbridge.pucksensor.utils.Calibrate;
 import com.thirdbridge.pucksensor.utils.CellOrganizer;
 import com.thirdbridge.pucksensor.utils.Constants;
 import com.thirdbridge.pucksensor.utils.IO;
-import com.thirdbridge.pucksensor.utils.MathHelper;
-import com.thirdbridge.pucksensor.utils.Protocol;
-import com.thirdbridge.pucksensor.utils.Shot;
+import com.thirdbridge.pucksensor.hardware.Protocol;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -617,13 +601,13 @@ public class StickHandlingFragment extends BaseFragment {
             // TODO OnChanged
             if (mCell != null) {
                 if (value[2] == 1) {
-                    double accelInitX = getAccel(value[3], value[4]);
-                    double accelInitY = getAccel(value[5], value[6]);
-                    double accelEndX = getAccel(value[7], value[8]);
-                    double accelEndY = getAccel(value[9], value[10]);
+                    double accelInitX = Protocol.getAccelSH(value[3], value[4]);
+                    double accelInitY = Protocol.getAccelSH(value[5], value[6]);
+                    double accelEndX = Protocol.getAccelSH(value[7], value[8]);
+                    double accelEndY = Protocol.getAccelSH(value[9], value[10]);
 
-                    double directionStart = getDirection(value[11]);
-                    double directionEnd = getDirection(value[12]);
+                    double directionStart = Protocol.getDirectionSH(value[11]);
+                    double directionEnd = Protocol.getDirectionSH(value[12]);
 
                     mTableData[0] = accelInitX;
                     mTableData[1] = accelInitY;
@@ -632,12 +616,12 @@ public class StickHandlingFragment extends BaseFragment {
                     mTableData[4] = directionStart;
                     mTableData[5] = directionEnd;
                 } else {
-                    double accelMean = getAccel(value[3], value[4]);
-                    double accelMax = getAccel(value[5], value[6]);
-                    double accelZ = getAccel(value[7], value[8]);
-                    double rotation = getRotation(value[9], value[10]);
-                    double deltaTick = getTick(value[11], value[12], STAMP);
-                    double deltaTickFlying = getTick(value[13], value[14], STAMP);
+                    double accelMean = Protocol.getAccelSH(value[3], value[4]);
+                    double accelMax = Protocol.getAccelSH(value[5], value[6]);
+                    double accelZ = Protocol.getAccelSH(value[7], value[8]);
+                    double rotation = Protocol.getRotationSH(value[9], value[10]);
+                    double deltaTick = Protocol.getTickSH(value[11], value[12], STAMP);
+                    double deltaTickFlying = Protocol.getTickSH(value[13], value[14], STAMP);
 
                     mTableData[6] = accelMean;
                     mTableData[7] = accelMax;
@@ -873,51 +857,6 @@ public class StickHandlingFragment extends BaseFragment {
         });
         t.start();
 
-    }
-
-    private static double getAccel(byte low, byte high) {
-        double retValue;
-        int value = (low & 0xFF);
-        value |= (high & 0xFF) << 8;
-        boolean negative = false;
-        boolean lowAccel = false;
-        if ((value & (1<<14)) > 1) {
-            value -= (1<<14);
-            negative = true;
-        }
-        if ((value & (1<<15)) > 1) {
-            value -= (1<<15);
-            lowAccel = true;
-        }
-
-        if (lowAccel) {
-            retValue = (double)value * 0.012;
-        } else {
-            retValue = ((double)value * 400)/2048;
-        }
-
-        if (negative) {
-            retValue *= -1;
-        }
-
-        return retValue;
-    }
-
-    private static double getDirection(byte angle) {
-        return (double) angle;
-    }
-
-    private static double getRotation(byte low, byte high) {
-        int value = (low & 0xFF);
-        value |= (high & 0xFF) << 8;
-        return  ((double)value * 0.07);
-    }
-
-    private static double getTick(byte low, byte high, double step) {
-        int value = (low & 0xFF);
-        value |= (high & 0xFF) << 8;
-
-        return (double) value * STAMP;
     }
 
     private void updateGUI() {

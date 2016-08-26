@@ -1,4 +1,4 @@
-package com.thirdbridge.pucksensor.controllers;
+package com.thirdbridge.pucksensor.adapter;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -8,7 +8,6 @@ import android.widget.ArrayAdapter;
 import android.widget.CheckedTextView;
 
 import com.thirdbridge.pucksensor.R;
-import com.thirdbridge.pucksensor.models.Statistic;
 import com.thirdbridge.pucksensor.models.User;
 
 import java.util.ArrayList;
@@ -17,12 +16,12 @@ import java.util.List;
 /**
  * Created by Jayson Dalpé on 2016-05-25.
  */
-class StatArrayAdapter extends ArrayAdapter<Statistic.Stat> {
+public class UserArrayAdapter extends ArrayAdapter<User> {
 
-    List<Statistic.Stat> userList = new ArrayList<Statistic.Stat>();
+    List<User> userList = new ArrayList<User>();
     Context mContext;
 
-    public StatArrayAdapter(Context context, int textViewResourceId, List<Statistic.Stat> objects) {
+    public UserArrayAdapter(Context context, int textViewResourceId, List<User> objects) {
         super(context, textViewResourceId, objects);
         userList = objects;
         mContext = context;
@@ -48,7 +47,7 @@ class StatArrayAdapter extends ArrayAdapter<Statistic.Stat> {
 
         CheckedTextView checkedTextView = (CheckedTextView) spinnerView.findViewById(R.id.spinner_dropdown_item);
 
-        checkedTextView.setText(Statistic.get(userList.get(position)));
+        checkedTextView.setText(userList.get(position).getName());
 
         return spinnerView;
     }
