@@ -14,28 +14,32 @@ import java.util.List;
 public class Calibrate {
 
     private String mTime;
-    private List<Pair<Double, Double>> mData;
+    private List<Double[]> mData;
 
 
     public Calibrate() {
-        mData = new ArrayList<Pair<Double, Double>>();
+        mData = new ArrayList<Double[]>();
 
         DateFormat df = new SimpleDateFormat("dd_MMM_yyyy_HH.mm.ssa");
         mTime = df.format(Calendar.getInstance().getTime());
     }
 
-    public void addEntry(double acc, double ask) {
-        mData.add(new Pair(acc, ask));
+    public void addEntry(double acc1, double acc2, double gyro) {
+        Double[] data = new Double[3];
+        data[0] = acc1;
+        data[1] = acc2;
+        data[2] = gyro;
+        mData.add(data);
     }
 
     public Pair<String, String> packageFormCSV() {
         // Create a form that is easily parceable
         String text = "Calibration data, \n";
         text += "Data,\n";
-        text += "Acceleration,Ask\n";
+        text += "Low accel,High accel,Gyro RAW\n";
 
-        for (Pair<Double, Double> value: mData) {
-            text += value.first + "," + value.second + "\n";
+        for (Double[] value: mData) {
+            text += value[0] + "," + value[1] + "," + value[2] + "\n";
         }
 
         String fileName = "calibration_" + mTime + ".csv";

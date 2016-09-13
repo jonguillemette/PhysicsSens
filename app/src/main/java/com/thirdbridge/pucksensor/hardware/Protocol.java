@@ -155,15 +155,15 @@ public class Protocol {
 
         int value = (values[6] & 0xFF);
         value |= (values[7] & 0xFF) << 8;
-        retValue[0] = ((double)value * 0.07);
+        retValue[0] = ((double)value * 1.0/*0.07*/);
 
         value = (values[12] & 0xFF);
         value |= (values[13] & 0xFF) << 8;
-        retValue[1] = ((double)value * 0.07);
+        retValue[1] = ((double)value * 1.0/*0.07*/);
 
         value = (values[18] & 0xFF);
         value |= (values[19] & 0xFF) << 8;
-        retValue[2] = ((double)value * 0.07);
+        retValue[2] = ((double)value * 1.0/*0.07*/);
         return retValue;
     }
 

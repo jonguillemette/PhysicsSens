@@ -662,7 +662,7 @@ public class FreeRoamingFragment extends BaseFragment {
         for (int i=0; i<value.length; i++) {
             val += value[i] + ", ";
         }
-        //Log.i(TAG, "Value: " + val);
+        Log.i(TAG, "Value: " + val);
 	}
 
     /**

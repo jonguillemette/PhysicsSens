@@ -55,7 +55,7 @@ public class CalibrationFragment extends BaseFragment {
 
     // Calibration pattern
     final static long[] CALIB_TIME= {5000, 1000}; // Position time, transition time.
-    final static double[] CALIB_VALUE = {0, 50, 400}; // Start, Step, Max
+    final static double[] CALIB_VALUE = {0, 50, 100}; // Start, Step, Max
 
 
     // Saving local instance
@@ -605,7 +605,7 @@ public class CalibrationFragment extends BaseFragment {
             // Calibration with cetrifuge
             } else if (mStartCalibrationCen) { // Delete DATA_START, ... when calibrating forces
                 for (int i = 0; i < accelHigh.length; i++) {
-                    mCalibrationRoutine.addEntry(accelHigh[i], mCalibrationValue[0]);
+                    mCalibrationRoutine.addEntry(accelLow[i], accelHigh[i], gyro[i]);
                 }
 
             }
