@@ -139,6 +139,8 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		String[] permi = {"android.permission.ACCESS_FINE_LOCATION", "android.permission.ACCESS_COARSE_LOCATION"};
+		requestPermissions(permi, 0);
 		setContentView(R.layout.fragment_main_container);
 
 		initializeScanFragment();
