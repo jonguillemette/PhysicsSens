@@ -419,13 +419,11 @@ public class KeyPoint {
             double y2 = dir12;
 
             double slopeX = (y2 - y1) / (x2 - x1);
-            //Log.i("YOLLO", "Slope X: " + slopeX);
 
             y1 = dir21;
             y2 = dir22;
 
             double slopeY = (y2 - y1) / (x2 - x1);
-            //Log.i("YOLLO", "Slope Y:"   + slopeY);
 
             qualityDirectionMagnitude = Math.sqrt(Math.pow(slopeX, 2) + Math.pow(slopeY, 2));
             gotQualityDirectionMagnitude = true;

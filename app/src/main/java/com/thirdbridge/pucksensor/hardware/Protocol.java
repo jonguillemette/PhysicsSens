@@ -148,6 +148,59 @@ public class Protocol {
         return retValue;
     }
 
+    public static double[] getAccelYCurling(byte[] values) {
+        double[] retValue;
+        retValue = new double[3];
+
+        int value = fusionBytes(values[2], values[3]);
+        retValue[0] = toG((double) value);
+
+        value = fusionBytes(values[8], values[9]);
+        retValue[1] = toG((double) value);
+
+        value = fusionBytes(values[14], values[15]);
+        retValue[2] = toG((double)value);
+
+        return retValue;
+    }
+
+    public static double[] getAccelZCurling(byte[] values) {
+        double[] retValue;
+        retValue = new double[3];
+
+        int value = fusionBytes(values[4], values[5]);
+        retValue[0] = toG((double)value);
+
+        value = fusionBytes(values[10], values[11]);
+        retValue[1] = toG((double)value);
+
+        value = fusionBytes(values[16], values[17]);
+        retValue[2] = toG((double)value);
+
+        return retValue;
+    }
+
+    private static double toG(double value)
+    {
+        return value * 8 / (65536 / 2);
+    }
+
+    private static int fusionBytes(byte low, byte high)
+    {
+        int val = (low & 0xFF) | ((high & 0xFF) << 8);
+
+        int maxValue = 65536;
+
+        if (val >= maxValue / 2)
+        {
+            val = ~val;
+            val &= 0xFFFF;
+            val *= -1;
+        }
+
+        return val;
+    }
+
     public static double[] getGyroShot(byte[] values) {
         // According to protocol, byte 2-19
         double[] retValue;

@@ -90,6 +90,7 @@
     <string name="show_angular">Show angular speed</string>
     <string name="show_high">Show only high G data</string>
     <string name="show_low">Show only low G data</string>
+    <string name="invert">Invert axis</string>
     <string name="recent_shot1">Last shot </string>
     <string name="recent_shot2">Previous shot 1 </string>
     <string name="recent_shot3">Previous shot 2 </string>

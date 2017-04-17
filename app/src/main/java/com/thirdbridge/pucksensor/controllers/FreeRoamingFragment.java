@@ -1,12 +1,19 @@
 package com.thirdbridge.pucksensor.controllers;
 
+import android.Manifest;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +25,7 @@ import android.widget.PopupWindow;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.Legend;
@@ -27,12 +35,15 @@ import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.thirdbridge.pucksensor.R;
+import com.thirdbridge.pucksensor.hardware.Curling;
 import com.thirdbridge.pucksensor.models.Player;
 import com.thirdbridge.pucksensor.models.ShotSpecification;
 import com.thirdbridge.pucksensor.utils.BaseFragment;
+import com.thirdbridge.pucksensor.utils.IO;
 import com.thirdbridge.pucksensor.utils.MathHelper;
 import com.thirdbridge.pucksensor.hardware.Protocol;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,6 +62,9 @@ public class FreeRoamingFragment extends BaseFragment {
     private static final String CHECK_AUTOSAVE = "CHECK_AUTOSAVE";
     private static final int MINIMAL_POINTS = 5;
     private static final String POINTS_BOARD = "POINTS_BOARD";
+    private static String FOLDER_SAVE = "Curling";
+    private static String FOLDER_SAVE_SHOT = "FreeRoaming";
+
 
     private static final int[] GRAPH_COLOR = {Color.BLUE};
 
@@ -83,10 +97,7 @@ public class FreeRoamingFragment extends BaseFragment {
     // Menu
     private CheckBox mAccCheckB;
     private CheckBox mAngularCheckB;
-    private CheckBox mShowHighOnlyCheckB;
-    private boolean mShotHighOnly;
-    private CheckBox mShowLowOnlyCheckB;
-    private boolean mShotLowOnly;
+    private CheckBox mInvertAxis;
 
 
 	//Accel Chart
@@ -119,7 +130,7 @@ public class FreeRoamingFragment extends BaseFragment {
     // Data flow
     private int mIndex = 0;
     private boolean mNewSetRequired = true;
-
+    private Curling mCurlingShot;
 
     //Bluetooth
     private boolean mSensorReady = false;
@@ -154,14 +165,6 @@ public class FreeRoamingFragment extends BaseFragment {
                         deactivateTestButtons();
                     }
                     mSensorReadyChange = mSensorReady;
-                }
-                if (!mTestRunning && mAutoStart) {
-                    getActivity().runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            start();
-                        }
-                    });
                 }
 
 
@@ -225,8 +228,7 @@ public class FreeRoamingFragment extends BaseFragment {
         // Menu
         mAccCheckB = (CheckBox) v.findViewById(R.id.show_acceleration_check);
         mAngularCheckB = (CheckBox) v.findViewById(R.id.show_angular_check);
-        mShowHighOnlyCheckB = (CheckBox) v.findViewById(R.id.show_high_check);
-        mShowLowOnlyCheckB = (CheckBox) v.findViewById(R.id.show_low_check);
+        mInvertAxis = (CheckBox) v.findViewById(R.id.invert);
 
         mSettings = getActivity().getSharedPreferences("StatPuck", 0);
 
@@ -248,6 +250,7 @@ public class FreeRoamingFragment extends BaseFragment {
         mRotationProgress.setVisibility(View.GONE);
 		mTopRotationTextView = (TextView) v.findViewById(R.id.top_rotation_textview);
 
+        mStartStopButton.setVisibility(View.INVISIBLE);
 		mStartStopButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -263,32 +266,15 @@ public class FreeRoamingFragment extends BaseFragment {
         showAcceleration(mAccCheckB.isChecked());
         showAngularSpeed(mAngularCheckB.isChecked());
 
-        mShowHighOnlyCheckB.setChecked(false);
-        mShowLowOnlyCheckB.setChecked(false);
-        mShotHighOnly = false;
-        mShotLowOnly = false;
+        mInvertAxis.setChecked(false);
 
-        mShowHighOnlyCheckB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+
+        mInvertAxis.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked) {
-                    mShotLowOnly = false;
-                    mShowLowOnlyCheckB.setChecked(false);
-                }
-                mShotHighOnly = isChecked;
             }
         });
 
-        mShowLowOnlyCheckB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked) {
-                    mShotHighOnly = false;
-                    mShowHighOnlyCheckB.setChecked(false);
-                }
-                mShotLowOnly = isChecked;
-            }
-        });
 
         mAccCheckB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -309,6 +295,21 @@ public class FreeRoamingFragment extends BaseFragment {
                 editor.commit();
             }
         });
+
+        if (ContextCompat.checkSelfPermission(getActivity(),
+                Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(getActivity(),
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+            }
+            else {
+                ActivityCompat.requestPermissions(getActivity(),
+                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                        80);
+            }
+        }
 
 		return v;
 	}
@@ -381,8 +382,8 @@ public class FreeRoamingFragment extends BaseFragment {
                 }
             }
             YAxis leftAxis = mAccelChart.getAxisLeft();
-            leftAxis.setAxisMaxValue(Math.abs(max));
-            leftAxis.setAxisMinValue(0);
+            leftAxis.setAxisMaxValue(8);
+            leftAxis.setAxisMinValue(-8);
 
             double releaseTime1 = 0;
 
@@ -420,11 +421,11 @@ public class FreeRoamingFragment extends BaseFragment {
 		mAccelChart.setAutoScaleMinMaxEnabled(true);
 
 		// enable touch gestures
-		mAccelChart.setTouchEnabled(false);
+		mAccelChart.setTouchEnabled(true);
 
 		// enable scaling and dragging
-		mAccelChart.setDragEnabled(false);
-		mAccelChart.setScaleEnabled(false);
+		mAccelChart.setDragEnabled(true);
+		mAccelChart.setScaleEnabled(true);
 		mAccelChart.setDrawGridBackground(false);
 
 		// if disabled, scaling can be done on x- and y-axis separately
@@ -505,7 +506,7 @@ public class FreeRoamingFragment extends BaseFragment {
 		mRotationChart.setAutoScaleMinMaxEnabled(true);
 
 		// enable touch gestures
-		mRotationChart.setTouchEnabled(false);
+		mRotationChart.setTouchEnabled(true);
 
 		// enable scaling and dragging
 		mRotationChart.setDragEnabled(true);
@@ -624,28 +625,27 @@ public class FreeRoamingFragment extends BaseFragment {
 
 	private void onCharacteristicChanged(byte[] value) {
         mAutoStart = true;
-        double[] accelHigh = Protocol.getAccelHighShot(value);
-        double[] accelLow = Protocol.getAccelLowShot(value);
+        double[] accelY = Protocol.getAccelYCurling(value);
+        double[] accelZ = Protocol.getAccelZCurling(value);
         double[] gyro = Protocol.getGyroShot(value);
+        double sign = 1;
+        double realSign = 1;
         if (Protocol.isSameMode(Protocol.SHOT_MODE, value[0])) {
-            double[] realAccel = new double[accelLow.length];
+            double[] realAccel = new double[accelY.length];
             for (int i = 0; i < realAccel.length; i++) {
-                if (!mShotHighOnly && !mShotLowOnly) {
-                    if (accelHigh[i] > accelLow[i] && accelHigh[i] > 10) {
-                        realAccel[i] = accelHigh[i];
-                    } else {
-                        realAccel[i] = accelLow[i];
-                    }
-                } else if (mShotHighOnly) {
-                    realAccel[i] = accelHigh[i];
-                } else {
-                    realAccel[i] = accelLow[i];
+                if (mInvertAxis.isChecked()) {
+                    sign = -1;
                 }
+                if (accelZ[i] < 0) {
+                    realSign = -1;
+                }
+                realAccel[i] = Math.sqrt(accelY[i]*accelY[i] + accelZ[i]*accelZ[i]) * realSign * sign;
+
             }
             if (mTestRunning) {
                 calculationMethod(realAccel, gyro, value[0]);
             }
-            //Log.i(TAG, "Check first: AH: " + accelHigh[0] + " AL: " + accelLow[0] + " Gyro: " + gyro[0]);
+            Log.i(TAG, "Check first: AH: " + accelY[0] + " AL: " + accelZ[0] + " Gyro: " + gyro[0]);
         } else if (Protocol.isSameMode(Protocol.SETTINGS_MODE, value[0])) {
             if (value[2] != Protocol.VALIDITY_TOKEN && !mSendOnce) {
                 // Settings don't care, send default ones
@@ -662,7 +662,7 @@ public class FreeRoamingFragment extends BaseFragment {
         for (int i=0; i<value.length; i++) {
             val += value[i] + ", ";
         }
-        //Log.i(TAG, "Value: " + val);
+        Log.i(TAG, "Value: " + val);
 	}
 
     /**
@@ -707,6 +707,11 @@ public class FreeRoamingFragment extends BaseFragment {
         // Add entry
         addAccelEntry(mIndex * mTimeStep + "", mIndex, (float) accel, mNewSetRequired, 0, 0);
         addRotationEntry(mIndex * mTimeStep + "", mIndex, (float) rotation, mNewSetRequired, 0, 0);
+        if (mNewSetRequired) {
+            mCurlingShot = new Curling(mTimeStep);
+        }
+        mCurlingShot.addAccel((float) accel);
+        mCurlingShot.addRot((float) rotation);
         mNewSetRequired = false;
         mIndex++;
     }
@@ -735,21 +740,37 @@ public class FreeRoamingFragment extends BaseFragment {
      */
     private void start() {
         if (mSensorReady) {
-            mStartStopButton.setVisibility(View.GONE);
+            //mStartStopButton.setVisibility(View.GONE);
 
             if (mTestRunning) {
                 mTestRunning = false;
                 mStartStopButton.setText(getString(R.string.reset));
                 mStartStopButton.setCompoundDrawablesWithIntrinsicBounds(R.drawable.reset, 0, 0, 0);
-                populateStatisticsFields();
-            } else if (mTestWasRun) {
+                save();
+                //populateStatisticsFields();
+            /*} else if (mTestWasRun) {
                 mTestWasRun = false;
                 getController().reloadShotStatsFragment();
                 if (!getController().isBleDeviceConnected())
-                    mStartStopButton.setEnabled(false);
+                    mStartStopButton.setEnabled(false);*/
             } else {
                 mTestWasRun = true;
+                mIndex = 0;
+                mNewSetRequired = true;
+                mCalibrationDone = false;
+                mAccelChart.clear();
+                LineData aData = new LineData();
+                aData.setValueTextColor(Color.BLACK);
+                mAccelChart.setData(aData);
 
+                mRotationChart.clear();
+                LineData rData = new LineData();
+                rData.setValueTextColor(Color.BLACK);
+                mRotationChart.setData(rData);
+
+                setupAccelChart();
+                setupRotationChart();
+                populateStatisticsFields();
                 if (mAccelChart.getLineData() != null) {
                     mAccelChart.getLineData().clearValues();
                     mAccelChart.getData().getDataSets().clear();
@@ -782,4 +803,37 @@ public class FreeRoamingFragment extends BaseFragment {
             }
         }
     }
+
+    private void save() {
+        // Save on a known place every shot shown
+        File rootsd = Environment.getExternalStorageDirectory();
+        File parent = new File(rootsd.getAbsolutePath(), FOLDER_SAVE);
+        File root = new File(parent.getAbsolutePath(), FOLDER_SAVE_SHOT);
+        boolean ret = false;
+        if (!parent.exists()) {
+            ret = parent.mkdirs();
+            Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+            intent.setData(Uri.fromFile(parent));
+            getActivity().sendBroadcast(intent);
+        }
+        if (!root.exists()) {
+            ret = root.mkdirs();
+            Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+            intent.setData(Uri.fromFile(root));
+            getActivity().sendBroadcast(intent);
+        }
+
+        Pair<String, String> saveData = mCurlingShot.packageFormCSV();
+        File file;
+
+        file = new File(root, saveData.first);
+
+        IO.saveFile(saveData.second, file);
+        Toast.makeText(getContext(), "Save " + " in " + file, Toast.LENGTH_LONG).show();
+
+        Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+        intent.setData(Uri.fromFile(file));
+        getActivity().sendBroadcast(intent);
+    }
+
 }

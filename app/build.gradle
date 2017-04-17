@@ -11,10 +11,10 @@ android {
         }
     }
     compileSdkVersion 23
-    buildToolsVersion "23.0.2"
+    buildToolsVersion '21.0.1'
     defaultConfig {
         applicationId "com.thirdbridge.pucksensor"
-        minSdkVersion 19
+        minSdkVersion 23
         targetSdkVersion 23
         versionCode 1
         versionName "1.0"

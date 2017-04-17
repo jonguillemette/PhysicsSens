@@ -1,5 +1,6 @@
 package com.thirdbridge.pucksensor.controllers;
 
+import android.Manifest;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
@@ -8,8 +9,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -51,11 +55,11 @@ public class HomeFragment extends BaseFragment {
     // Saving local instance
     SharedPreferences mSettings;
 
-    private Button mShotTextButton;
-    private Button mStickHandlingButton;
+    //private Button mShotTextButton;
+    //private Button mStickHandlingButton;
     private Button mCalibrationButton;
     private Button mFreeRoamingButton;
-    private Button mAnalysisButton;
+    //private Button mAnalysisButton;
     private ImageButton mNewUserImageButton;
     private Spinner mUserSpinner;
     private Button mSaveUserButton;
@@ -160,11 +164,11 @@ public class HomeFragment extends BaseFragment {
 
         View v = inflater.inflate(R.layout.fragment_home, container, false);
 
-        mShotTextButton = (Button) v.findViewById(R.id.shot_test_button);
-        mStickHandlingButton = (Button) v.findViewById(R.id.handling_test_button);
+        //mShotTextButton = (Button) v.findViewById(R.id.shot_test_button);
+        //mStickHandlingButton = (Button) v.findViewById(R.id.handling_test_button);
         mCalibrationButton = (Button) v.findViewById(R.id.calibration_button);
         mFreeRoamingButton = (Button) v.findViewById(R.id.roaming_test_button);
-        mAnalysisButton = (Button) v.findViewById(R.id.analysis_test_button);
+        //mAnalysisButton = (Button) v.findViewById(R.id.analysis_test_button);
         mNewUserImageButton = (ImageButton) v.findViewById(R.id.new_user_image_button);
         mUserSpinner = (Spinner) v.findViewById(R.id.user_spinner);
 
@@ -202,7 +206,7 @@ public class HomeFragment extends BaseFragment {
             }
         });
 
-        mShotTextButton.setOnClickListener(new View.OnClickListener() {
+        /*mShotTextButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 if (mCommunicationDone) {
@@ -236,7 +240,7 @@ public class HomeFragment extends BaseFragment {
                         Toast.makeText(getActivity(), "No device connected", Toast.LENGTH_LONG).show();
                 }
             }
-        });
+        });*/
 
         mCalibrationButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -274,14 +278,14 @@ public class HomeFragment extends BaseFragment {
             }
         });
 
-        mAnalysisButton.setOnClickListener(new View.OnClickListener() {
+        /*mAnalysisButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (mUserSpinner.getSelectedItemPosition() != -1) {
                     getController().gotoAnalysis((User) mUserSpinner.getSelectedItem());
                 }
             }
-        });
+        });*/
 
 /*
         WebSettings wSettings;
@@ -289,6 +293,8 @@ public class HomeFragment extends BaseFragment {
         wSettings.setJavaScriptEnabled(true);
         mWebView.loadUrl("file:///storage/emulated/0/Statpuck/index.html");
 */
+
+
 
         return v;
     }

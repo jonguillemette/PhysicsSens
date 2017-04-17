@@ -60,76 +60,20 @@
             android:lineSpacingExtra="@dimen/home_line_extra"
             android:textColor="@color/instruction_grey"/>
 
-        <LinearLayout
-            android:layout_width="wrap_content"
+
+        <Button
+            android:layout_width="@dimen/test_box_width"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_gravity="center_horizontal">
-
-            <Button
-                android:layout_width="@dimen/test_box_width"
-                android:layout_height="@dimen/test_box_height"
-                android:id="@+id/shot_test_button"
-                android:background="@drawable/test_button_shadow"
-                android:text="@string/shot"
-                android:textAllCaps="false"
-                android:textColor="@color/dark_grey"
-                android:textSize="@dimen/test_text_size"
-                android:gravity="center"
-                />
-
-            <Button
-                android:layout_width="@dimen/test_box_width"
-                android:layout_height="@dimen/test_box_height"
-                android:id="@+id/analysis_test_button"
-                android:background="@drawable/test_button_shadow"
-                android:text="@string/analysis"
-                android:textAllCaps="false"
-                android:textColor="@color/dark_grey"
-                android:textSize="@dimen/test_text_size"
-                android:layout_marginStart="@dimen/test_horizontal_margin"
-                android:gravity="center"
-                android:clickable="false"
-                />
-
-
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="@dimen/test_vertical_margin">
-
-            <Button
-                android:layout_width="@dimen/test_box_width"
-                android:layout_height="@dimen/test_box_height"
-                android:id="@+id/handling_test_button"
-                android:background="@drawable/test_button_shadow"
-                android:text="@string/stickHandling"
-                android:textAllCaps="false"
-                android:textColor="@color/dark_grey"
-                android:textSize="@dimen/test_text_size"
-                android:gravity="center"
-                android:clickable="true"
-                />
-
-            <Button
-                android:layout_width="@dimen/test_box_width"
-                android:layout_height="@dimen/test_box_height"
-                android:id="@+id/roaming_test_button"
-                android:background="@drawable/test_button_shadow"
-                android:text="@string/freeRoaming"
-                android:textAllCaps="false"
-                android:textColor="@color/dark_grey"
-                android:textSize="@dimen/test_text_size"
-                android:layout_marginStart="@dimen/test_horizontal_margin"
-                android:gravity="center"
-                />
-
-        </LinearLayout>
+            android:id="@+id/roaming_test_button"
+            android:background="@drawable/test_button_shadow"
+            android:text="@string/freeRoaming"
+            android:textAllCaps="false"
+            android:textColor="@color/dark_grey"
+            android:textSize="@dimen/test_text_size"
+            android:layout_marginTop="@dimen/test_horizontal_margin"
+            android:layout_gravity="center"
+            android:clickable="true"
+            />
 
         <Button
             android:layout_width="@dimen/test_box_width"
