@@ -59,6 +59,7 @@ public class HomeFragment extends BaseFragment {
     //private Button mStickHandlingButton;
     private Button mCalibrationButton;
     private Button mFreeRoamingButton;
+    private Button mBleReadingButton;
     //private Button mAnalysisButton;
     private ImageButton mNewUserImageButton;
     private Spinner mUserSpinner;
@@ -168,6 +169,7 @@ public class HomeFragment extends BaseFragment {
         //mStickHandlingButton = (Button) v.findViewById(R.id.handling_test_button);
         mCalibrationButton = (Button) v.findViewById(R.id.calibration_button);
         mFreeRoamingButton = (Button) v.findViewById(R.id.roaming_test_button);
+        mBleReadingButton = (Button) v.findViewById(R.id.blue_reading_button);
         //mAnalysisButton = (Button) v.findViewById(R.id.analysis_test_button);
         mNewUserImageButton = (ImageButton) v.findViewById(R.id.new_user_image_button);
         mUserSpinner = (Spinner) v.findViewById(R.id.user_spinner);
@@ -267,6 +269,24 @@ public class HomeFragment extends BaseFragment {
                     if (mUserSpinner.getSelectedItemPosition() != -1) {
                         if (getController().isBleDeviceConnected()) {
                             getController().gotoFreeRoaming();
+                        }
+                    }
+                } else {
+                    if (getController().isBleDeviceConnected())
+                        Toast.makeText(getActivity(), "Device is connecting...", Toast.LENGTH_LONG).show();
+                    else
+                        Toast.makeText(getActivity(), "No device connected", Toast.LENGTH_LONG).show();
+                }
+            }
+        });
+
+        mBleReadingButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mCommunicationDone) {
+                    if (mUserSpinner.getSelectedItemPosition() != -1) {
+                        if (getController().isBleDeviceConnected()) {
+                            getController().gotoBlueReading();
                         }
                     }
                 } else {

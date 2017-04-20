@@ -198,5 +198,9 @@
     <string name="idle">idle</string>
     <string name="btn_txt_confirm">Confirm</string>
 
+    <!-- Ble Reading -->
+    <string name="ble_data_lbl">Data:</string>
+    <string name="ble_reading">BLE Debug</string>
+
 
 </resources>

@@ -31,6 +31,7 @@ import com.thirdbridge.pucksensor.ble.BLEDeviceInfo;
 import com.thirdbridge.pucksensor.ble.BluetoothLeService;
 import com.thirdbridge.pucksensor.controllers.ActionBarFragment;
 import com.thirdbridge.pucksensor.controllers.AnalysisFragment;
+import com.thirdbridge.pucksensor.controllers.BLEReadingFragment;
 import com.thirdbridge.pucksensor.controllers.CalibrationFragment;
 import com.thirdbridge.pucksensor.controllers.FreeRoamingFragment;
 import com.thirdbridge.pucksensor.controllers.HistoryFragment;
@@ -56,7 +57,7 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 
 
 	// TODO Need better management
-	private enum VisibleFragment {BLE, HOME, HISTORY, STATS, STICK_HAND, YOUTUBE, CALIBRATION, FREE_ROAMING, ANALYSIS}
+	private enum VisibleFragment {BLE, HOME, HISTORY, STATS, STICK_HAND, YOUTUBE, CALIBRATION, FREE_ROAMING, ANALYSIS, BLE_READING}
 
 	private VisibleFragment mVisibleFragment;
 	private Constants.SelectedTest mSelectedTest;
@@ -90,6 +91,9 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 
 	private FrameLayout mFreeRoamingFragmentContainer;
 	private FreeRoamingFragment mFreeRoamingFragment;
+
+	private FrameLayout mBleReadingFragmentContainer;
+	private BLEReadingFragment mBleReadingFragment;
 
 	private FrameLayout mAnalysisFragmentContainer;
 	private AnalysisFragment mAnalysisFragment;
@@ -260,6 +264,16 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 		ft.commit();
 	}
 
+	private void initializeBleReadingFragment() {
+		mBleReadingFragmentContainer = (FrameLayout) findViewById(R.id.ble_reading_fragment_container);
+		mBleReadingFragment = BLEReadingFragment.newInstance();
+
+		FragmentManager fm = getSupportFragmentManager();
+		FragmentTransaction ft = fm.beginTransaction();
+		ft.replace(R.id.ble_reading_fragment_container, mBleReadingFragment);
+		ft.commit();
+	}
+
 	private void initializeAnalysisFragment(User user) {
 		mAnalysisFragmentContainer = (FrameLayout) findViewById(R.id.analysis_fragment_container);
 		mAnalysisFragment = AnalysisFragment.newInstance(user);
@@ -342,6 +356,9 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 		if (mAnalysisFragmentContainer != null)
 			mAnalysisFragmentContainer.setVisibility(View.GONE);
 
+		if (mBleReadingFragmentContainer != null)
+			mBleReadingFragmentContainer.setVisibility(View.GONE);
+
 		mActionBarFragment.setActionBarTitle("BLE Device Discovery");
 
 
@@ -377,6 +394,9 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 
 		if (mAnalysisFragmentContainer != null)
 			mAnalysisFragmentContainer.setVisibility(View.GONE);
+
+		if (mBleReadingFragmentContainer != null)
+			mBleReadingFragmentContainer.setVisibility(View.GONE);
 
 		mActionBarFragment.setActionBarTitle("Home");
 
@@ -439,6 +459,18 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
         mActionBarFragment.setActionBarTitle("Freeroaming");
     }
 
+	public void gotoBlueReading() {
+		initializeBleReadingFragment();
+		mHomeFragmentContainer.setVisibility(View.GONE);
+		if(mHistoryFragmentContainer != null)
+			mHistoryFragmentContainer.setVisibility(View.GONE);
+		mBleReadingFragmentContainer.setVisibility(View.VISIBLE);
+		setVisibleFragment(VisibleFragment.BLE_READING);
+		mActionBarFragment.setActionBarTitle("Ble Reading");
+	}
+
+
+
 	public void gotoAnalysis(User user) {
 		initializeAnalysisFragment(user);
 		mHomeFragmentContainer.setVisibility(View.GONE);
@@ -494,6 +526,9 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 				gotoHome();
 				break;
 			case ANALYSIS:
+				gotoHome();
+				break;
+			case BLE_READING:
 				gotoHome();
 				break;
             case YOUTUBE:

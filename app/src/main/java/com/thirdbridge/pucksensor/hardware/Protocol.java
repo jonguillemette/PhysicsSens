@@ -29,6 +29,12 @@ public class Protocol {
     public static final int DATA = 4;
 
     /**
+     * This sequence is a shot sequence (Shot mode)
+     */
+    public static final int SHOT_SEQUENCE = 4;
+
+
+    /**
      * Slave ask data (shot mode)
      * Switching into Shot mode
      */
@@ -36,9 +42,19 @@ public class Protocol {
     public static final int SHOT_MODE = 5;
 
     /**
+     * Switching into Launch mode
+     */
+    public static final int LAUNCH_MODE = 5;
+
+    /**
      * The Master finish sending a series of data. (Shot mode)
      */
     public static final int DATA_END = 6;
+
+    /**
+     * The Master finish sending a series of data. (Launch mode)
+     */
+    public static final int LAUNCH_READY = 6;
 
     /**
      * Te Master is starting to send relevant data, no draft. (Shot mode)
@@ -77,6 +93,13 @@ public class Protocol {
      */
     public static final int CALIB_AXIS = 15;
 
+    // Other value:
+
+    public static final int HOGLINE_FINISH = 0x10;
+    public static final int MOVEMENT_FINISH = 0x11;
+    public static final int PLAYER_ID = 0x01;
+    public static final int MAGNETO = 0x02;
+
     // PROTOCOL DEFAULT SETTINGS
     public static final byte VALIDITY_TOKEN = 0x3D;
     public static final int[] DEFAULT = {VALIDITY_TOKEN, 0x00, 0x00, 255, 0x00, 0x01, 0x01, 0x01, 0x00, 255}; //(2G)
@@ -85,10 +108,12 @@ public class Protocol {
         switch(mode) {
             case SETTINGS_MODE:
                 return SETTINGS_MODE==cmd || SETTINGS_READ==cmd || SETTINGS_NEW==cmd;
-            case SHOT_MODE:
-                return DATA==cmd || DATA_READY==cmd || DATA_END==cmd || DATA_START==cmd || DATA_DRAFT==cmd;
+            case LAUNCH_MODE:
+                return LAUNCH_READY==cmd;
             case STICK_MODE:
                 return  STICK_START==cmd || STICK_MOMENT==cmd;
+            case FREE_MODE:
+                return  DATA==cmd || DATA_READY==cmd || DATA_END==cmd || DATA_START==cmd || DATA_DRAFT==cmd;
         }
         return false;
     }
@@ -153,13 +178,13 @@ public class Protocol {
         retValue = new double[3];
 
         int value = fusionBytes(values[2], values[3]);
-        retValue[0] = toG((double) value);
+        retValue[0] = (double) value * 0.001 / 4;
 
         value = fusionBytes(values[8], values[9]);
-        retValue[1] = toG((double) value);
+        retValue[1] = (double) value * 0.001 / 4;
 
         value = fusionBytes(values[14], values[15]);
-        retValue[2] = toG((double)value);
+        retValue[2] = (double) value * 0.001 / 4;
 
         return retValue;
     }
@@ -169,20 +194,20 @@ public class Protocol {
         retValue = new double[3];
 
         int value = fusionBytes(values[4], values[5]);
-        retValue[0] = toG((double)value);
+        retValue[0] = (double) value * 0.001 / 4;
 
         value = fusionBytes(values[10], values[11]);
-        retValue[1] = toG((double)value);
+        retValue[1] = (double) value * 0.001 / 4;
 
         value = fusionBytes(values[16], values[17]);
-        retValue[2] = toG((double)value);
+        retValue[2] = (double) value * 0.001 / 4;
 
         return retValue;
     }
 
     private static double toG(double value)
     {
-        return value * 8 / (65536 / 2);
+        return value * 2 / (65536 / 2);
     }
 
     private static int fusionBytes(byte low, byte high)
@@ -208,15 +233,15 @@ public class Protocol {
 
         int value = (values[6] & 0xFF);
         value |= (values[7] & 0xFF) << 8;
-        retValue[0] = ((double)value * 0.07);
+        retValue[0] = ((double)value * 0.00875);
 
         value = (values[12] & 0xFF);
         value |= (values[13] & 0xFF) << 8;
-        retValue[1] = ((double)value * 0.07);
+        retValue[1] = ((double)value * 0.00875);
 
         value = (values[18] & 0xFF);
         value |= (values[19] & 0xFF) << 8;
-        retValue[2] = ((double)value * 0.07);
+        retValue[2] = ((double)value * 0.00875);
         return retValue;
     }
 
@@ -263,6 +288,12 @@ public class Protocol {
         value |= (high & 0xFF) << 8;
 
         return (double) value * step;
+    }
+
+    public static double getMagneticField(byte[] values) {
+        int value = (values[3] & 0xFF);
+        value |= (values[4] & 0xFF) << 8;
+        return ((double)value);
     }
 
 

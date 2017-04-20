@@ -382,8 +382,8 @@ public class FreeRoamingFragment extends BaseFragment {
                 }
             }
             YAxis leftAxis = mAccelChart.getAxisLeft();
-            leftAxis.setAxisMaxValue(8);
-            leftAxis.setAxisMinValue(-8);
+            leftAxis.setAxisMaxValue(4f);
+            leftAxis.setAxisMinValue(-4f);
 
             double releaseTime1 = 0;
 
@@ -630,7 +630,7 @@ public class FreeRoamingFragment extends BaseFragment {
         double[] gyro = Protocol.getGyroShot(value);
         double sign = 1;
         double realSign = 1;
-        if (Protocol.isSameMode(Protocol.SHOT_MODE, value[0])) {
+        if (Protocol.isSameMode(Protocol.FREE_MODE, value[0])) {
             double[] realAccel = new double[accelY.length];
             for (int i = 0; i < realAccel.length; i++) {
                 if (mInvertAxis.isChecked()) {

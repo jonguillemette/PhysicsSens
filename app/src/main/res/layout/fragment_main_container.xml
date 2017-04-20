@@ -85,7 +85,15 @@
         />
 
     <FrameLayout
-        android:id="@+id/freeroaming_fragment_container"
+    android:id="@+id/freeroaming_fragment_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_below="@id/action_bar_fragment_container"
+    android:visibility="gone"
+    />
+
+    <FrameLayout
+        android:id="@+id/ble_reading_fragment_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/action_bar_fragment_container"
