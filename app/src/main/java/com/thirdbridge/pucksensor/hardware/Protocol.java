@@ -296,5 +296,11 @@ public class Protocol {
         return ((double)value);
     }
 
+    public static double getMagneticDeltaField(byte[] values) {
+        int value = (values[5] & 0xFF);
+        value |= (values[6] & 0xFF) << 8;
+        return ((double)value);
+    }
+
 
 }

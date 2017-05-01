@@ -748,6 +748,17 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 	}
 
 	private boolean checkDeviceFilter(BluetoothDevice device) {
+		String devName = device.getName();
+
+		return true;
+		/*
+		if (devName == null) {
+			return false;
+		}
+		if (devName.contains("Physics")) {
+			return true;
+		}
+		*/
 		/*int  n = mDeviceFilter.length;
         if (n > 0) {
             boolean found = false;
@@ -759,10 +770,11 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
             return found;
         } else*/
 		// Allow all devices if the device filter is empty
-		return true;
+		//return false;
 	}
 
 	private void addDevice(BLEDeviceInfo device) {
+
 		mNumDevs++;
 		mDeviceInfoList.add(device);
 		mScanFragment.notifyDataSetChanged();

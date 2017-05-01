@@ -62,9 +62,7 @@ public class BLEReadingFragment extends BaseFragment {
     private static final String CHECK_ROTATION = "CHECK_ROTATION";
     private static final String CHECK_AUTOSAVE = "CHECK_AUTOSAVE";
     private static final int MINIMAL_POINTS = 5;
-
-
-
+    private static final int NB_MEAN = 300;
 
     // Saving local instance
     SharedPreferences mSettings;
@@ -78,6 +76,8 @@ public class BLEReadingFragment extends BaseFragment {
 	private TextView mDescriptionTextView;
 
     private TextView mDataTV;
+    private TextView mData2TV;
+
 
 	//Loading screen
 	private RelativeLayout mLoadingScreenRelativeLayout;
@@ -105,11 +105,18 @@ public class BLEReadingFragment extends BaseFragment {
     };
 
     // Magnetic time
+    double mStartValue = 1500;
+    boolean mFirstRun = true;
     double mStart = SystemClock.uptimeMillis();
-    double mThresLow = 1000;
-    double mThresHigh = 1500;
+    double mThresLow = 120;
+    double mThresHigh = 150;
+    double mThreshDelta = 20;
     boolean mInHigh = false;
     boolean mIsValid = false;
+    private List<Double> mMean = new ArrayList<>();
+
+    private boolean mWaiting = false;
+
 
     // Popup for player and shot specification
     private PopupWindow mPlayerPopup;
@@ -143,6 +150,8 @@ public class BLEReadingFragment extends BaseFragment {
             }
         }
     };
+
+
 
     public static BLEReadingFragment newInstance() {
 		Bundle args = new Bundle();
@@ -192,8 +201,9 @@ public class BLEReadingFragment extends BaseFragment {
 		mStartStopButton = (Button) v.findViewById(R.id.start_button);
 		mDescriptionTextView = (TextView) v.findViewById(R.id.stats_description_textview);
         mDataTV = (TextView) v.findViewById(R.id.data);
+        mData2TV = (TextView) v.findViewById(R.id.data2);
 
-
+        mData2TV.setText("TESTT");
 		mLoadingScreenRelativeLayout = (RelativeLayout) v.findViewById(R.id.loading_screen_relative_layout);
 
 
@@ -264,57 +274,114 @@ public class BLEReadingFragment extends BaseFragment {
         });
 	}
 
-
+    private double average(List<Double> numbers) {
+        double mean = 0;
+        for (int i=0; i<numbers.size(); i++) {
+            mean += numbers.get(i);
+        }
+        mean /= numbers.size();
+        return mean;
+    }
 	private void onCharacteristicChanged(byte[] value) {
-        // TODO, check different data
+
+        if (mWaiting) {
+            return;
+        }
+
         mAutoStart = true;
         double sign = 1;
         double realSign = 1;
         if (Protocol.isSameMode(Protocol.LAUNCH_MODE, value[0])) {
 
-            double mag = Protocol.getMagneticField(value);
+            final double mag = Protocol.getMagneticField(value);
+            final double magDelta = Protocol.getMagneticDeltaField(value);
+            mMean.add(mag);
+            if (mMean.size() >= NB_MEAN) {
+                mMean.remove(0);
+            }
+            mStartValue = average(mMean);
 
-            String val = "Time between lines is ";
+            double delta = Math.abs(mStartValue - mag);
+            String val = "Time between lines is (mag: " + mag + ") Delta from start (" + delta + ")  Derivative (" + magDelta+ ")";
 
-            if (!mInHigh && mag > mThresLow) {
+            if (!mInHigh && delta > mThresLow) {
                 mInHigh = true;
             }
-            else if (mInHigh && mag > mThresHigh && !mIsValid) {
+            else if (mInHigh && delta > mThresHigh && !mIsValid) {
 
-                val += (SystemClock.uptimeMillis() - mStart) + " ms";
+                String info = "Time (Value method): " + (SystemClock.uptimeMillis() - mStart) + " ms";
                 mStart = SystemClock.uptimeMillis();
 
-                final String uiVal = val;
+                final String uiVal2 = info;
                 getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        mDataTV.setText(uiVal);
+                        mData2TV.setText(uiVal2);
+
                     }
                 });
-
+                mWaiting = true;
                 mIsValid = true;
             }
-            else if (mInHigh && mIsValid && mag < mThresLow)
+            else if (mInHigh && mIsValid && delta < mThresLow)
             {
                 mInHigh = false;
                 mIsValid = false;
             }
-            else if (mInHigh && mIsValid && mag >= mThresLow)
+            else if (mInHigh && mIsValid && delta >= mThresLow)
             {
                 // Clean
+            }
+            else if(magDelta > mThreshDelta)
+            {
+                mInHigh = true;
+                mIsValid = true;
+                String info = "Time (Derivative method): " + (SystemClock.uptimeMillis() - mStart) + " ms";
+                mStart = SystemClock.uptimeMillis();
+
+                final String uiVal2 = info;
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mData2TV.setText(uiVal2);
+
+                    }
+                });
+                mWaiting = true;
             }
             else
             {
                 mInHigh = false;
                 mIsValid = false;
             }
-            double mThresLow = 1000;
-            double mThresHigh = 1500;
-            boolean mInHigh = false;
+            // If found:
 
+            if (mWaiting) {
+                try {
+                    Thread.sleep(2000);
+                } catch (Exception e) {
+
+                }
+                mWaiting = false;
+            }
+
+            final String uiVal = val;
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mDataTV.setText(uiVal);
+
+                }
+            });
 
 
             Log.i(TAG, "Value BLE reading: " + val);
+
+            String text = "Value: ";
+            for (int i=0; i<value.length; i++) {
+                text += value[i] + ", ";
+            }
+            Log.i(TAG, text);
 
         }
         else
