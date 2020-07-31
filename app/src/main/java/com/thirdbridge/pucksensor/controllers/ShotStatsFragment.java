@@ -1165,7 +1165,19 @@ public class ShotStatsFragment extends BaseFragment {
                     mRecent[idData.get(id)].setAccelerationXYZ(accelXYZ, i);
                     addAccelEntry(i * mTimeStep + "", i, (float) accelXYZ, newSetRequired, idData.get(id), id);
                 }
-                mPuckSpeedXYZ = (float) (mRecent[idData.get(id)].getAccelerations()[i] * GRAVITY * mTimeStep / 1000f * 3.6 + mPuckSpeedXYZ);
+
+                // Build speed only on zone of interest
+                double minOnlySpeed = mRecent[idData.get(id)].getMinOnly();
+                double maxOnlySpeed = mRecent[idData.get(id)].getMaxOnly();
+                if (i < minOnlySpeed) {
+                    mPuckSpeedXYZ = 0;
+                }
+                else if (i > minOnlySpeed && i <= maxOnlySpeed)
+                {
+                    mPuckSpeedXYZ = (float) (mRecent[idData.get(id)].getAccelerations()[i] * GRAVITY * mTimeStep / 1000f * 3.6 + mPuckSpeedXYZ);
+                }
+                // Else it stay the same
+
 
                 mRecent[idData.get(id)].setSpeedXYZ(mPuckSpeedXYZ, i);
                 addSpeedEntry(i * mTimeStep + "", i, mPuckSpeedXYZ, newSetRequired, idData.get(id), id);

@@ -37,6 +37,9 @@ public class Shot {
 
     private int mMax = 0;
     private int mMin = 0;
+
+    private int mMaxOnlySpeed = 0;
+    private int mMinOnlySpeed = 0;
     private int mReleaseTime = 0; //In number of steps
 
     public Shot(Point3D[] acceleration, double[] rotation, User user) {
@@ -91,26 +94,50 @@ public class Shot {
         return mDraft;
     }
 
-    public Point3D[] getAccelerationsXYZ() {
+    /*public Point3D[] getAccelerationsXYZ() {
         Point3D[] retValue = new Point3D[mMax-mMin];
         for(int i=0; i<mMax-mMin; i++) {
             retValue[i] = mAccDatas[mMin+i];
         }
         return retValue;
+    }*/
+
+    public Point3D[] getAccelerationsXYZ() {
+        Point3D[] retValue = new Point3D[mAccDatas.length];
+        for(int i=0; i<mAccDatas.length; i++) {
+            retValue[i] = mAccDatas[i];
+        }
+        return retValue;
     }
 
-    public double[] getAccelerations() {
+    /*public double[] getAccelerations() {
         double[] retValue = new double[mMax-mMin];
         for(int i=0; i<mMax-mMin; i++) {
             retValue[i] = mAccTotal[mMin+i];
         }
         return retValue;
+    }*/
+
+    public double[] getAccelerations() {
+        double[] retValue = new double[mAccTotal.length];
+        for(int i=0; i<mAccTotal.length; i++) {
+            retValue[i] = mAccTotal[i];
+        }
+        return retValue;
     }
 
-    public double[] getRotations() {
+    /*public double[] getRotations() {
         double[] retValue = new double[mMax-mMin];
         for(int i=0; i<mMax-mMin; i++) {
             retValue[i] = mRotDatas[mMin+i];
+        }
+        return retValue;
+    }*/
+
+    public double[] getRotations() {
+        double[] retValue = new double[mRotDatas.length];
+        for(int i=0; i<mRotDatas.length; i++) {
+            retValue[i] = mRotDatas[i];
         }
         return retValue;
     }
@@ -128,6 +155,16 @@ public class Shot {
     public void setSpeedXYZ(double data, int id) {
         if (id < mSpeedTotal.length)
             mSpeedTotal[id] = data;
+    }
+
+    public double getMaxOnly()
+    {
+        return mMaxOnlySpeed;
+    }
+
+    public double getMinOnly()
+    {
+        return mMinOnlySpeed;
     }
 
     public void setMax(double acceleration, double speed, double angular) {
@@ -155,16 +192,8 @@ public class Shot {
         text += "Data,\n";
         text += "Acceleration,Speed,Rotation\n";
 
-        //for (int i=0; i< mAccTotal.length; i++) {
-        //    text += mAccTotal[i] + "," + mSpeedTotal[i] + "," + mRotDatas[i] + "\n";
-        //}
-
         for (int i=0; i< mAccTotal.length; i++) {
-            text += mAccDatasRAW[i] + "," + mSpeedTotal[i] + "," + mRotDatas[i] + "\n";
-        }
-
-        for (int i=mAccTotal.length; i< mAccDatasRAW.length; i++) {
-            text += mAccDatasRAW[i] + "," + 0 + "," + 0 + "\n";
+            text += mAccTotal[i] + "," + mSpeedTotal[i] + "," + mRotDatas[i] + "\n";
         }
 
         String fileName = mUser.getName().replace(" ", "_") + "_" + mTime + ".csv";
@@ -209,12 +238,6 @@ public class Shot {
     public boolean analyze(int threshold, int thresholdRelease, int pointBoard) {
         mMin = 0;
         mMax = mAccTotal.length;
-        mAccDatasRAW = new double[mAccTotal.length];
-
-        for(int i=0;i<mAccTotal.length;i++) {
-            mAccDatasRAW[i] = mAccTotal[i];
-
-        }
 
         mReleaseTime = 0;
 
@@ -337,6 +360,11 @@ public class Shot {
         for (int i=mMin; i<mMax; i++) {
             sum += mAccTotal[i];
         }
+        // Propagate only one
+        mMinOnlySpeed = mMin;
+        mMaxOnlySpeed = mMax;
+        mMin = 0;
+        mMax = mAccTotal.length;
         mMeanAccel = sum / (mMax-mMin);
         return true;
     }
