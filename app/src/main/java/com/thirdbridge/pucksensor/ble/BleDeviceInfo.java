@@ -2,11 +2,11 @@ package com.thirdbridge.pucksensor.ble;
 
 import android.bluetooth.BluetoothDevice;
 
-public class BLEDeviceInfo {
+public class BleDeviceInfo {
   private BluetoothDevice mDevice;
   private int mRssi;
 
-  public BLEDeviceInfo(BluetoothDevice device, int rssi) {
+  public BleDeviceInfo(BluetoothDevice device, int rssi) {
     mDevice = device;
     mRssi = rssi;
   }

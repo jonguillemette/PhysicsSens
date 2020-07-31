@@ -3,7 +3,7 @@ package com.thirdbridge.pucksensor.activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.v4.app.Fragment;
+import androidx.fragment.app.Fragment;
 
 import com.thirdbridge.pucksensor.controllers.SplashFragment;
 import com.thirdbridge.pucksensor.utils.SingleFragmentActivity;

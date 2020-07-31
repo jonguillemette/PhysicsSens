@@ -22,6 +22,7 @@ public class Shot {
     private static final int DELTA = 2; // Data display before and after the peak.
 
     private Point3D[] mAccDatas;
+    private double[] mAccDatasRAW;
     private double[] mRotDatas;
     private double[] mAccTotal;
     private double[] mSpeedTotal;
@@ -154,8 +155,16 @@ public class Shot {
         text += "Data,\n";
         text += "Acceleration,Speed,Rotation\n";
 
+        //for (int i=0; i< mAccTotal.length; i++) {
+        //    text += mAccTotal[i] + "," + mSpeedTotal[i] + "," + mRotDatas[i] + "\n";
+        //}
+
         for (int i=0; i< mAccTotal.length; i++) {
-            text += mAccTotal[i] + "," + mSpeedTotal[i] + "," + mRotDatas[i] + "\n";
+            text += mAccDatasRAW[i] + "," + mSpeedTotal[i] + "," + mRotDatas[i] + "\n";
+        }
+
+        for (int i=mAccTotal.length; i< mAccDatasRAW.length; i++) {
+            text += mAccDatasRAW[i] + "," + 0 + "," + 0 + "\n";
         }
 
         String fileName = mUser.getName().replace(" ", "_") + "_" + mTime + ".csv";
@@ -200,6 +209,12 @@ public class Shot {
     public boolean analyze(int threshold, int thresholdRelease, int pointBoard) {
         mMin = 0;
         mMax = mAccTotal.length;
+        mAccDatasRAW = new double[mAccTotal.length];
+
+        for(int i=0;i<mAccTotal.length;i++) {
+            mAccDatasRAW[i] = mAccTotal[i];
+
+        }
 
         mReleaseTime = 0;
 

@@ -7,7 +7,7 @@ package com.thirdbridge.pucksensor.controllers;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.os.Bundle;
-import android.support.v4.content.ContextCompat;
+import androidx.core.content.ContextCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -22,7 +22,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.thirdbridge.pucksensor.R;
-import com.thirdbridge.pucksensor.ble.BLEDeviceInfo;
+import com.thirdbridge.pucksensor.ble.BleDeviceInfo;
 import com.thirdbridge.pucksensor.utils.BaseFragment;
 import com.thirdbridge.pucksensor.utils.Timer;
 
@@ -101,7 +101,7 @@ public class ScanBleFragment extends BaseFragment {
     }
 
     public void notifyDataSetChanged() {
-        List<BLEDeviceInfo> deviceList = getController().getDeviceInfoList();
+        List<BleDeviceInfo> deviceList = getController().getDeviceInfoList();
         if (mDeviceAdapter == null) {
             mDeviceAdapter = new DeviceListAdapter(getController(),deviceList);
         }
@@ -230,11 +230,11 @@ public class ScanBleFragment extends BaseFragment {
     // CLASS DeviceAdapter: handle device list
     //
     class DeviceListAdapter extends BaseAdapter {
-        private List<BLEDeviceInfo> mDevices;
+        private List<BleDeviceInfo> mDevices;
         private LayoutInflater mInflater;
         private Button mConnectButton;
 
-        public DeviceListAdapter(Context context, List<BLEDeviceInfo> devices) {
+        public DeviceListAdapter(Context context, List<BleDeviceInfo> devices) {
             mInflater = LayoutInflater.from(context);
             mDevices = devices;
         }
@@ -262,7 +262,7 @@ public class ScanBleFragment extends BaseFragment {
                 vg.setTag(position);
             }
 
-            BLEDeviceInfo deviceInfo = mDevices.get(position);
+            BleDeviceInfo deviceInfo = mDevices.get(position);
             BluetoothDevice device = deviceInfo.getDevice();
             int rssi = deviceInfo.getRssi();
             String descr = device.getName() + "\n" + device.getAddress() + "\nRssi: " + rssi + " dBm";

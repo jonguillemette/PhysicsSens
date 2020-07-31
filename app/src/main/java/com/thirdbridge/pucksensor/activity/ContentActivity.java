@@ -14,9 +14,9 @@ import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.support.v4.app.FragmentActivity;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
+import androidx.fragment.app.FragmentActivity;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -27,7 +27,7 @@ import com.google.android.youtube.player.YouTubeInitializationResult;
 import com.google.android.youtube.player.YouTubePlayer;
 import com.google.android.youtube.player.YouTubePlayerFragment;
 import com.thirdbridge.pucksensor.R;
-import com.thirdbridge.pucksensor.ble.BLEDeviceInfo;
+import com.thirdbridge.pucksensor.ble.BleDeviceInfo;
 import com.thirdbridge.pucksensor.ble.BluetoothLeService;
 import com.thirdbridge.pucksensor.controllers.ActionBarFragment;
 import com.thirdbridge.pucksensor.controllers.AnalysisFragment;
@@ -115,7 +115,7 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 	private boolean mScanning = false;
 	private int mNumDevs = 0;
 	private int mConnIndex = NO_DEVICE;
-	private List<BLEDeviceInfo> mDeviceInfoList;
+	private List<BleDeviceInfo> mDeviceInfoList;
 	private static BluetoothManager mBluetoothManager;
 	private BluetoothAdapter mBtAdapter = null;
 	private BluetoothDevice mBluetoothDevice = null;
@@ -530,7 +530,7 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 		}
 
 		// Initialize device list container and device filter
-		mDeviceInfoList = new ArrayList<BLEDeviceInfo>();
+		mDeviceInfoList = new ArrayList<BleDeviceInfo>();
 		Resources res = getResources();
 		mDeviceFilter = res.getStringArray(R.array.device_filter);
 
@@ -706,14 +706,14 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 		mScanFragment.setError(txt);
 	}
 
-	private BLEDeviceInfo createDeviceInfo(BluetoothDevice device, int rssi) {
-		BLEDeviceInfo deviceInfo = new BLEDeviceInfo(device, rssi);
+	private BleDeviceInfo createDeviceInfo(BluetoothDevice device, int rssi) {
+		BleDeviceInfo deviceInfo = new BleDeviceInfo(device, rssi);
 
 		return deviceInfo;
 	}
 
 	private boolean checkDeviceFilter(BluetoothDevice device) {
-		/*int  n = mDeviceFilter.length;
+		int  n = mDeviceFilter.length;
         if (n > 0) {
             boolean found = false;
             for (int i=0; i<n && !found; i++) {
@@ -722,12 +722,12 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
                 }
             }
             return found;
-        } else*/
+        }
 		// Allow all devices if the device filter is empty
 		return true;
 	}
 
-	private void addDevice(BLEDeviceInfo device) {
+	private void addDevice(BleDeviceInfo device) {
 		mNumDevs++;
 		mDeviceInfoList.add(device);
 		mScanFragment.notifyDataSetChanged();
@@ -746,7 +746,7 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 		return false;
 	}
 
-	private BLEDeviceInfo findDeviceInfo(BluetoothDevice device) {
+	private BleDeviceInfo findDeviceInfo(BluetoothDevice device) {
 		for (int i = 0; i < mDeviceInfoList.size(); i++) {
 			if (mDeviceInfoList.get(i).getDevice().getAddress().equals(device.getAddress())) {
 				return mDeviceInfoList.get(i);
@@ -765,7 +765,7 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 		return mScanning;
 	}
 
-	public List<BLEDeviceInfo> getDeviceInfoList() {
+	public List<BleDeviceInfo> getDeviceInfoList() {
 		return mDeviceInfoList;
 	}
 
@@ -887,11 +887,11 @@ public class ContentActivity extends FragmentActivity implements YouTubePlayer.O
 					if (checkDeviceFilter(device)) {
 						if (!deviceInfoExists(device.getAddress())) {
 							// New device
-							BLEDeviceInfo deviceInfo = createDeviceInfo(device, rssi);
+							BleDeviceInfo deviceInfo = createDeviceInfo(device, rssi);
 							addDevice(deviceInfo);
 						} else {
 							// Already in list, update RSSI info
-							BLEDeviceInfo deviceInfo = findDeviceInfo(device);
+							BleDeviceInfo deviceInfo = findDeviceInfo(device);
 							deviceInfo.setRssi(rssi);
 							mScanFragment.notifyDataSetChanged();
 						}

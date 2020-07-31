@@ -219,7 +219,7 @@ public class HomeFragment extends BaseFragment {
                 }
             }
         });
-
+        mStickHandlingButton.setVisibility(View.INVISIBLE);
         mStickHandlingButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -274,6 +274,7 @@ public class HomeFragment extends BaseFragment {
             }
         });
 
+        mAnalysisButton.setVisibility(View.INVISIBLE);
         mAnalysisButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
