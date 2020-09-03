@@ -25,6 +25,8 @@ public class Shot {
     private double[] mAccDatasRAW;
     private double[] mRotDatas;
     private double[] mAccTotal;
+    private double[] mAccLowTotal;
+    private double[] mAccHighTotal;
     private double[] mSpeedTotal;
     private String mTime;
     private double mMaxAccel = 0;
@@ -49,6 +51,8 @@ public class Shot {
             mAccDatas = new Point3D[min];
             mRotDatas = new double[min];
             mAccTotal = new double[min];
+            mAccLowTotal = new double[min];
+            mAccHighTotal = new double[min];
             mSpeedTotal = new double[min];
 
             for (int i=0; i<min; i++) {
@@ -76,6 +80,8 @@ public class Shot {
         int min = Math.min(length, MAX_DATA);
         mRotDatas = new double[min];
         mAccTotal = new double[min];
+        mAccLowTotal = new double[min];
+        mAccHighTotal = new double[min];
         mSpeedTotal = new double[min];
 
         DateFormat df = new SimpleDateFormat("dd_MMM_yyyy_HH.mm.ssa");
@@ -152,6 +158,13 @@ public class Shot {
             mAccTotal[id] = data;
     }
 
+    public void setAccelerationComposite(double lowG, double highG, int id) {
+        if (id < mAccLowTotal.length)
+            mAccLowTotal[id] = lowG;
+        if (id < mAccHighTotal.length)
+            mAccHighTotal[id] = highG;
+    }
+
     public void setSpeedXYZ(double data, int id) {
         if (id < mSpeedTotal.length)
             mSpeedTotal[id] = data;
@@ -190,10 +203,10 @@ public class Shot {
         text += "Speed, " + mMaxSpeed + " km/h\n";
         text += "Rotation, " + mMaxRotation + " degrees/s\n";
         text += "Data,\n";
-        text += "Acceleration,Speed,Rotation\n";
+        text += "Acceleration,Speed,Rotation,LowG, HighG\n";
 
         for (int i=0; i< mAccTotal.length; i++) {
-            text += mAccTotal[i] + "," + mSpeedTotal[i] + "," + mRotDatas[i] + "\n";
+            text += mAccTotal[i] + "," + mSpeedTotal[i] + "," + mRotDatas[i] + "," + mAccLowTotal[i] + "," + mAccHighTotal[i] + "\n";
         }
 
         String fileName = mUser.getName().replace(" ", "_") + "_" + mTime + ".csv";

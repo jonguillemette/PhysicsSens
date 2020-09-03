@@ -968,7 +968,7 @@ public class ShotStatsFragment extends BaseFragment {
                 }
             }
             if (mTestRunning) {
-                calculationMethod(realAccel, gyro, value[0]);
+                calculationMethod(realAccel, accelLow, accelHigh, gyro, value[0]);
             }
             //Log.i(TAG, "Check first: AH: " + accelHigh[0] + " AL: " + accelLow[0] + " Gyro: " + gyro[0]);
         } else if (Protocol.isSameMode(Protocol.SETTINGS_MODE, value[0])) {
@@ -996,7 +996,7 @@ public class ShotStatsFragment extends BaseFragment {
      * @param rotation The angular speed
      * @param mode The Mode of transmission
      */
-    private void calculationMethod(double[] acceleration, double rotation[], byte mode) {
+    private void calculationMethod(double[] acceleration, double[] lowG, double[] highG, double rotation[], byte mode) {
         if (!mCalibrationDone) {
             // Calibration process (no need now)
             mCalibrationDone = true;
@@ -1059,6 +1059,7 @@ public class ShotStatsFragment extends BaseFragment {
                 for (int i=0; i<acceleration.length; i++) {
                     // Use circular buffer
                     mReal.setAccelerationXYZ(acceleration[i], i);
+                    mReal.setAccelerationComposite(lowG[i], highG[i], i);
                     mReal.setRotation(rotation[i], i);
                     mRealIndex ++;
                 }
@@ -1073,6 +1074,7 @@ public class ShotStatsFragment extends BaseFragment {
                 for (int i=0; i<acceleration.length; i++) {
                     // Use circular buffer
                     mReal.setAccelerationXYZ(acceleration[i], mRealIndex+i);
+                    mReal.setAccelerationComposite(lowG[i], highG[i], mRealIndex+i);
                     mReal.setRotation(rotation[i], mRealIndex+i);
                     mRealIndex ++;
                 }
@@ -1088,6 +1090,7 @@ public class ShotStatsFragment extends BaseFragment {
                 for (int i=0; i<acceleration.length; i++) {
                     // Use circular buffer
                     mReal.setAccelerationXYZ(acceleration[i], mRealIndex+i);
+                    mReal.setAccelerationComposite(lowG[i], highG[i], mRealIndex+i);
                     mReal.setRotation(rotation[i], mRealIndex+i);
                     mRealIndex ++;
                 }
